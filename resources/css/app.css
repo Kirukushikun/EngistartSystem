@@ -5,7 +5,99 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg:       #ffffff;
+  --bg2:      #f7f6f3;
+  --bg3:      #eeede9;
+  --text:     #1c1c1a;
+  --text2:    #6b6b67;
+  --text3:    #a0a09b;
+  --border:   rgba(0,0,0,0.09);
+  --border2:  rgba(0,0,0,0.16);
+
+  --blue-bg:  #e8f0fb;
+  --blue:     #1a4fa0;
+  --blue-bd:  rgba(26,79,160,0.22);
+
+  --green-bg: #e8f5ee;
+  --green:    #1a6e3a;
+  --green-bd: rgba(26,110,58,0.22);
+
+  --red-bg:   #fdeaea;
+  --red:      #a32020;
+  --red-bd:   rgba(163,32,32,0.22);
+
+  --amber-bg: #fef3e2;
+  --amber:    #7a4f00;
+  --amber-bd: rgba(122,79,0,0.22);
+
+  --gray-bg:  #f2f1ef;
+  --gray:     #5a5a56;
+}
+
+.dark {
+  --bg:       #12161d;
+  --bg2:      #1a2029;
+  --bg3:      #0d1117;
+  --text:     #edf2f7;
+  --text2:    #a9b4c2;
+  --text3:    #748091;
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.16);
+
+  --blue-bg:  #13243b;
+  --blue:     #8ab4f8;
+  --blue-bd:  rgba(138,180,248,0.28);
+
+  --green-bg: #11281d;
+  --green:    #7bd79a;
+  --green-bd: rgba(123,215,154,0.28);
+
+  --red-bg:   #35161a;
+  --red:      #ff9c9c;
+  --red-bd:   rgba(255,156,156,0.28);
+
+  --amber-bg: #352611;
+  --amber:    #f6c66f;
+  --amber-bd: rgba(246,198,111,0.28);
+
+  --gray-bg:  #202734;
+  --gray:     #c2cad6;
+}
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@theme inline {
+  --color-apis-bg:        var(--bg);
+  --color-apis-bg2:       var(--bg2);
+  --color-apis-bg3:       var(--bg3);
+  --color-apis-text:      var(--text);
+  --color-apis-text2:     var(--text2);
+  --color-apis-text3:     var(--text3);
+  --color-apis-border:    var(--border);
+  --color-apis-border2:   var(--border2);
+
+  --color-apis-blue-bg:   var(--blue-bg);
+  --color-apis-blue:      var(--blue);
+  --color-apis-blue-bd:   var(--blue-bd);
+
+  --color-apis-green-bg:  var(--green-bg);
+  --color-apis-green:     var(--green);
+  --color-apis-green-bd:  var(--green-bd);
+
+  --color-apis-red-bg:    var(--red-bg);
+  --color-apis-red:       var(--red);
+  --color-apis-red-bd:    var(--red-bd);
+
+  --color-apis-amber-bg:  var(--amber-bg);
+  --color-apis-amber:     var(--amber);
+  --color-apis-amber-bd:  var(--amber-bd);
+
+  --color-apis-gray-bg:   var(--gray-bg);
+  --color-apis-gray:      var(--gray);
 }
