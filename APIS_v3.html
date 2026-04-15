@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EngiStart – Automated Project Initialization System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f7f6f3;--bg3:#eeede9;
+  --text:#1c1c1a;--text2:#6b6b67;--text3:#a0a09b;
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.16);
+  --blue-bg:#e8f0fb;--blue:#1a4fa0;--blue-bd:rgba(26,79,160,0.22);
+  --green-bg:#e8f5ee;--green:#1a6e3a;--green-bd:rgba(26,110,58,0.22);
+  --red-bg:#fdeaea;--red:#a32020;--red-bd:rgba(163,32,32,0.22);
+  --amber-bg:#fef3e2;--amber:#7a4f00;--amber-bd:rgba(122,79,0,0.22);
+  --gray-bg:#f2f1ef;--gray:#5a5a56;
+  --r:8px;--rl:12px;--sidebar:220px;
+}
+body[data-theme='dark']{
+  --bg:#12161d;--bg2:#1a2029;--bg3:#0d1117;
+  --text:#edf2f7;--text2:#a9b4c2;--text3:#748091;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.16);
+  --blue-bg:#13243b;--blue:#8ab4f8;--blue-bd:rgba(138,180,248,0.28);
+  --green-bg:#11281d;--green:#7bd79a;--green-bd:rgba(123,215,154,0.28);
+  --red-bg:#35161a;--red:#ff9c9c;--red-bd:rgba(255,156,156,0.28);
+  --amber-bg:#352611;--amber:#f6c66f;--amber-bd:rgba(246,198,111,0.28);
+  --gray-bg:#202734;--gray:#c2cad6;
+}
+html,body,#root{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);font-size:14px;background:var(--bg3);transition:background 0.2s,color 0.2s}
+input,select,textarea{background:var(--bg);color:var(--text);border:0.5px solid var(--border2);border-radius:var(--r);padding:7px 10px;font-size:13px;font-family:inherit;width:100%;outline:none;transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{border-color:#378add;box-shadow:0 0 0 3px rgba(55,138,221,0.1)}
+input[type="file"]{padding:6px 10px;font-size:12px}
+input[type="checkbox"]{width:auto;cursor:pointer}
+button{background:transparent;border:0.5px solid var(--border2);border-radius:var(--r);padding:6px 14px;font-size:12px;font-family:inherit;color:var(--text);cursor:pointer;transition:background 0.12s}
+button:hover{background:var(--bg2)}
+textarea{resize:vertical;line-height:1.6}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:4px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useEffect} = React;
+const e = React.createElement;
+
+const TODAY = new Date('2026-03-23');
+const daysUntil = d => Math.floor((new Date(d) - TODAY) / 86400000);
+const pad = n => String(n).padStart(3,'0');
+let reqCounter = 8;
+const genId = () => 'APIS-2026-0' + pad(reqCounter++);
+let crCounter = 1;
+const genCrId = () => 'SCR-2026-00' + pad(crCounter++);
+
+// ─── ACCOUNTS ────────────────────────────────────────────────
+const ACCOUNTS = [
+  {id:'jose',  password:'1234', name:'Jose Santos',      role:'farm_manager', farm:'Farm A – Bamban, Tarlac',    email:'j.santos@brooksidegroup.org'},
+  {id:'dh',    password:'1234', name:'Div. Head Santos', role:'division_head',farm:'All',                        email:'dh.santos@brooksidegroup.org'},
+  {id:'vp',    password:'1234', name:'Atty. T. Dizon',   role:'vp',           farm:'All',                        email:'t.dizon@brooksidegroup.org'},
+  {id:'ancel', password:'1234', name:'Ancel Roque',      role:'dh_gs',        farm:'All',                        email:'a.roque@brooksidegroup.org'},
+  {id:'dang',  password:'1234', name:'Engr. D. Baniaga', role:'ed_manager',   farm:'All',                        email:'d.baniaga@brooksidegroup.org'},
+  {id:'jeff',  password:'1234', name:'Jeff Montiano',    role:'it_admin',     farm:'All',                        email:'j.montiano@brooksidegroup.org'},
+];
+
+const ROLE_LABELS = {
+  farm_manager:'Farm Manager', division_head:'Division Head',
+  vp:'VP Gen Services', dh_gs:'DH Gen Services',
+  ed_manager:'ED Manager', it_admin:'IT Admin',
+};
+
+const NAV = {
+  farm_manager: [{id:'new_request',label:'New Request'},{id:'my_requests',label:'My Requests'}],
+  division_head:[{id:'inbox',label:'For Recommendation',badge:true},{id:'history',label:'History'}],
+  vp:           [{id:'inbox',label:'For Approval',badge:true},{id:'cr_inbox',label:'Change Requests',badge:true},{id:'history',label:'History'}],
+  dh_gs:        [{id:'late',label:'Late Filings',badge:true},{id:'noting',label:'For Noting',badge:true},{id:'history',label:'History'},{id:'change_request',label:'Settings Change Request'}],
+  ed_manager:   [{id:'inbox',label:'For Acceptance',badge:true},{id:'history',label:'History'},{id:'change_request',label:'Settings Change Request'}],
+  it_admin:     [{id:'all_requests',label:'All Requests'},{id:'users',label:'User Management'},{id:'audit',label:'Audit Trail'},{id:'override',label:'Status Override'},{id:'cr_implement',label:'Pending Changes',badge:true},{id:'settings',label:'Settings'}],
+};
+
+// ─── SEED SETTINGS ───────────────────────────────────────────
+const DEFAULT_SETTINGS = [
+  {key:'lead_time_days',       label:'Required Advance Submission (days)',      value:'45',      unit:'days'},
+  {key:'small_threshold',      label:'Small Project Cost Threshold',             value:'200000',  unit:'₱'},
+  {key:'small_lead_time',      label:'Small Project Lead Time (working days)',   value:'15',      unit:'days'},
+  {key:'large_lead_time',      label:'Large Project Lead Time (working days)',   value:'30',      unit:'days'},
+  {key:'acceptance_lead_time', label:'Acceptance Lead Time (days)',              value:'3',       unit:'days'},
+  {key:'reminder_hours',       label:'Approver Inaction Reminder (hours)',       value:'48',      unit:'hours'},
+  {key:'system_name',          label:'System Name',                              value:'EngiStart – Automated Project Initialization System', unit:''},
+  {key:'org_name',             label:'Organization Name',                        value:'Brookside Group of Companies', unit:''},
+];
+
+// ─── SEED DATA ───────────────────────────────────────────────
+const SEED = [
+  {id:'APIS-2026-001',title:'Poultry House Renovation',farm:'Farm A – Bamban, Tarlac',type:'Building',purpose:'Layer capacity expansion',needed:'2026-05-20',submitted:'2026-03-15',days:58,status:'submitted',by:'Jose Santos',byId:'jose',desc:'Full renovation of Building 3 including roof replacement, ventilation system, and lighting upgrades.',chickin:'2026-06-01',cap:'25,000 heads',mtgDate:'2026-03-25',mtgTime:'10:00',isLate:false,jl:null,
+    chain:[{role:'Farm Manager',user:'Jose Santos',action:'Submitted',date:'2026-03-15',st:'done'},{role:'Division Head',user:null,action:'Recommendation',date:null,st:'pending'},{role:'VP Gen Services',user:null,action:'Approval',date:null,st:'waiting'},{role:'DH Gen Services',user:null,action:'Noted',date:null,st:'waiting'},{role:'ED Manager',user:null,action:'Acceptance',date:null,st:'waiting'}]},
+  {id:'APIS-2026-002',title:'Feed Storage Expansion',farm:'Farm C – Concepcion, Tarlac',type:'Building',purpose:'Additional feed warehouse',needed:'2026-06-01',submitted:'2026-03-10',days:70,status:'recommended',by:'Pedro Reyes',byId:'pedro',desc:'Construction of 500 sqm feed storage building adjacent to existing facility.',chickin:null,cap:'500 MT',mtgDate:'2026-03-20',mtgTime:'14:00',isLate:false,jl:null,
+    chain:[{role:'Farm Manager',user:'Pedro Reyes',action:'Submitted',date:'2026-03-10',st:'done'},{role:'Division Head',user:'Div. Head Santos',action:'Recommended',date:'2026-03-14',st:'done'},{role:'VP Gen Services',user:null,action:'Approval',date:null,st:'pending'},{role:'DH Gen Services',user:null,action:'Noted',date:null,st:'waiting'},{role:'ED Manager',user:null,action:'Acceptance',date:null,st:'waiting'}]},
+  {id:'APIS-2026-003',title:'Irrigation System Phase 2',farm:'Farm B – Capas, Tarlac',type:'Infrastructure',purpose:'Water supply improvement',needed:'2026-05-15',submitted:'2026-03-05',days:53,status:'vp_approved',by:'Maria Cruz',byId:'maria',desc:'Drip irrigation system installation covering 15 hectares.',chickin:null,cap:'N/A',mtgDate:'2026-03-12',mtgTime:'09:00',isLate:false,jl:null,
+    chain:[{role:'Farm Manager',user:'Maria Cruz',action:'Submitted',date:'2026-03-05',st:'done'},{role:'Division Head',user:'Div. Head Santos',action:'Recommended',date:'2026-03-08',st:'done'},{role:'VP Gen Services',user:'Atty. T. Dizon',action:'Approved',date:'2026-03-12',st:'done'},{role:'DH Gen Services',user:null,action:'Noted',date:null,st:'pending'},{role:'ED Manager',user:null,action:'Acceptance',date:null,st:'waiting'}]},
+  {id:'APIS-2026-004',title:'Equipment Shed Phase 2',farm:'Farm D – Angeles, Pampanga',type:'Building',purpose:'Equipment storage expansion',needed:'2026-05-30',submitted:'2026-03-01',days:68,status:'noted',by:'Ramon Torres',byId:'ramon',desc:'Secondary shed for tractors and implements, 300 sqm.',chickin:null,cap:'N/A',mtgDate:'2026-03-08',mtgTime:'11:00',isLate:false,jl:null,
+    chain:[{role:'Farm Manager',user:'Ramon Torres',action:'Submitted',date:'2026-03-01',st:'done'},{role:'Division Head',user:'Div. Head Santos',action:'Recommended',date:'2026-03-04',st:'done'},{role:'VP Gen Services',user:'Atty. T. Dizon',action:'Approved',date:'2026-03-07',st:'done'},{role:'DH Gen Services',user:'Ancel Roque',action:'Noted',date:'2026-03-10',st:'done'},{role:'ED Manager',user:null,action:'Acceptance',date:null,st:'pending'}]},
+  {id:'APIS-2026-005',title:'Irrigation Pump Emergency Repair',farm:'Farm B – Capas, Tarlac',type:'Infrastructure',purpose:'Emergency pump replacement',needed:'2026-04-10',submitted:'2026-03-22',days:18,status:'late_pending',by:'Maria Cruz',byId:'maria',desc:'Urgent replacement of main irrigation pump.',chickin:null,cap:'N/A',mtgDate:'2026-03-25',mtgTime:'13:00',isLate:true,jl:'JL_APIS-2026-005.pdf',
+    chain:[{role:'Farm Manager',user:'Maria Cruz',action:'Submitted (Late Filing)',date:'2026-03-22',st:'done'},{role:'DH Gen Services',user:null,action:'Validation / Decision',date:null,st:'pending'}]},
+  {id:'APIS-2026-006',title:'Biogas Plant Repair',farm:'Farm A – Bamban, Tarlac',type:'Infrastructure',purpose:'Restore biogas production',needed:'2026-03-30',submitted:'2026-02-01',days:57,status:'accepted',by:'Jose Santos',byId:'jose',desc:'Full repair of biogas plant unit 2.',chickin:null,cap:'N/A',mtgDate:'2026-02-08',mtgTime:'10:00',isLate:false,jl:null,
+    chain:[{role:'Farm Manager',user:'Jose Santos',action:'Submitted',date:'2026-02-01',st:'done'},{role:'Division Head',user:'Div. Head Santos',action:'Recommended',date:'2026-02-05',st:'done'},{role:'VP Gen Services',user:'Atty. T. Dizon',action:'Approved',date:'2026-02-10',st:'done'},{role:'DH Gen Services',user:'Ancel Roque',action:'Noted',date:'2026-02-12',st:'done'},{role:'ED Manager',user:'Engr. D. Baniaga',action:'Accepted',date:'2026-02-14',st:'done'}]},
+  {id:'APIS-2026-007',title:'Biogas Plant Construction',farm:'Farm A – Bamban, Tarlac',type:'Infrastructure',purpose:'Expand biogas capacity',needed:'2026-04-05',submitted:'2026-03-20',days:13,status:'rejected',by:'Jose Santos',byId:'jose',desc:'New biogas plant construction adjacent to existing unit.',chickin:null,cap:'N/A',mtgDate:null,mtgTime:null,isLate:true,jl:'JL_APIS-2026-007.pdf',
+    chain:[{role:'Farm Manager',user:'Jose Santos',action:'Submitted (Late Filing)',date:'2026-03-20',st:'done'},{role:'DH Gen Services',user:'Ancel Roque',action:'Rejected',date:'2026-03-21',st:'rejected',remarks:'Insufficient justification. Please resubmit with complete supporting documents.'}]},
+];
+
+const SEED_LOGS = [
+  {ts:'2026-03-23 09:08',user:'Maria Cruz',role:'Farm Manager',action:'Submitted',id:'APIS-2026-005',note:'Late filing – 18 days ahead'},
+  {ts:'2026-03-22 16:45',user:'Ancel Roque',role:'DH Gen Services',action:'Rejected',id:'APIS-2026-007',note:'Insufficient JL'},
+  {ts:'2026-03-21 10:30',user:'Ancel Roque',role:'DH Gen Services',action:'Noted',id:'APIS-2026-004',note:'Forwarded to ED Manager'},
+  {ts:'2026-03-20 14:12',user:'Atty. T. Dizon',role:'VP Gen Services',action:'Approved',id:'APIS-2026-003',note:'Standard approval'},
+  {ts:'2026-03-15 11:05',user:'Jose Santos',role:'Farm Manager',action:'Submitted',id:'APIS-2026-001',note:'58 days ahead – standard'},
+  {ts:'2026-03-14 15:22',user:'Div. Head Santos',role:'Division Head',action:'Recommended',id:'APIS-2026-002',note:''},
+  {ts:'2026-02-14 14:00',user:'Engr. D. Baniaga',role:'ED Manager',action:'Accepted',id:'APIS-2026-006',note:'Final acceptance'},
+];
+
+const SEED_USERS = [
+  {id:'jose', name:'Jose Santos',      email:'j.santos@brooksidegroup.org',   role:'Farm Manager',  farm:'Farm A – Bamban',     status:'active'},
+  {id:'pedro',name:'Pedro Reyes',      email:'p.reyes@brooksidegroup.org',    role:'Farm Manager',  farm:'Farm C – Concepcion', status:'active'},
+  {id:'maria',name:'Maria Cruz',       email:'m.cruz@brooksidegroup.org',     role:'Farm Manager',  farm:'Farm B – Capas',      status:'active'},
+  {id:'ramon',name:'Ramon Torres',     email:'r.torres@brooksidegroup.org',   role:'Farm Manager',  farm:'Farm D – Angeles',    status:'active'},
+  {id:'dh',   name:'Div. Head Santos', email:'dh.santos@brooksidegroup.org',  role:'Division Head', farm:'All',                 status:'active'},
+  {id:'vp',   name:'Atty. T. Dizon',  email:'t.dizon@brooksidegroup.org',    role:'VP Gen Services',farm:'All',                status:'active'},
+  {id:'ancel',name:'Ancel Roque',      email:'a.roque@brooksidegroup.org',    role:'DH Gen Services',farm:'All',               status:'active'},
+  {id:'dang', name:'Engr. D. Baniaga',email:'d.baniaga@brooksidegroup.org',  role:'ED Manager',    farm:'All',                 status:'active'},
+  {id:'jeff', name:'Jeff Montiano',    email:'j.montiano@brooksidegroup.org', role:'IT Admin',      farm:'All',                 status:'active'},
+];
+
+// seed one pending change request
+const SEED_CR = [
+  {id:'SCR-2026-001',setting:'Small Project Cost Threshold',key:'small_threshold',oldVal:'₱200,000',newVal:'₱250,000',reason:'Project costs have increased due to inflation. The current threshold no longer reflects small vs large project distinction accurately.',requestedBy:'Engr. D. Baniaga',requestedRole:'ED Manager',requestedAt:'2026-03-22',status:'pending_vp',approvedBy:null,implementedBy:null},
+];
+
+// ─── UI HELPERS ──────────────────────────────────────────────
+function Badge({status}){
+  const M={
+    submitted:{bg:'var(--blue-bg)',c:'var(--blue)',l:'Submitted'},
+    recommended:{bg:'var(--blue-bg)',c:'var(--blue)',l:'Recommended'},
+    vp_approved:{bg:'var(--blue-bg)',c:'var(--blue)',l:'VP Approved'},
+    noted:{bg:'var(--blue-bg)',c:'var(--blue)',l:'Noted'},
+    accepted:{bg:'var(--green-bg)',c:'var(--green)',l:'Accepted'},
+    late_pending:{bg:'var(--amber-bg)',c:'var(--amber)',l:'Late – Pending'},
+    rejected:{bg:'var(--red-bg)',c:'var(--red)',l:'Rejected'},
+    active:{bg:'var(--green-bg)',c:'var(--green)',l:'Active'},
+    inactive:{bg:'var(--gray-bg)',c:'var(--gray)',l:'Inactive'},
+    pending_vp:{bg:'var(--amber-bg)',c:'var(--amber)',l:'Pending VP Approval'},
+    pending_it:{bg:'var(--blue-bg)',c:'var(--blue)',l:'Pending Implementation'},
+    cr_approved:{bg:'var(--green-bg)',c:'var(--green)',l:'Approved'},
+    cr_rejected:{bg:'var(--red-bg)',c:'var(--red)',l:'Rejected'},
+    implemented:{bg:'var(--green-bg)',c:'var(--green)',l:'Implemented'},
+  };
+  const s=M[status]||{bg:'var(--gray-bg)',c:'var(--gray)',l:status};
+  return e('span',{style:{background:s.bg,color:s.c,fontSize:11,padding:'2px 8px',borderRadius:4,fontWeight:500,whiteSpace:'nowrap'}},s.l);
+}
+
+function StepDot({st}){
+  const M={done:{bg:'var(--green-bg)',c:'var(--green)',sym:'✓'},pending:{bg:'var(--blue-bg)',c:'var(--blue)',sym:'●'},rejected:{bg:'var(--red-bg)',c:'var(--red)',sym:'✕'},waiting:{bg:'var(--gray-bg)',c:'var(--text3)',sym:'○'}};
+  const s=M[st]||M.waiting;
+  return e('span',{style:{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:'50%',background:s.bg,color:s.c,fontSize:9,fontWeight:600,flexShrink:0}},s.sym);
+}
+
+function Chain({chain}){
+  return e('div',{style:{display:'flex',flexDirection:'column',gap:7}},
+    chain.map((s,i)=>e('div',{key:i,style:{display:'flex',alignItems:'flex-start',gap:9}},
+      e(StepDot,{st:s.st}),
+      e('div',{style:{flex:1,paddingTop:1}},
+        e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}},
+          e('span',{style:{fontSize:12,fontWeight:s.st==='pending'?500:400,color:s.st==='waiting'?'var(--text3)':'var(--text)'}},[s.role,' — ',s.action]),
+          s.date&&e('span',{style:{fontSize:11,color:'var(--text3)',flexShrink:0}},s.date)
+        ),
+        s.st==='done'&&s.user&&e('span',{style:{fontSize:11,color:'var(--text2)'}},s.user),
+        s.remarks&&e('p',{style:{fontSize:11,color:'var(--red)',marginTop:3,lineHeight:1.4,fontStyle:'italic'}},'"',s.remarks,'"')
+      )
+    ))
+  );
+}
+
+function SectionDivider({label}){
+  return e('div',{style:{borderBottom:'0.5px solid var(--border)',paddingBottom:7,marginBottom:4,marginTop:22}},
+    e('span',{style:{fontSize:10,fontWeight:500,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.08em'}},label)
+  );
+}
+
+function Alert({type,children}){
+  const M={info:{bg:'var(--blue-bg)',c:'var(--blue)',bd:'var(--blue-bd)'},warn:{bg:'var(--amber-bg)',c:'var(--amber)',bd:'var(--amber-bd)'},danger:{bg:'var(--red-bg)',c:'var(--red)',bd:'var(--red-bd)'}};
+  const s=M[type]||M.info;
+  return e('div',{style:{background:s.bg,border:`0.5px solid ${s.bd}`,borderRadius:'var(--r)',padding:'10px 14px',marginBottom:14}},
+    e('p',{style:{fontSize:12,color:s.c,margin:0,lineHeight:1.6}},children)
+  );
+}
+
+function ThemeToggle({theme,onToggle}){
+  return e('button',{onClick:onToggle,style:{fontSize:11,padding:'5px 10px',background:'var(--bg2)',border:'0.5px solid var(--border)',fontWeight:500,whiteSpace:'nowrap'}},theme==='dark'?'Light Mode':'Dark Mode');
+}
+
+// ─── REQUEST CARD ────────────────────────────────────────────
+function RequestCard({r,actionLabel,actionStyle,rejectLabel,showChain,onAction,noAction}){
+  const [open,setOpen]=useState(false);
+  const [remarks,setRemarks]=useState('');
+  return e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',background:'var(--bg)',overflow:'hidden',marginBottom:10}},
+    e('div',{style:{padding:'14px 18px',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12},onClick:()=>setOpen(!open)},
+      e('div',{style:{flex:1,minWidth:0}},
+        e('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:5,flexWrap:'wrap'}},
+          e('span',{style:{fontFamily:'monospace',fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},r.id),
+          e(Badge,{status:r.status}),
+          r.isLate&&e('span',{style:{background:'var(--amber-bg)',color:'var(--amber)',fontSize:10,padding:'1px 6px',borderRadius:3,fontWeight:500}},'LATE FILING'),
+          r.jl&&e('span',{style:{background:'var(--gray-bg)',color:'var(--gray)',fontSize:10,padding:'1px 6px',borderRadius:3}},'JL attached')
+        ),
+        e('p',{style:{fontSize:14,fontWeight:500,margin:'0 0 3px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},r.title),
+        e('p',{style:{fontSize:11,color:'var(--text2)',margin:0}},r.farm,' · Needed ',r.needed,' · ',r.isLate?r.days+'d (late)':r.days+'d ahead',' · By ',r.by)
+      ),
+      e('span',{style:{fontSize:10,color:'var(--text3)',flexShrink:0,marginTop:3}},open?'▲':'▼')
+    ),
+    open&&e('div',{style:{borderTop:'0.5px solid var(--border)',padding:'16px 18px'}},
+      e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 20px',fontSize:12,marginBottom:14,color:'var(--text2)'}},
+        e('div',null,e('span',{style:{marginRight:4}},'Type:'),e('span',{style:{color:'var(--text)'}},r.type)),
+        e('div',null,e('span',{style:{marginRight:4}},'Purpose:'),e('span',{style:{color:'var(--text)'}},r.purpose)),
+        r.chickin&&e('div',null,e('span',{style:{marginRight:4}},'Chick-in:'),e('span',{style:{color:'var(--text)'}},r.chickin)),
+        r.cap&&r.cap!=='N/A'&&e('div',null,e('span',{style:{marginRight:4}},'Capacity:'),e('span',{style:{color:'var(--text)'}},r.cap)),
+        r.mtgDate&&e('div',{style:{gridColumn:'1/-1'}},e('span',{style:{marginRight:4}},'Meeting:'),e('span',{style:{color:'var(--text)'}},r.mtgDate,' at ',r.mtgTime))
+      ),
+      e('p',{style:{fontSize:12,lineHeight:1.7,color:'var(--text)',marginBottom:14,borderLeft:'2px solid var(--border)',paddingLeft:12}},r.desc),
+      showChain&&e('div',{style:{marginBottom:14}},
+        e('p',{style:{fontSize:10,color:'var(--text2)',marginBottom:8,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.07em'}},'Approval Chain'),
+        e(Chain,{chain:r.chain})
+      ),
+      r.isLate&&e(Alert,{type:'warn'},'Late filing: only ',r.days,' days before project start. Verify the attached Justification Letter before acting.'),
+      !noAction&&actionLabel&&e('div',null,
+        e('label',{style:{marginBottom:5}},'Remarks (optional)'),
+        e('textarea',{rows:2,placeholder:'Add remarks or conditions...',value:remarks,onChange:ev=>setRemarks(ev.target.value),style:{marginBottom:10}}),
+        e('div',{style:{display:'flex',gap:8,flexWrap:'wrap'}},
+          e('button',{style:actionStyle||{},onClick:()=>onAction&&onAction('approve',r.id,remarks)},actionLabel),
+          rejectLabel&&e('button',{style:{background:'var(--red-bg)',color:'var(--red)',border:'0.5px solid var(--red-bd)',padding:'7px 16px',fontWeight:500},onClick:()=>onAction&&onAction('reject',r.id,remarks)},rejectLabel),
+          e('button',{style:{fontSize:12,padding:'7px 14px'},onClick:()=>onAction&&onAction('return',r.id,remarks)},'Return for Revision')
+        )
+      )
+    )
+  );
+}
+
+// ─── SETTINGS CHANGE REQUEST — SUBMIT (DH GS + ED Manager) ──
+function ChangeRequestScreen({user, onSubmit}){
+  const SETTINGS_OPTS = DEFAULT_SETTINGS.filter(s=>!['system_name','org_name'].includes(s.key));
+  const [sel,setSel]=useState('');
+  const [newVal,setNewVal]=useState('');
+  const [reason,setReason]=useState('');
+  const [errors,setErrors]=useState({});
+  const [done,setDone]=useState(null);
+
+  const selected = SETTINGS_OPTS.find(s=>s.key===sel);
+
+  const validate=()=>{
+    const err={};
+    if(!sel) err.sel=true;
+    if(!newVal.trim()) err.newVal=true;
+    if(!reason.trim()) err.reason=true;
+    setErrors(err);
+    return Object.keys(err).length===0;
+  };
+
+  const submit=()=>{
+    if(!validate()) return;
+    const id=genCrId();
+    const cr={id,setting:selected.label,key:sel,oldVal:selected.unit==='₱'?'₱'+Number(selected.value).toLocaleString():selected.value+' '+selected.unit,newVal:selected.unit==='₱'?'₱'+Number(newVal).toLocaleString():newVal+' '+selected.unit,reason,requestedBy:user.name,requestedRole:ROLE_LABELS[user.role],requestedAt:'2026-03-23',status:'pending_vp',approvedBy:null,implementedBy:null};
+    onSubmit(cr);
+    setDone(id);
+  };
+
+  if(done) return e('div',{style:{padding:32,display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:12,maxWidth:440,margin:'40px auto'}},
+    e('div',{style:{width:52,height:52,borderRadius:'50%',background:'var(--green-bg)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'var(--green)'}},'✓'),
+    e('p',{style:{fontSize:15,fontWeight:500}},'Change request submitted'),
+    e('p',{style:{fontSize:12,color:'var(--text2)',lineHeight:1.6}},'Your request has been forwarded to VP Gen Services for approval. IT Admin will be notified upon approval to implement the change.'),
+    e('div',{style:{background:'var(--bg2)',borderRadius:'var(--r)',padding:'12px 20px',width:'100%',textAlign:'left',fontSize:12}},
+      e('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:5}},
+        e('span',{style:{color:'var(--text2)'}},'Reference ID'),
+        e('span',{style:{fontFamily:'monospace',fontWeight:500}},done)
+      ),
+      e('div',{style:{display:'flex',justifyContent:'space-between'}}),
+        e('span',{style:{color:'var(--text2)'}},'Next step'),
+        e('span',{style:{fontWeight:500,color:'var(--amber)'}},'Awaiting VP Gen Services approval')
+    ),
+    e('button',{onClick:()=>{setDone(null);setSel('');setNewVal('');setReason('');setErrors({});}},  'Submit another request')
+  );
+
+  return e('div',{style:{padding:24}},
+    e('div',{style:{maxWidth:560}},
+      e(Alert,{type:'warn'},'Settings changes affect the entire system. Your request will require VP Gen Services approval before IT Admin can implement it. All changes are logged in the audit trail.'),
+
+      e(SectionDivider,{label:'Change Request Details'}),
+      e('div',{style:{display:'grid',gap:14,marginTop:14}},
+        e('div',null,
+          e('label',null,'Setting to Change *'),
+          e('select',{value:sel,onChange:ev=>{setSel(ev.target.value);setNewVal('');},style:errors.sel?{borderColor:'var(--red)'}:{}},
+            e('option',{value:''},'Select a setting...'),
+            SETTINGS_OPTS.map(s=>e('option',{key:s.key,value:s.key},s.label+' (current: '+(s.unit==='₱'?'₱'+Number(s.value).toLocaleString():s.value+' '+s.unit)+')'))
+          )
+        ),
+        selected&&e('div',{style:{background:'var(--bg2)',border:'0.5px solid var(--border)',borderRadius:'var(--r)',padding:'12px 14px',fontSize:12}},
+          e('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:4}},
+            e('span',{style:{color:'var(--text2)'}},'Current value'),
+            e('span',{style:{fontWeight:500}},selected.unit==='₱'?'₱'+Number(selected.value).toLocaleString():selected.value+' '+selected.unit)
+          )
+        ),
+        e('div',null,
+          e('label',null,'Proposed New Value *'+(selected?(' ('+selected.unit+')'):''),),
+          e('input',{placeholder:selected?'Enter new value...':'Select a setting first',value:newVal,onChange:ev=>setNewVal(ev.target.value),disabled:!sel,style:errors.newVal?{borderColor:'var(--red)'}:{}})
+        ),
+        e('div',null,
+          e('label',null,'Justification / Reason *'),
+          e('textarea',{rows:4,placeholder:'Explain why this change is needed and what impact it will have...',value:reason,onChange:ev=>setReason(ev.target.value),style:errors.reason?{borderColor:'var(--red)'}:{}})
+        )
+      ),
+
+      e(SectionDivider,{label:'Approval Chain'}),
+      e('div',{style:{display:'flex',flexDirection:'column',gap:8,marginTop:14,marginBottom:20}},
+        [{role:'Submitted by',user:user.name,st:'done'},{role:'VP Gen Services',user:'Atty. T. Dizon',st:'pending'},{role:'IT Admin',user:'Jeff Montiano',st:'waiting'}].map((s,i)=>
+          e('div',{key:i,style:{display:'flex',alignItems:'center',gap:10}},
+            e(StepDot,{st:s.st}),
+            e('div',null,
+              e('p',{style:{fontSize:12,fontWeight:s.st==='pending'?500:400,color:s.st==='waiting'?'var(--text3)':'var(--text)',margin:0}},s.role),
+              e('p',{style:{fontSize:11,color:'var(--text2)',margin:0}},s.user)
+            )
+          )
+        )
+      ),
+
+      Object.keys(errors).length>0&&e(Alert,{type:'danger'},'Please complete all required fields.'),
+      e('div',{style:{display:'flex',gap:10}},
+        e('button',{onClick:submit,style:{background:'var(--blue-bg)',color:'var(--blue)',border:'0.5px solid var(--blue-bd)',padding:'9px 24px',fontWeight:500,fontSize:13}},'Submit Change Request'),
+        e('button',{onClick:()=>{setSel('');setNewVal('');setReason('');setErrors({});}},'Clear')
+      )
+    )
+  );
+}
+
+// ─── VP — CHANGE REQUEST INBOX ───────────────────────────────
+function CrInboxScreen({changeRequests, onCrAction}){
+  const pending=changeRequests.filter(cr=>cr.status==='pending_vp');
+  const [open,setOpen]=useState(null);
+  const [remarks,setRemarks]=useState('');
+  return e('div',{style:{padding:24}},
+    pending.length>0&&e(Alert,{type:'warn'},pending.length+' settings change request'+(pending.length!==1?'s':'')+' pending your approval.'),
+    pending.length===0&&e('div',{style:{textAlign:'center',padding:'80px 0',color:'var(--text2)',fontSize:13}},'No change requests pending your approval.'),
+    pending.map(cr=>e('div',{key:cr.id,style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',background:'var(--bg)',overflow:'hidden',marginBottom:10}},
+      e('div',{style:{padding:'14px 18px',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'flex-start'},onClick:()=>setOpen(open===cr.id?null:cr.id)},
+        e('div',null,
+          e('div',{style:{display:'flex',gap:7,marginBottom:5,alignItems:'center'}},
+            e('span',{style:{fontFamily:'monospace',fontSize:11,color:'var(--text2)'}},'SCR'),
+            e(Badge,{status:cr.status})
+          ),
+          e('p',{style:{fontSize:14,fontWeight:500,margin:'0 0 3px'}},'Change: '+cr.setting),
+          e('p',{style:{fontSize:11,color:'var(--text2)',margin:0}},'Requested by '+cr.requestedBy+' ('+cr.requestedRole+') · '+cr.requestedAt)
+        ),
+        e('span',{style:{fontSize:10,color:'var(--text3)',marginTop:3}},open===cr.id?'▲':'▼')
+      ),
+      open===cr.id&&e('div',{style:{borderTop:'0.5px solid var(--border)',padding:'16px 18px'}},
+        e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px 24px',fontSize:12,marginBottom:14}},
+          e('div',null,e('span',{style:{color:'var(--text2)',marginRight:4}},'Current value:'),e('span',{style:{fontWeight:500,color:'var(--red)'}},cr.oldVal)),
+          e('div',null,e('span',{style:{color:'var(--text2)',marginRight:4}},'Proposed value:'),e('span',{style:{fontWeight:500,color:'var(--green)'}},cr.newVal))
+        ),
+        e('div',{style:{background:'var(--bg2)',borderRadius:'var(--r)',padding:'12px 14px',marginBottom:14,fontSize:12,lineHeight:1.6}},
+          e('p',{style:{color:'var(--text2)',marginBottom:4,fontSize:10,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.07em'}},'Justification'),
+          e('p',{style:{color:'var(--text)',margin:0}},cr.reason)
+        ),
+        e('label',{style:{marginBottom:5}},'Remarks (optional)'),
+        e('textarea',{rows:2,placeholder:'Add remarks...',value:remarks,onChange:ev=>setRemarks(ev.target.value),style:{marginBottom:10}}),
+        e('div',{style:{display:'flex',gap:8}},
+          e('button',{style:{background:'var(--green-bg)',color:'var(--green)',border:'0.5px solid var(--green-bd)',padding:'7px 18px',fontWeight:500},onClick:()=>onCrAction('approve',cr.id,remarks)},'Approve'),
+          e('button',{style:{background:'var(--red-bg)',color:'var(--red)',border:'0.5px solid var(--red-bd)',padding:'7px 18px',fontWeight:500},onClick:()=>onCrAction('reject',cr.id,remarks)},'Reject')
+        )
+      )
+    ))
+  );
+}
+
+// ─── IT ADMIN — PENDING CHANGES (implement) ──────────────────
+function CrImplementScreen({changeRequests, settings, onImplement}){
+  const pending=changeRequests.filter(cr=>cr.status==='pending_it');
+  const done=changeRequests.filter(cr=>['implemented','cr_rejected'].includes(cr.status));
+  return e('div',{style:{padding:24}},
+    pending.length>0&&e(Alert,{type:'info'},pending.length+' VP-approved change'+(pending.length!==1?'s':'')+' ready for implementation.'),
+    pending.length===0&&done.length===0&&e('div',{style:{textAlign:'center',padding:'60px 0',color:'var(--text2)',fontSize:13}},'No pending changes to implement.'),
+    pending.map(cr=>e('div',{key:cr.id,style:{border:'0.5px solid var(--blue-bd)',borderRadius:'var(--rl)',background:'var(--bg)',overflow:'hidden',marginBottom:10}},
+      e('div',{style:{padding:'14px 18px',background:'var(--blue-bg)',borderBottom:'0.5px solid var(--blue-bd)',display:'flex',justifyContent:'space-between',alignItems:'center'}},
+        e('div',null,
+          e('p',{style:{fontSize:13,fontWeight:500,margin:'0 0 2px',color:'var(--blue)'}},'Ready to Implement: '+cr.setting),
+          e('p',{style:{fontSize:11,color:'var(--blue)',margin:0,opacity:0.7}},'Requested by '+cr.requestedBy+' · Approved by VP · '+cr.requestedAt)
+        ),
+        e(Badge,{status:cr.status})
+      ),
+      e('div',{style:{padding:'14px 18px'}},
+        e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px 20px',fontSize:12,marginBottom:14}},
+          e('div',null,e('p',{style:{color:'var(--text2)',margin:'0 0 3px',fontSize:10,textTransform:'uppercase',letterSpacing:'0.06em'}},'Setting'),e('p',{style:{fontWeight:500,margin:0}},cr.setting)),
+          e('div',null,e('p',{style:{color:'var(--text2)',margin:'0 0 3px',fontSize:10,textTransform:'uppercase',letterSpacing:'0.06em'}},'Current Value'),e('p',{style:{fontWeight:500,color:'var(--red)',margin:0}},cr.oldVal)),
+          e('div',null,e('p',{style:{color:'var(--text2)',margin:'0 0 3px',fontSize:10,textTransform:'uppercase',letterSpacing:'0.06em'}},'New Value'),e('p',{style:{fontWeight:500,color:'var(--green)',margin:0}},cr.newVal))
+        ),
+        e('div',{style:{background:'var(--bg2)',borderRadius:'var(--r)',padding:'10px 14px',marginBottom:14,fontSize:12}},
+          e('span',{style:{color:'var(--text2)'}},'Justification: '),cr.reason
+        ),
+        e('button',{style:{background:'var(--green-bg)',color:'var(--green)',border:'0.5px solid var(--green-bd)',padding:'8px 20px',fontWeight:500,fontSize:13},onClick:()=>onImplement(cr.id)},'Implement Change')
+      )
+    )),
+    done.length>0&&e('div',null,
+      e('p',{style:{fontSize:11,color:'var(--text2)',fontWeight:500,marginBottom:10,marginTop:done.length>0&&pending.length>0?20:0,textTransform:'uppercase',letterSpacing:'0.07em'}},'Change History'),
+      e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',overflow:'hidden',background:'var(--bg)'}},
+        e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+          e('thead',null,e('tr',{style:{background:'var(--bg2)'}},
+            ['Setting','Old Value','New Value','Requested By','Implemented By','Status'].map(h=>e('th',{key:h,style:{padding:'9px 14px',textAlign:'left',fontWeight:500,fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},h))
+          )),
+          e('tbody',null,done.map((cr,i)=>e('tr',{key:i,style:{borderTop:'0.5px solid var(--border)'}},
+            e('td',{style:{padding:'9px 14px',fontWeight:500}},cr.setting),
+            e('td',{style:{padding:'9px 14px',color:'var(--red)',fontSize:11}},cr.oldVal),
+            e('td',{style:{padding:'9px 14px',color:'var(--green)',fontSize:11}},cr.newVal),
+            e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11}},cr.requestedBy),
+            e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11}},cr.implementedBy||'—'),
+            e('td',{style:{padding:'9px 14px'}},e(Badge,{status:cr.status}))
+          )))
+        )
+      )
+    )
+  );
+}
+
+// ─── IT ADMIN — SETTINGS ─────────────────────────────────────
+function SettingsScreen({settings}){
+  return e('div',{style:{padding:24}},
+    e(Alert,{type:'warn'},'Settings values are governed by the Change Management Control workflow. To change a value, DH Gen Services or ED Manager must submit a Settings Change Request, which requires VP Gen Services approval before IT Admin can implement it.'),
+    e('div',{style:{maxWidth:560}},
+      e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',overflow:'hidden',background:'var(--bg)',marginBottom:20}},
+        e('div',{style:{padding:'12px 18px',borderBottom:'0.5px solid var(--border)',background:'var(--bg2)'}},
+          e('span',{style:{fontSize:13,fontWeight:500}},'Current System Values')
+        ),
+        settings.map((s,i)=>e('div',{key:i,style:{padding:'12px 18px',borderTop:i>0?'0.5px solid var(--border)':'none',display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}},
+          e('div',null,
+            e('p',{style:{fontSize:12,fontWeight:500,margin:'0 0 2px'}},s.label),
+            e('p',{style:{fontSize:11,color:'var(--text2)',margin:0}},'Key: '+s.key)
+          ),
+          e('span',{style:{fontFamily:'monospace',fontSize:13,fontWeight:500,color:'var(--blue)',whiteSpace:'nowrap'}},
+            s.unit==='₱'?'₱'+Number(s.value).toLocaleString():s.value+(s.unit?' '+s.unit:'')
+          )
+        ))
+      ),
+      e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',overflow:'hidden',background:'var(--bg)'}},
+        e('div',{style:{padding:'12px 18px',borderBottom:'0.5px solid var(--border)',background:'var(--bg2)'}},
+          e('span',{style:{fontSize:13,fontWeight:500}},'System Information')
+        ),
+        [{label:'System Name',value:'EngiStart – Automated Project Initialization System'},{label:'Organization',value:'Brookside Group of Companies'},{label:'IT Support Email',value:'j.montiano@brooksidegroup.org'}].map((s,i)=>
+          e('div',{key:i,style:{padding:'12px 18px',borderTop:i>0?'0.5px solid var(--border)':'none',display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}},
+            e('span',{style:{fontSize:12,fontWeight:500}},s.label),
+            e('span',{style:{fontSize:12,color:'var(--text2)'}},s.value)
+          )
+        )
+      )
+    )
+  );
+}
+
+// ─── SHARED SCREENS ──────────────────────────────────────────
+function InboxScreen({items,actionLabel,actionStyle,rejectLabel,alertMsg,showChain,emptyMsg,onAction}){
+  return e('div',{style:{padding:24}},
+    alertMsg&&items.length>0&&e(Alert,{type:'warn'},alertMsg),
+    items.length===0
+      ?e('div',{style:{textAlign:'center',padding:'80px 0',color:'var(--text2)',fontSize:13}},emptyMsg||'Nothing pending.')
+      :items.map(r=>e(RequestCard,{key:r.id,r,actionLabel,actionStyle,rejectLabel,showChain,onAction}))
+  );
+}
+
+function HistoryScreen({items}){
+  return e('div',{style:{padding:24}},
+    e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',overflow:'hidden',background:'var(--bg)'}},
+      e('div',{style:{overflowX:'auto'}},
+        e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+          e('thead',null,e('tr',{style:{background:'var(--bg2)'}},
+            ['ID','Project','Farm','Date Needed','Status'].map(h=>e('th',{key:h,style:{padding:'9px 14px',textAlign:'left',fontWeight:500,fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},h))
+          )),
+          e('tbody',null,
+            items.length===0?e('tr',null,e('td',{colSpan:5,style:{padding:28,textAlign:'center',color:'var(--text2)',fontSize:12}},'No records yet.')):
+            items.map(r=>e('tr',{key:r.id,style:{borderTop:'0.5px solid var(--border)'}},
+              e('td',{style:{padding:'9px 14px',fontFamily:'monospace',fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},r.id),
+              e('td',{style:{padding:'9px 14px',fontWeight:500}},r.title),
+              e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11}},r.farm),
+              e('td',{style:{padding:'9px 14px',color:'var(--text2)',whiteSpace:'nowrap'}},r.needed),
+              e('td',{style:{padding:'9px 14px'}},e(Badge,{status:r.status}))
+            ))
+          )
+        )
+      )
+    )
+  );
+}
+
+function NewRequestScreen({user,onSubmit}){
+  const TYPES=['Building','Infrastructure','Equipment','Utility','Others'];
+  const [f,setF]=useState({title:'',type:'',purpose:'',needed:'',desc:'',chickin:'',cap:'',mtgDate:'',mtgTime:''});
+  const [proceed,setProceed]=useState(false);
+  const [errors,setErrors]=useState({});
+  const [done,setDone]=useState(null);
+  const set=k=>ev=>setF(p=>({...p,[k]:ev.target.value}));
+  const days=f.needed?daysUntil(f.needed):null;
+  const isLate=days!==null&&days>=0&&days<45;
+  const isPast=days!==null&&days<0;
+  const validate=()=>{
+    const err={};
+    if(!f.title.trim())err.title=true;
+    if(!f.type)err.type=true;
+    if(!f.needed||isPast)err.needed=true;
+    if(!f.desc.trim())err.desc=true;
+    if(isLate&&!proceed)err.proceed=true;
+    setErrors(err);
+    return Object.keys(err).length===0;
+  };
+  const submit=()=>{
+    if(!validate())return;
+    const id=genId();
+    const newReq={id,title:f.title,farm:user.farm,type:f.type,purpose:f.purpose||'—',needed:f.needed,submitted:'2026-03-23',days,status:isLate?'late_pending':'submitted',by:user.name,byId:user.id,desc:f.desc,chickin:f.chickin||null,cap:f.cap||null,mtgDate:f.mtgDate||null,mtgTime:f.mtgTime||null,isLate,jl:isLate?'JL_'+id+'.pdf':null,
+      chain:isLate
+        ?[{role:'Farm Manager',user:user.name,action:'Submitted (Late Filing)',date:'2026-03-23',st:'done'},{role:'DH Gen Services',user:null,action:'Validation / Decision',date:null,st:'pending'}]
+        :[{role:'Farm Manager',user:user.name,action:'Submitted',date:'2026-03-23',st:'done'},{role:'Division Head',user:null,action:'Recommendation',date:null,st:'pending'},{role:'VP Gen Services',user:null,action:'Approval',date:null,st:'waiting'},{role:'DH Gen Services',user:null,action:'Noted',date:null,st:'waiting'},{role:'ED Manager',user:null,action:'Acceptance',date:null,st:'waiting'}]
+    };
+    onSubmit(newReq);
+    setDone({id,isLate});
+  };
+  const inp=(k,ph,type='text')=>e('input',{type,placeholder:ph,value:f[k],onChange:set(k),style:errors[k]?{borderColor:'var(--red)'}:{}});
+  if(done) return e('div',{style:{padding:32,display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:12,maxWidth:480,margin:'40px auto'}},
+    e('div',{style:{width:52,height:52,borderRadius:'50%',background:'var(--green-bg)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'var(--green)'}},'✓'),
+    e('p',{style:{fontSize:16,fontWeight:500}},'Request submitted'),
+    e('p',{style:{fontSize:12,color:'var(--text2)',lineHeight:1.6}},done.isLate?'Routed to DH Gen Services for late-filing review.':'Now in the standard approval workflow.'),
+    e('div',{style:{background:'var(--bg2)',borderRadius:'var(--r)',padding:'12px 20px',width:'100%',textAlign:'left',fontSize:12}},
+      e('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:5}},e('span',{style:{color:'var(--text2)'}},'Request ID'),e('span',{style:{fontFamily:'monospace',fontWeight:500}},done.id)),
+      e('div',{style:{display:'flex',justifyContent:'space-between'}},e('span',{style:{color:'var(--text2)'}},'Routing'),e('span',{style:{fontSize:11,fontWeight:500,padding:'2px 8px',borderRadius:4,background:done.isLate?'var(--amber-bg)':'var(--blue-bg)',color:done.isLate?'var(--amber)':'var(--blue)'}},done.isLate?'Late Filing – DH Gen Services':'Standard Workflow'))
+    ),
+    e('button',{onClick:()=>{setDone(null);setF({title:'',type:'',purpose:'',needed:'',desc:'',chickin:'',cap:'',mtgDate:'',mtgTime:''});setProceed(false);setErrors({});}},  'Submit another request')
+  );
+  return e('div',{style:{padding:24,overflowY:'auto',height:'100%'}},
+    e('div',{style:{maxWidth:640}},
+      e('div',{style:{background:'var(--bg2)',border:'0.5px solid var(--border)',borderRadius:'var(--r)',padding:'11px 16px',marginBottom:16,display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 20px',fontSize:12}},
+        e('div',null,e('span',{style:{color:'var(--text2)'}},'TO: '),e('span',{style:{fontWeight:500}},'Div. Head Santos')),
+        e('div',null,e('span',{style:{color:'var(--text2)'}},'DATE: '),e('span',{style:{fontWeight:500}},'March 23, 2026')),
+        e('div',null,e('span',{style:{color:'var(--text2)'}},'FROM: '),e('span',{style:{fontWeight:500}},user.name)),
+        e('div',null,e('span',{style:{color:'var(--text2)'}},'FARM: '),e('span',{style:{fontWeight:500}},user.farm))
+      ),
+      e(Alert,{type:'info'},'Requests must be submitted at least 45 days before the project start date. Late submissions require a Justification Letter and will be routed directly to DH Gen Services.'),
+      e(SectionDivider,{label:'Project Overview'}),
+      e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:12}},
+        e('div',null,e('label',null,'Project Title *'),inp('title','e.g. Poultry House Renovation')),
+        e('div',null,e('label',null,'Type *'),
+          e('select',{value:f.type,onChange:set('type'),style:errors.type?{borderColor:'var(--red)'}:{}},
+            e('option',{value:''},'Select type...'),TYPES.map(o=>e('option',{key:o},o))
+          )
+        ),
+        e('div',{style:{gridColumn:'1/-1'}},e('label',null,'Purpose'),inp('purpose','Describe the purpose...'))
+      ),
+      e('div',{style:{marginTop:14}},
+        e('label',null,'Date Needed *  ',
+          days!==null&&e('span',{style:{fontSize:11,fontWeight:500,color:isPast?'var(--red)':isLate?'var(--red)':'var(--green)'}},
+            isPast?'(Date is in the past)':isLate?`(${days} days away — below 45-day minimum)`:`(${days} days ahead — within required window)`
+          )
+        ),
+        e('input',{type:'date',value:f.needed,min:'2026-03-24',onChange:set('needed'),style:errors.needed?{borderColor:'var(--red)'}:{}})
+      ),
+      isLate&&e('div',{style:{marginTop:14,background:'var(--red-bg)',border:'0.5px solid var(--red-bd)',borderRadius:'var(--r)',padding:'16px 18px'}},
+        e('p',{style:{fontSize:13,fontWeight:500,color:'var(--red)',marginBottom:6}},'Submission deadline exceeded'),
+        e('p',{style:{fontSize:12,color:'var(--red)',lineHeight:1.65,marginBottom:12}},'Only ',days,' day'+(days===1?'':'s'),' before start date. A Justification Letter is required and this will route to DH Gen Services.'),
+        e('div',{style:{display:'flex',alignItems:'flex-start',gap:8,marginBottom:proceed?12:0}},
+          e('input',{type:'checkbox',id:'ack',checked:proceed,onChange:ev=>setProceed(ev.target.checked),style:{marginTop:2}}),
+          e('label',{htmlFor:'ack',style:{color:'var(--red)',cursor:'pointer',margin:0,fontSize:12}},'I acknowledge this is a late filing and will provide a Justification Letter')
+        ),
+        proceed&&e('div',null,
+          e('label',{style:{color:'var(--red)'}},'Attach Justification Letter (JL) *'),
+          e('input',{type:'file',accept:'.pdf,.doc,.docx'})
+        )
+      ),
+      e(SectionDivider,{label:'Project Requirement'}),
+      e('div',{style:{marginTop:12}},
+        e('label',null,'Detailed Description *'),
+        e('textarea',{rows:4,placeholder:'Describe the project scope and requirements...',value:f.desc,onChange:set('desc'),style:errors.desc?{borderColor:'var(--red)'}:{}})
+      ),
+      e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:12}},
+        e('div',null,e('label',null,'Chick-in Date (if applicable)'),e('input',{type:'date',value:f.chickin,onChange:set('chickin')})),
+        e('div',null,e('label',null,'Capacity'),inp('cap','e.g. 25,000 heads'))
+      ),
+      e(SectionDivider,{label:'Assessment Meeting Request'}),
+      e('p',{style:{fontSize:12,color:'var(--text2)',marginBottom:12}},'We kindly request your availability for a meeting to discuss the assessment process and schedule.'),
+      e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}},
+        e('div',null,e('label',null,'Preferred Date'),e('input',{type:'date',value:f.mtgDate,onChange:set('mtgDate')})),
+        e('div',null,e('label',null,'Preferred Time'),e('input',{type:'time',value:f.mtgTime,onChange:set('mtgTime')}))
+      ),
+      Object.keys(errors).length>0&&e('div',{style:{marginTop:14,background:'var(--red-bg)',border:'0.5px solid var(--red-bd)',borderRadius:'var(--r)',padding:'10px 14px'}},
+        e('p',{style:{fontSize:12,color:'var(--red)',margin:0}},'Please complete all required fields before submitting.')
+      ),
+      e('div',{style:{display:'flex',gap:10,marginTop:22,paddingBottom:40}},
+        e('button',{onClick:submit,style:{background:'var(--blue-bg)',color:'var(--blue)',border:'0.5px solid var(--blue-bd)',padding:'9px 24px',fontWeight:500,fontSize:13}},'Submit Request'),
+        e('button',{onClick:()=>{setF({title:'',type:'',purpose:'',needed:'',desc:'',chickin:'',cap:'',mtgDate:'',mtgTime:''});setErrors({});setProceed(false);}},'Clear')
+      )
+    )
+  );
+}
+
+function MyRequestsScreen({userId,requests}){
+  const mine=requests.filter(r=>r.byId===userId);
+  const [filter,setFilter]=useState('all');
+  const shown=filter==='all'?mine:mine.filter(r=>r.status===filter);
+  return e('div',{style:{padding:24}},
+    e('div',{style:{display:'flex',gap:6,marginBottom:16,flexWrap:'wrap'}},
+      ['all','submitted','late_pending','accepted','rejected'].map(f=>e('button',{key:f,onClick:()=>setFilter(f),style:{fontSize:11,padding:'4px 12px',fontWeight:filter===f?500:400,background:filter===f?'var(--bg2)':'transparent'}},f==='all'?'All':f.replace('_',' ')))
+    ),
+    shown.length===0?e('div',{style:{textAlign:'center',padding:'60px 0',color:'var(--text2)',fontSize:13}},'No requests match this filter.'):
+    shown.map(r=>e('div',{key:r.id,style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',background:'var(--bg)',padding:'14px 18px',marginBottom:10}},
+      e('div',{style:{display:'flex',gap:7,alignItems:'center',marginBottom:4,flexWrap:'wrap'}},
+        e('span',{style:{fontFamily:'monospace',fontSize:11,color:'var(--text2)'}},r.id),
+        e(Badge,{status:r.status}),
+        r.isLate&&e('span',{style:{background:'var(--amber-bg)',color:'var(--amber)',fontSize:10,padding:'1px 6px',borderRadius:3,fontWeight:500}},'LATE')
+      ),
+      e('p',{style:{fontSize:13,fontWeight:500,margin:'0 0 2px'}},r.title),
+      e('p',{style:{fontSize:11,color:'var(--text2)',margin:'0 0 10px'}},'Needed: ',r.needed,' · Submitted: ',r.submitted),
+      e('p',{style:{fontSize:10,color:'var(--text2)',marginBottom:7,fontWeight:500,textTransform:'uppercase',letterSpacing:'0.07em'}},'Status chain'),
+      e('div',{style:{display:'flex',alignItems:'center',gap:4,flexWrap:'wrap'}},
+        r.chain.map((s,i)=>e('div',{key:i,style:{display:'flex',alignItems:'center',gap:4}},
+          i>0&&e('span',{style:{color:'var(--text3)',fontSize:10,marginRight:2}},'›'),
+          e('div',{style:{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:20,background:s.st==='done'?'var(--green-bg)':s.st==='pending'?'var(--blue-bg)':s.st==='rejected'?'var(--red-bg)':'var(--gray-bg)'}},
+            e(StepDot,{st:s.st}),
+            e('span',{style:{fontSize:10,whiteSpace:'nowrap',color:s.st==='done'?'var(--green)':s.st==='pending'?'var(--blue)':s.st==='rejected'?'var(--red)':'var(--text3)',fontWeight:s.st==='pending'?500:400}},s.role)
+          )
+        ))
+      )
+    ))
+  );
+}
+
+function AllRequestsScreen({requests}){
+  const [filter,setFilter]=useState('all');
+  const [search,setSearch]=useState('');
+  const shown=requests.filter(r=>(filter==='all'||r.status===filter)&&(r.title.toLowerCase().includes(search.toLowerCase())||r.id.toLowerCase().includes(search.toLowerCase())));
+  const stats=[{l:'Total',v:requests.length},{l:'In Progress',v:requests.filter(r=>!['accepted','rejected'].includes(r.status)).length},{l:'Completed',v:requests.filter(r=>r.status==='accepted').length},{l:'Late Filings',v:requests.filter(r=>r.isLate).length}];
+  return e('div',{style:{padding:24}},
+    e('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}},
+      stats.map((s,i)=>e('div',{key:i,style:{background:'var(--bg2)',borderRadius:'var(--r)',padding:'14px 16px',border:'0.5px solid var(--border)'}},
+        e('p',{style:{fontSize:11,color:'var(--text2)',margin:'0 0 5px'}},s.l),
+        e('p',{style:{fontSize:26,fontWeight:500,margin:0}},s.v)
+      ))
+    ),
+    e('div',{style:{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap',alignItems:'center'}},
+      e('input',{placeholder:'Search by ID or title...',value:search,onChange:ev=>setSearch(ev.target.value),style:{width:220}}),
+      ['all','submitted','recommended','vp_approved','noted','accepted','late_pending','rejected'].map(s=>
+        e('button',{key:s,onClick:()=>setFilter(s),style:{fontSize:11,padding:'4px 10px',fontWeight:filter===s?500:400,background:filter===s?'var(--bg2)':'transparent'}},s==='all'?'All':s.replace('_',' '))
+      )
+    ),
+    e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',overflow:'hidden',background:'var(--bg)'}},
+      e('div',{style:{overflowX:'auto'}},
+        e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+          e('thead',null,e('tr',{style:{background:'var(--bg2)'}},
+            ['ID','Project Title','Farm','By','Date Needed','Days','Routing','Status'].map(h=>e('th',{key:h,style:{padding:'9px 14px',textAlign:'left',fontWeight:500,fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},h))
+          )),
+          e('tbody',null,
+            shown.length===0?e('tr',null,e('td',{colSpan:8,style:{padding:28,textAlign:'center',color:'var(--text2)',fontSize:12}},'No matching requests.')):
+            shown.map(r=>e('tr',{key:r.id,style:{borderTop:'0.5px solid var(--border)'}},
+              e('td',{style:{padding:'9px 14px',fontFamily:'monospace',fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},r.id),
+              e('td',{style:{padding:'9px 14px',fontWeight:500,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},r.title),
+              e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11,whiteSpace:'nowrap'}},r.farm.split('–')[0].trim()),
+              e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11,whiteSpace:'nowrap'}},r.by),
+              e('td',{style:{padding:'9px 14px',color:'var(--text2)',whiteSpace:'nowrap'}},r.needed),
+              e('td',{style:{padding:'9px 14px'}},e('span',{style:{color:r.days<45?'var(--red)':'var(--green)',fontWeight:500}},r.days,'d')),
+              e('td',{style:{padding:'9px 14px'}},r.isLate?e('span',{style:{background:'var(--amber-bg)',color:'var(--amber)',fontSize:10,padding:'2px 7px',borderRadius:3,fontWeight:500}},'DH Gen Svc'):e('span',{style:{background:'var(--blue-bg)',color:'var(--blue)',fontSize:10,padding:'2px 7px',borderRadius:3}},'Standard')),
+              e('td',{style:{padding:'9px 14px'}},e(Badge,{status:r.status}))
+            ))
+          )
+        )
+      )
+    )
+  );
+}
+
+function AuditScreen({logs}){
+  const aStyle=a=>({Submitted:{bg:'var(--blue-bg)',c:'var(--blue)'},Recommended:{bg:'var(--blue-bg)',c:'var(--blue)'},Approved:{bg:'var(--green-bg)',c:'var(--green)'},Accepted:{bg:'var(--green-bg)',c:'var(--green)'},Noted:{bg:'var(--blue-bg)',c:'var(--blue)'},Rejected:{bg:'var(--red-bg)',c:'var(--red)'}}[a]||{bg:'var(--gray-bg)',c:'var(--gray)'});
+  return e('div',{style:{padding:24}},
+    e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',overflow:'hidden',background:'var(--bg)'}},
+      e('div',{style:{padding:'12px 18px',borderBottom:'0.5px solid var(--border)',background:'var(--bg2)',display:'flex',justifyContent:'space-between',alignItems:'center'}},
+        e('span',{style:{fontSize:13,fontWeight:500}},'Activity Log'),
+        e('button',{style:{fontSize:11,padding:'4px 12px'}},'Export CSV')
+      ),
+      e('div',{style:{overflowX:'auto'}},
+        e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+          e('thead',null,e('tr',{style:{background:'var(--bg2)'}},
+            ['Timestamp','User','Role','Action','Request ID','Details'].map(h=>e('th',{key:h,style:{padding:'9px 14px',textAlign:'left',fontWeight:500,fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},h))
+          )),
+          e('tbody',null,logs.map((l,i)=>{const s=aStyle(l.action);return e('tr',{key:i,style:{borderTop:'0.5px solid var(--border)'}},
+            e('td',{style:{padding:'9px 14px',fontFamily:'monospace',fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},l.ts),
+            e('td',{style:{padding:'9px 14px',whiteSpace:'nowrap'}},l.user),
+            e('td',{style:{padding:'9px 14px',fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},l.role),
+            e('td',{style:{padding:'9px 14px'}},e('span',{style:{background:s.bg,color:s.c,fontSize:11,padding:'2px 8px',borderRadius:3,fontWeight:500}},l.action)),
+            e('td',{style:{padding:'9px 14px',fontFamily:'monospace',fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},l.id),
+            e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11}},l.note)
+          );}))
+        )
+      )
+    )
+  );
+}
+
+function UsersScreen(){
+  return e('div',{style:{padding:24}},
+    e('div',{style:{display:'flex',justifyContent:'flex-end',marginBottom:14}},
+      e('button',{style:{fontSize:12,padding:'6px 16px',fontWeight:500}},'+ Add User')
+    ),
+    e('div',{style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',overflow:'hidden',background:'var(--bg)'}},
+      e('div',{style:{overflowX:'auto'}},
+        e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+          e('thead',null,e('tr',{style:{background:'var(--bg2)'}},
+            ['Name','Email','Role','Farm','Status','Actions'].map(h=>e('th',{key:h,style:{padding:'9px 14px',textAlign:'left',fontWeight:500,fontSize:11,color:'var(--text2)',whiteSpace:'nowrap'}},h))
+          )),
+          e('tbody',null,SEED_USERS.map((u,i)=>e('tr',{key:i,style:{borderTop:'0.5px solid var(--border)'}},
+            e('td',{style:{padding:'9px 14px',fontWeight:500,whiteSpace:'nowrap'}},u.name),
+            e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11}},u.email),
+            e('td',{style:{padding:'9px 14px'}},e('span',{style:{background:'var(--blue-bg)',color:'var(--blue)',fontSize:11,padding:'2px 8px',borderRadius:3}},u.role)),
+            e('td',{style:{padding:'9px 14px',color:'var(--text2)',fontSize:11}},u.farm),
+            e('td',{style:{padding:'9px 14px'}},e(Badge,{status:u.status})),
+            e('td',{style:{padding:'9px 14px'}},
+              e('div',{style:{display:'flex',gap:6}},
+                e('button',{style:{fontSize:11,padding:'2px 8px'}},'Edit'),
+                e('button',{style:{fontSize:11,padding:'2px 8px'}},'Role'),
+                e('button',{style:{fontSize:11,padding:'2px 8px'}},'Disable')
+              )
+            )
+          )))
+        )
+      )
+    )
+  );
+}
+
+function OverrideScreen({requests}){
+  return e('div',{style:{padding:24}},
+    e(Alert,{type:'warn'},'Status overrides are logged in the audit trail. Use only in exceptional circumstances and ensure proper authorization.'),
+    requests.filter(r=>r.status!=='accepted').map(r=>e('div',{key:r.id,style:{border:'0.5px solid var(--border)',borderRadius:'var(--rl)',background:'var(--bg)',padding:'14px 18px',marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:12}},
+      e('div',null,
+        e('div',{style:{display:'flex',gap:7,marginBottom:4}},e('span',{style:{fontFamily:'monospace',fontSize:11,color:'var(--text2)'}},r.id),e(Badge,{status:r.status})),
+        e('p',{style:{fontSize:13,fontWeight:500,margin:'0 0 2px'}},r.title),
+        e('p',{style:{fontSize:11,color:'var(--text2)',margin:0}},r.farm)
+      ),
+      e('div',{style:{display:'flex',gap:8,alignItems:'center'}},
+        e('select',{style:{width:160,fontSize:12}},
+          ['submitted','recommended','vp_approved','noted','accepted','rejected'].map(s=>e('option',{key:s,selected:r.status===s},s.replace('_',' ')))
+        ),
+        e('button',{style:{fontSize:11,padding:'6px 14px',background:'var(--amber-bg)',color:'var(--amber)',border:'0.5px solid var(--amber-bd)',fontWeight:500}},'Override')
+      )
+    ))
+  );
+}
+
+// ─── APP ─────────────────────────────────────────────────────
+function App(){
+  const [user,setUser]=useState(null);
+  const [screen,setScreen]=useState('');
+  const [loginId,setLoginId]=useState('jose');
+  const [requests,setRequests]=useState(SEED);
+  const [logs,setLogs]=useState(SEED_LOGS);
+  const [changeRequests,setChangeRequests]=useState(SEED_CR);
+  const [settings,setSettings]=useState(DEFAULT_SETTINGS);
+  const [theme,setTheme]=useState('light');
+
+  useEffect(()=>{document.body.setAttribute('data-theme',theme);},[theme]);
+  const toggleTheme=()=>setTheme(t=>t==='dark'?'light':'dark');
+
+  const login=()=>{
+    const acc=ACCOUNTS.find(a=>a.id===loginId);
+    if(!acc)return;
+    setUser(acc);
+    setScreen(NAV[acc.role][0].id);
+  };
+
+  const addRequest=newReq=>{
+    setRequests(p=>[newReq,...p]);
+    setLogs(p=>[{ts:'2026-03-23 '+new Date().toTimeString().slice(0,5),user:user.name,role:ROLE_LABELS[user.role],action:'Submitted',id:newReq.id,note:newReq.isLate?`Late filing – ${newReq.days} days ahead`:`${newReq.days} days ahead – standard`},...p]);
+  };
+
+  const addCr=cr=>{
+    setChangeRequests(p=>[cr,...p]);
+    setLogs(p=>[{ts:'2026-03-23 '+new Date().toTimeString().slice(0,5),user:user.name,role:ROLE_LABELS[user.role],action:'Submitted',id:cr.id,note:'Settings change request: '+cr.setting},...p]);
+  };
+
+  const crAction=(action,id,remarks)=>{
+    setChangeRequests(p=>p.map(cr=>cr.id===id?{...cr,status:action==='approve'?'pending_it':'cr_rejected',approvedBy:action==='approve'?user.name:null}:cr));
+    setLogs(p=>[{ts:'2026-03-23 '+new Date().toTimeString().slice(0,5),user:user.name,role:ROLE_LABELS[user.role],action:action==='approve'?'Approved':'Rejected',id,note:'Settings change request — '+remarks},...p]);
+  };
+
+  const implementCr=id=>{
+    const cr=changeRequests.find(c=>c.id===id);
+    setChangeRequests(p=>p.map(c=>c.id===id?{...c,status:'implemented',implementedBy:user.name}:c));
+    setSettings(p=>p.map(s=>s.key===cr.key?{...s,value:cr.newVal.replace(/[₱, ]/g,'').split(' ')[0]}:s));
+    setLogs(p=>[{ts:'2026-03-23 '+new Date().toTimeString().slice(0,5),user:user.name,role:ROLE_LABELS[user.role],action:'Implemented',id,note:'Setting updated: '+cr.setting+' → '+cr.newVal},...p]);
+  };
+
+  if(!user) return e('div',{style:{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg3)',padding:24,position:'relative'}},
+    e('div',{style:{position:'absolute',top:18,right:18}},e(ThemeToggle,{theme,onToggle:toggleTheme})),
+    e('div',{style:{background:'var(--bg)',border:'0.5px solid var(--border2)',borderRadius:'var(--rl)',padding:'44px 48px',width:380,maxWidth:'100%'}},
+      e('div',{style:{textAlign:'center',marginBottom:32}},
+        e('div',{style:{fontSize:10,letterSpacing:'0.14em',color:'var(--text2)',marginBottom:8,textTransform:'uppercase'}},'Brookside Group of Companies'),
+        e('div',{style:{fontSize:46,fontWeight:700,letterSpacing:'-0.04em',marginBottom:5}},'EngiStart'),
+        e('div',{style:{fontSize:11,color:'var(--text2)',lineHeight:1.5}},'Automated Project Initialization System')
+      ),
+      e('div',{style:{display:'grid',gap:13}},
+        e('div',null,e('label',null,'Email address'),e('input',{type:'email',placeholder:'yourname@brooksidegroup.org',defaultValue:'j.santos@brooksidegroup.org'})),
+        e('div',null,e('label',null,'Password'),e('input',{type:'password',defaultValue:'1234'})),
+        e('div',{style:{borderTop:'0.5px solid var(--border)',paddingTop:13}},
+          e('label',null,'Demo — select account'),
+          e('select',{value:loginId,onChange:ev=>setLoginId(ev.target.value)},
+            ACCOUNTS.map(a=>e('option',{key:a.id,value:a.id},ROLE_LABELS[a.role]+' — '+a.name))
+          )
+        ),
+        e('button',{onClick:login,style:{background:'var(--blue-bg)',color:'var(--blue)',border:'0.5px solid var(--blue-bd)',padding:'10px',fontSize:13,fontWeight:500,marginTop:2}},'Sign In')
+      )
+    )
+  );
+
+  const nav=NAV[user.role];
+  const badgeCounts={
+    inbox: user.role==='division_head'?requests.filter(r=>r.status==='submitted').length:user.role==='vp'?requests.filter(r=>r.status==='recommended').length:user.role==='ed_manager'?requests.filter(r=>r.status==='noted').length:0,
+    late: requests.filter(r=>r.status==='late_pending').length,
+    noting: requests.filter(r=>r.status==='vp_approved').length,
+    cr_inbox: changeRequests.filter(cr=>cr.status==='pending_vp').length,
+    cr_implement: changeRequests.filter(cr=>cr.status==='pending_it').length,
+  };
+
+  const renderScreen=()=>{
+    if(user.role==='farm_manager'){
+      if(screen==='new_request') return e(NewRequestScreen,{user,onSubmit:addRequest});
+      if(screen==='my_requests') return e(MyRequestsScreen,{userId:user.id,requests});
+    }
+    if(user.role==='division_head'){
+      if(screen==='inbox') return e(InboxScreen,{items:requests.filter(r=>r.status==='submitted'),actionLabel:'Recommend for Approval',actionStyle:{background:'var(--green-bg)',color:'var(--green)',border:'0.5px solid var(--green-bd)',padding:'7px 18px',fontWeight:500},rejectLabel:'Reject',alertMsg:badgeCounts.inbox+' request'+(badgeCounts.inbox!==1?'s':'')+' pending your recommendation.',emptyMsg:'No requests pending recommendation.',showChain:true});
+      if(screen==='history') return e(HistoryScreen,{items:requests.filter(r=>!['submitted'].includes(r.status))});
+    }
+    if(user.role==='vp'){
+      if(screen==='inbox') return e(InboxScreen,{items:requests.filter(r=>r.status==='recommended'),actionLabel:'Approve',actionStyle:{background:'var(--green-bg)',color:'var(--green)',border:'0.5px solid var(--green-bd)',padding:'7px 18px',fontWeight:500},rejectLabel:'Reject',alertMsg:badgeCounts.inbox+' request'+(badgeCounts.inbox!==1?'s':'')+' pending your approval.',emptyMsg:'No requests pending approval.',showChain:true});
+      if(screen==='cr_inbox') return e(CrInboxScreen,{changeRequests,onCrAction:crAction});
+      if(screen==='history') return e(HistoryScreen,{items:requests.filter(r=>!['submitted','recommended'].includes(r.status))});
+    }
+    if(user.role==='dh_gs'){
+      if(screen==='late') return e(InboxScreen,{items:requests.filter(r=>r.status==='late_pending'),actionLabel:'Approve Late Request',actionStyle:{background:'var(--amber-bg)',color:'var(--amber)',border:'0.5px solid var(--amber-bd)',padding:'7px 18px',fontWeight:500},rejectLabel:'Reject',alertMsg:badgeCounts.late+' late filing'+(badgeCounts.late!==1?'s':'')+' pending your validation.',emptyMsg:'No late filings pending.',showChain:false});
+      if(screen==='noting') return e(InboxScreen,{items:requests.filter(r=>r.status==='vp_approved'),actionLabel:'Note & Forward to ED Manager',actionStyle:{background:'var(--blue-bg)',color:'var(--blue)',border:'0.5px solid var(--blue-bd)',padding:'7px 18px',fontWeight:500},alertMsg:badgeCounts.noting+' request'+(badgeCounts.noting!==1?'s':'')+' pending your notation.',emptyMsg:'No requests pending notation.',showChain:true});
+      if(screen==='history') return e(HistoryScreen,{items:requests.filter(r=>['accepted','noted','rejected'].includes(r.status))});
+      if(screen==='change_request') return e(ChangeRequestScreen,{user,onSubmit:addCr});
+    }
+    if(user.role==='ed_manager'){
+      if(screen==='inbox') return e(InboxScreen,{items:requests.filter(r=>r.status==='noted'),actionLabel:'Accept',actionStyle:{background:'var(--green-bg)',color:'var(--green)',border:'0.5px solid var(--green-bd)',padding:'7px 18px',fontWeight:500},rejectLabel:'Return',alertMsg:badgeCounts.inbox+' request'+(badgeCounts.inbox!==1?'s':'')+' awaiting your final acceptance.',emptyMsg:'No requests pending acceptance.',showChain:true});
+      if(screen==='history') return e(HistoryScreen,{items:requests.filter(r=>r.status==='accepted')});
+      if(screen==='change_request') return e(ChangeRequestScreen,{user,onSubmit:addCr});
+    }
+    if(user.role==='it_admin'){
+      if(screen==='all_requests') return e(AllRequestsScreen,{requests});
+      if(screen==='users') return e(UsersScreen);
+      if(screen==='audit') return e(AuditScreen,{logs});
+      if(screen==='override') return e(OverrideScreen,{requests});
+      if(screen==='cr_implement') return e(CrImplementScreen,{changeRequests,settings,onImplement:implementCr});
+      if(screen==='settings') return e(SettingsScreen,{settings});
+    }
+    return e('div',{style:{padding:24,color:'var(--text2)',fontSize:13}},'Screen not found.');
+  };
+
+  const currentNav=nav.find(n=>n.id===screen);
+  const totalPending=(badgeCounts.inbox||0)+(badgeCounts.late||0)+(badgeCounts.noting||0)+(badgeCounts.cr_inbox||0)+(badgeCounts.cr_implement||0);
+
+  return e('div',{style:{display:'flex',height:'100vh',overflow:'hidden'}},
+    e('div',{style:{width:'var(--sidebar)',background:'var(--bg2)',borderRight:'0.5px solid var(--border)',display:'flex',flexDirection:'column',flexShrink:0}},
+      e('div',{style:{padding:'18px 16px',borderBottom:'0.5px solid var(--border)'}},
+        e('div',{style:{fontSize:20,fontWeight:700,letterSpacing:'-0.03em'}},'EngiStart'),
+        e('div',{style:{fontSize:10,color:'var(--text2)',marginTop:3,lineHeight:1.4}})
+      ),
+      e('nav',{style:{flex:1,padding:'10px 8px',overflowY:'auto'}},
+        nav.map(n=>{
+          const bc=n.id==='cr_inbox'?badgeCounts.cr_inbox:n.id==='cr_implement'?badgeCounts.cr_implement:badgeCounts[n.id]||0;
+          return e('button',{key:n.id,onClick:()=>setScreen(n.id),style:{
+            display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%',
+            padding:'8px 10px',borderRadius:6,textAlign:'left',cursor:'pointer',marginBottom:2,
+            fontSize:13,fontWeight:screen===n.id?500:400,
+            background:screen===n.id?'var(--bg)':'transparent',
+            border:screen===n.id?'0.5px solid var(--border)':'0.5px solid transparent',
+            color:screen===n.id?'var(--text)':'var(--text2)',
+          }},
+            e('span',null,n.label),
+            n.badge&&bc>0&&e('span',{style:{background:'var(--amber-bg)',color:'var(--amber)',fontSize:10,padding:'1px 6px',borderRadius:99,fontWeight:600}},bc)
+          );
+        })
+      ),
+      e('div',{style:{padding:12,borderTop:'0.5px solid var(--border)'}},
+        e('div',{style:{fontSize:10,color:'var(--text3)',marginBottom:3}},'Signed in as'),
+        e('div',{style:{fontSize:12,fontWeight:500,marginBottom:1}},user.name),
+        e('div',{style:{fontSize:11,color:'var(--blue)',marginBottom:10}},ROLE_LABELS[user.role]),
+        e('div',{style:{fontSize:10,color:'var(--text3)',marginBottom:4}},'Switch account (demo)'),
+        e('select',{value:user.id,onChange:ev=>{const a=ACCOUNTS.find(x=>x.id===ev.target.value);setUser(a);setScreen(NAV[a.role][0].id);},style:{fontSize:11,marginBottom:8}},
+          ACCOUNTS.map(a=>e('option',{key:a.id,value:a.id},ROLE_LABELS[a.role]+' — '+a.name))
+        ),
+        e('button',{onClick:()=>setUser(null),style:{fontSize:11,width:'100%',color:'var(--text2)'}},'Sign Out')
+      )
+    ),
+    e('div',{style:{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}},
+      e('div',{style:{padding:'13px 22px',borderBottom:'0.5px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:'var(--bg)'}},
+        e('span',{style:{fontSize:14,fontWeight:500}},currentNav?.label||''),
+        e('div',{style:{display:'flex',gap:10,alignItems:'center'}},
+          e(ThemeToggle,{theme,onToggle:toggleTheme}),
+          e('span',{style:{fontSize:11,color:'var(--text2)'}},'March 23, 2026'),
+          e('span',{style:{background:'var(--blue-bg)',color:'var(--blue)',fontSize:11,padding:'2px 10px',borderRadius:4}},ROLE_LABELS[user.role]),
+          totalPending>0&&e('span',{style:{background:'var(--amber-bg)',color:'var(--amber)',fontSize:11,padding:'2px 8px',borderRadius:4,fontWeight:500}},'● '+totalPending+' pending')
+        )
+      ),
+      e('div',{style:{flex:1,overflowY:'auto',background:'var(--bg)'}},renderScreen())
+    )
+  );
+}
+
+ReactDOM.render(e(App), document.getElementById('root'));
+</script>
+</body>
+</html>
