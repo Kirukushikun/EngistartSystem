@@ -18,39 +18,52 @@
             ])
         @endif
 
-        <div class="rounded-[12px] p-[12px_14px] mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between" style="border: 0.5px solid var(--border); background: var(--bg2)">
-            <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1.5fr)_180px_200px] gap-3 flex-1 w-full">
-                <div>
-                    <label class="block text-[10px] text-apis-text2 mb-1 font-medium uppercase tracking-[0.07em]">Search</label>
-                    <input type="text" wire:model.live.debounce.300ms="search" class="apis-toolbar-control" placeholder="Search by request ID, setting, or requester...">
-                </div>
-                <div>
-                    <label class="block text-[10px] text-apis-text2 mb-1 font-medium uppercase tracking-[0.07em]">Status</label>
-                    <select wire:model.live="statusFilter" class="apis-toolbar-control">
-                        <option value="pending_vp">Pending VP Approval</option>
-                        <option value="all">All statuses</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] text-apis-text2 mb-1 font-medium uppercase tracking-[0.07em]">Sort</label>
-                    <select wire:model.live="sortBy" class="apis-toolbar-control">
-                        <option value="latest">Latest submitted</option>
-                        <option value="setting_asc">Setting A-Z</option>
-                        <option value="setting_desc">Setting Z-A</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex items-end gap-3 lg:justify-end">
-                <div>
-                    <label class="block text-[10px] text-apis-text2 mb-1 font-medium uppercase tracking-[0.07em]">Per page</label>
-                    <select wire:model.live="perPage" class="apis-toolbar-control w-[92px]">
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                        <option value="15">15</option>
-                    </select>
-                </div>
-            </div>
-        </div>
+        @include('partials.apis.filter-toolbar', [
+            'gridClass' => 'grid-cols-1 md:grid-cols-[minmax(0,1.5fr)_180px_200px]',
+            'fields' => [
+                [
+                    'label' => 'Search',
+                    'type' => 'text',
+                    'placeholder' => 'Search by request ID, setting, or requester...',
+                    'class' => 'apis-toolbar-control',
+                    'attributes' => ['wire:model.live.debounce.300ms' => 'search'],
+                ],
+                [
+                    'label' => 'Status',
+                    'type' => 'select',
+                    'class' => 'apis-toolbar-control',
+                    'attributes' => ['wire:model.live' => 'statusFilter'],
+                    'options' => [
+                        ['value' => 'pending_vp', 'label' => 'Pending VP Approval'],
+                        ['value' => 'all', 'label' => 'All statuses'],
+                    ],
+                ],
+                [
+                    'label' => 'Sort',
+                    'type' => 'select',
+                    'class' => 'apis-toolbar-control',
+                    'attributes' => ['wire:model.live' => 'sortBy'],
+                    'options' => [
+                        ['value' => 'latest', 'label' => 'Latest submitted'],
+                        ['value' => 'setting_asc', 'label' => 'Setting A-Z'],
+                        ['value' => 'setting_desc', 'label' => 'Setting Z-A'],
+                    ],
+                ],
+            ],
+            'trailingFields' => [
+                [
+                    'label' => 'Per page',
+                    'type' => 'select',
+                    'class' => 'apis-toolbar-control w-[92px]',
+                    'attributes' => ['wire:model.live' => 'perPage'],
+                    'options' => [
+                        ['value' => '5', 'label' => '5'],
+                        ['value' => '10', 'label' => '10'],
+                        ['value' => '15', 'label' => '15'],
+                    ],
+                ],
+            ],
+        ])
 
         @forelse ($this->paginatedChangeRequests as $request)
             <div class="apis-cr-card" x-data="{ open: false }">
@@ -95,14 +108,11 @@
             <div class="text-center py-[80px] text-[13px] text-apis-text2">No change requests match the current filters.</div>
         @endforelse
 
-        <div class="mt-4 rounded-[12px] p-[12px_14px] flex flex-col gap-3 md:flex-row md:items-center md:justify-between" style="border: 0.5px solid var(--border); background: var(--bg)">
-            <p class="text-[12px] text-apis-text2 m-0">Showing {{ $this->showingFrom }}-{{ $this->showingTo }} of {{ $this->filteredChangeRequests->count() }} request{{ $this->filteredChangeRequests->count() !== 1 ? 's' : '' }}</p>
-            <div class="flex items-center gap-2">
-                <button type="button" wire:click="previousPage" @disabled($page <= 1) class="apis-card-button" style="border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); opacity: {{ $page <= 1 ? '0.5' : '1' }};">Previous</button>
-                <span class="text-[12px] text-apis-text2 px-1">Page {{ $page }} of {{ $this->totalPages }}</span>
-                <button type="button" wire:click="nextPage" @disabled($page >= $this->totalPages) class="apis-card-button" style="border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); opacity: {{ $page >= $this->totalPages ? '0.5' : '1' }};">Next</button>
-            </div>
-        </div>
+        @include('partials.apis.simple-pagination', [
+            'summary' => 'Showing ' . $this->showingFrom . '-' . $this->showingTo . ' of ' . $this->filteredChangeRequests->count() . ' request' . ($this->filteredChangeRequests->count() !== 1 ? 's' : ''),
+            'page' => $page,
+            'totalPages' => $this->totalPages,
+        ])
     </div>
 </div>
 @endsection

@@ -20,21 +20,25 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:division_head')->group(function () {
         Route::get('/division-head/inbox', \App\Livewire\DivisionHead\InboxPage::class)->name('division-head.inbox');
+        Route::get('/division-head/history', \App\Livewire\HistoryPage::class)->name('division-head.history');
     });
 
     Route::middleware('role:vp_gen_services')->group(function () {
         Route::get('/vp-gen-services/inbox', \App\Livewire\VPGenServices\InboxPage::class)->name('vp-gen-services.inbox');
         Route::get('/vp-gen-services/change-requests', \App\Livewire\VPGenServices\ChangeRequestsPage::class)->name('vp-gen-services.change-requests');
+        Route::get('/vp-gen-services/history', \App\Livewire\HistoryPage::class)->name('vp-gen-services.history');
     });
 
     Route::middleware('role:dh_gen_services')->group(function () {
         Route::get('/dh-gen-services/late-filings', \App\Livewire\DHGenServices\LateFilingsPage::class)->name('dh-gen-services.late-filings');
         Route::get('/dh-gen-services/noting', \App\Livewire\DHGenServices\NotingPage::class)->name('dh-gen-services.noting');
+        Route::get('/dh-gen-services/history', \App\Livewire\HistoryPage::class)->name('dh-gen-services.history');
         Route::get('/dh-gen-services/change-request', \App\Livewire\DHGenServices\SettingsChangeRequestPage::class)->name('dh-gen-services.change-request');
     });
 
     Route::middleware('role:ed_manager')->group(function () {
         Route::get('/ed-manager/inbox', \App\Livewire\EDManager\InboxPage::class)->name('ed-manager.inbox');
+        Route::get('/ed-manager/history', \App\Livewire\HistoryPage::class)->name('ed-manager.history');
         Route::get('/ed-manager/change-request', \App\Livewire\EDManager\SettingsChangeRequestPage::class)->name('ed-manager.change-request');
     });
 

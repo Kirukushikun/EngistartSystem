@@ -28,6 +28,11 @@ return [
                     'active' => ['division-head.inbox'],
                     'badge' => ['text' => '1', 'tone' => 'blue'],
                 ],
+                [
+                    'label' => 'History',
+                    'route' => 'division-head.history',
+                    'active' => ['division-head.history'],
+                ],
             ],
         ],
         'vp-gen-services' => [
@@ -45,6 +50,11 @@ return [
                     'route' => 'vp-gen-services.change-requests',
                     'active' => ['vp-gen-services.change-requests'],
                     'badge' => ['text' => '3', 'tone' => 'amber'],
+                ],
+                [
+                    'label' => 'History',
+                    'route' => 'vp-gen-services.history',
+                    'active' => ['vp-gen-services.history'],
                 ],
             ],
         ],
@@ -65,6 +75,11 @@ return [
                     'badge' => ['text' => '3', 'tone' => 'blue'],
                 ],
                 [
+                    'label' => 'History',
+                    'route' => 'dh-gen-services.history',
+                    'active' => ['dh-gen-services.history'],
+                ],
+                [
                     'label' => 'Settings Change Request',
                     'route' => 'dh-gen-services.change-request',
                     'active' => ['dh-gen-services.change-request'],
@@ -80,6 +95,11 @@ return [
                     'route' => 'ed-manager.inbox',
                     'active' => ['ed-manager.inbox'],
                     'badge' => ['text' => '3', 'tone' => 'green'],
+                ],
+                [
+                    'label' => 'History',
+                    'route' => 'ed-manager.history',
+                    'active' => ['ed-manager.history'],
                 ],
                 [
                     'label' => 'Settings Change Request',
