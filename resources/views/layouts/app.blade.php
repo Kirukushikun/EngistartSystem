@@ -20,6 +20,32 @@
 </head>
 <body class="h-full overflow-hidden bg-apis-bg3 text-apis-text">
 
+    @php
+        $sidebarModules = config('sidebar.modules', []);
+        $authUser = auth()->user();
+        $currentSidebar = ($authUser && isset($sidebarModules[str_replace('_', '-', $authUser->role)]))
+            ? $sidebarModules[str_replace('_', '-', $authUser->role)]
+            : collect($sidebarModules)->first(function (array $module) {
+            return isset($module['match']) && request()->routeIs($module['match']);
+        }) ?? [
+            'items' => [],
+        ];
+        $sidebarItems = $currentSidebar['items'] ?? [];
+
+        $footerLabel = $authUser?->role === 'guest' ? 'Access level' : 'Signed in as';
+        $footerName = $authUser?->name ?? 'Guest';
+        $footerRole = $authUser?->role
+            ? \Illuminate\Support\Str::of($authUser->role)->replace('_', ' ')->title()->toString()
+            : 'Read-only';
+
+        $badgeTones = [
+            'blue' => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)'],
+            'amber' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)'],
+            'green' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)'],
+            'red' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)'],
+        ];
+    @endphp
+
     <div class="flex h-screen overflow-hidden bg-apis-bg3">
 
         {{-- ── SIDEBAR ─────────────────────────────────────────── --}}
@@ -36,12 +62,29 @@
 
             {{-- Nav links --}}
             <nav class="flex-1 overflow-y-auto px-2 py-2.5 space-y-0.5">
-                @yield('sidebar')
+                @foreach ($sidebarItems as $item)
+                    @php
+                        $isActive = collect($item['active'] ?? [$item['route']])->contains(fn ($pattern) => request()->routeIs($pattern));
+                        $badge = $item['badge'] ?? null;
+                        $tone = $badge ? ($badgeTones[$badge['tone'] ?? 'blue'] ?? $badgeTones['blue']) : null;
+                    @endphp
+
+                    <a href="{{ route($item['route']) }}"
+                       class="flex items-center {{ $badge ? 'justify-between' : '' }} rounded-md px-3 py-2 text-sm {{ $isActive ? 'font-medium bg-apis-bg text-apis-text' : 'text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text' }}"
+                       @if($isActive) style="border: 0.5px solid var(--border2)" @endif>
+                        <span>{{ $item['label'] }}</span>
+                        @if ($badge)
+                            <span class="text-[10px] px-1.5 py-0.5 rounded" style="background: {{ $tone['bg'] }}; color: {{ $tone['color'] }}">{{ $badge['text'] }}</span>
+                        @endif
+                    </a>
+                @endforeach
             </nav>
 
             {{-- User / footer --}}
             <div class="px-4 py-3" style="border-top: 0.5px solid var(--border)">
-                @yield('sidebarFooter')
+                <p class="mb-1 text-[10px] text-apis-text3">{{ $footerLabel }}</p>
+                <p class="text-xs font-medium leading-tight text-apis-text">{{ $footerName }}</p>
+                <p class="mt-0.5 text-[11px] text-apis-blue">{{ $footerRole }}</p>
             </div>
         </aside>
 
@@ -63,6 +106,19 @@
                 </div>
 
                 <div class="flex items-center gap-3">
+                    @auth
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button
+                                type="submit"
+                                class="rounded px-3 py-1 text-xs text-apis-text2 hover:bg-apis-bg2 transition-colors"
+                                style="border: 0.5px solid var(--border2)"
+                            >
+                                Logout
+                            </button>
+                        </form>
+                    @endauth
+
                     <button
                         type="button"
                         @click="darkMode = !darkMode"

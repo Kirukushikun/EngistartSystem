@@ -4,73 +4,9 @@
 @section('header', 'My Requests')
 @section('subheader', 'Track the status of your submitted project requests.')
 
-@section('sidebar')
-    <a href="{{ route('farm-manager.requests.new') }}"
-       class="flex items-center rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text">
-        New Request
-    </a>
-    <a href="{{ route('farm-manager.requests.index') }}"
-       class="flex items-center rounded-md px-3 py-2 text-sm font-medium bg-apis-bg text-apis-text"
-       style="border: 0.5px solid var(--border2)">
-        My Requests
-    </a>
-@endsection
-
-@section('sidebarFooter')
-    <p class="mb-1 text-[10px] text-apis-text3">Signed in as</p>
-    <p class="text-xs font-medium leading-tight text-apis-text">Jose Santos</p>
-    <p class="mt-0.5 text-[11px] text-apis-blue">Farm Manager</p>
-@endsection
-
 @section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="max-w-[760px]">
-        <style>
-            .apis-filter-chip {
-                font-size: 11px;
-                padding: 4px 12px;
-                border-radius: 9999px;
-                border: 0.5px solid transparent;
-                color: var(--text);
-                background: transparent;
-                transition: background 0.12s, border-color 0.12s, color 0.12s;
-            }
-
-            .apis-filter-chip.is-active {
-                background: var(--bg2);
-                border-color: var(--border);
-                font-weight: 500;
-            }
-
-            .apis-badge {
-                font-size: 11px;
-                padding: 2px 8px;
-                border-radius: 4px;
-                font-weight: 500;
-                white-space: nowrap;
-            }
-
-            .apis-step-pill {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                padding: 3px 8px;
-                border-radius: 9999px;
-            }
-
-            .apis-step-dot {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 14px;
-                height: 14px;
-                border-radius: 9999px;
-                font-size: 8px;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-        </style>
-
         <div class="flex gap-1.5 mb-4 flex-wrap">
             @foreach (['all' => 'All', 'submitted' => 'submitted', 'late_pending' => 'late pending', 'accepted' => 'accepted', 'rejected' => 'rejected'] as $value => $label)
                 <button type="button"

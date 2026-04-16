@@ -4,28 +4,9 @@
 @section('header', 'Settings Change Request')
 @section('subheader', 'Submit a system-wide settings change request for VP approval.')
 
-@section('sidebar')
-    <a href="{{ route('dh-gen-services.late-filings') }}" class="flex items-center justify-between rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text"><span>Late Filings</span><span class="text-[10px] px-1.5 py-0.5 rounded" style="background: var(--amber-bg); color: var(--amber)">3</span></a>
-    <a href="{{ route('dh-gen-services.noting') }}" class="flex items-center justify-between rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text"><span>For Noting</span><span class="text-[10px] px-1.5 py-0.5 rounded" style="background: var(--blue-bg); color: var(--blue)">3</span></a>
-    <a href="{{ route('dh-gen-services.change-request') }}" class="flex items-center rounded-md px-3 py-2 text-sm font-medium bg-apis-bg text-apis-text" style="border: 0.5px solid var(--border2)">Settings Change Request</a>
-@endsection
-
-@section('sidebarFooter')
-    <p class="mb-1 text-[10px] text-apis-text3">Signed in as</p>
-    <p class="text-xs font-medium leading-tight text-apis-text">Ancel Roque</p>
-    <p class="mt-0.5 text-[11px] text-apis-blue">DH Gen Services</p>
-@endsection
-
 @section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="max-w-[640px]">
-        <style>
-            .apis-form-control { width: 100%; min-height: 34px; border-radius: 8px; padding: 0 12px; font-size: 12px; color: var(--text); background: var(--bg); outline: none; border: 0.5px solid var(--border2); transition: border-color 0.15s, box-shadow 0.15s; box-shadow: none; -webkit-appearance: none; appearance: none; }
-            .apis-form-control.apis-textarea { min-height: 108px; padding: 10px 12px; resize: vertical; }
-            .apis-form-control:focus { border-color: #378add; box-shadow: 0 0 0 3px rgba(55, 138, 221, 0.1); }
-            .apis-error-text { margin-top: 4px; font-size: 11px; color: var(--red); line-height: 1.45; }
-        </style>
-
         @if ($submitted)
             <div class="flex flex-col items-center text-center gap-3 max-w-[480px] mx-auto mt-10 px-2">
                 <div class="w-[52px] h-[52px] rounded-full flex items-center justify-center text-[22px]" style="background: var(--green-bg); color: var(--green)">✓</div>

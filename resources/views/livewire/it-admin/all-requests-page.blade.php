@@ -4,21 +4,6 @@
 @section('header', 'All Requests')
 @section('subheader', 'Monitor request flow across the entire system.')
 
-@section('sidebar')
-    <a href="{{ route('it-admin.all-requests') }}" class="flex items-center rounded-md px-3 py-2 text-sm font-medium bg-apis-bg text-apis-text" style="border: 0.5px solid var(--border2)">All Requests</a>
-    <a href="{{ route('it-admin.users') }}" class="flex items-center rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text">User Management</a>
-    <a href="{{ route('it-admin.audit') }}" class="flex items-center rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text">Audit Trail</a>
-    <a href="{{ route('it-admin.override') }}" class="flex items-center rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text">Status Override</a>
-    <a href="{{ route('it-admin.pending-changes') }}" class="flex items-center justify-between rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text"><span>Pending Changes</span><span class="text-[10px] px-1.5 py-0.5 rounded" style="background: var(--blue-bg); color: var(--blue)">1</span></a>
-    <a href="{{ route('it-admin.settings') }}" class="flex items-center rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text">Settings</a>
-@endsection
-
-@section('sidebarFooter')
-    <p class="mb-1 text-[10px] text-apis-text3">Signed in as</p>
-    <p class="text-xs font-medium leading-tight text-apis-text">Jeff Montiano</p>
-    <p class="mt-0.5 text-[11px] text-apis-blue">IT Admin</p>
-@endsection
-
 @section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">

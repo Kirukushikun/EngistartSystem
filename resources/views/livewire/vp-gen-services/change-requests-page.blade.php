@@ -4,86 +4,9 @@
 @section('header', 'Change Requests')
 @section('subheader', 'Review settings change requests before they are forwarded for implementation.')
 
-@section('sidebar')
-    <a href="{{ route('vp-gen-services.inbox') }}"
-       class="flex items-center justify-between rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text">
-        <span>For Approval</span>
-        <span class="text-[10px] px-1.5 py-0.5 rounded"
-              style="background: var(--blue-bg); color: var(--blue)">
-            3
-        </span>
-    </a>
-    <a href="{{ route('vp-gen-services.change-requests') }}"
-       class="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium bg-apis-bg text-apis-text"
-       style="border: 0.5px solid var(--border2)">
-        <span>Change Requests</span>
-        <span class="text-[10px] px-1.5 py-0.5 rounded"
-              style="background: var(--amber-bg); color: var(--amber)">
-            {{ $this->filteredChangeRequests->count() }}
-        </span>
-    </a>
-@endsection
-
-@section('sidebarFooter')
-    <p class="mb-1 text-[10px] text-apis-text3">Signed in as</p>
-    <p class="text-xs font-medium leading-tight text-apis-text">Atty. T. Dizon</p>
-    <p class="mt-0.5 text-[11px] text-apis-blue">VP Gen Services</p>
-@endsection
-
 @section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="w-full">
-        <style>
-            .apis-cr-card {
-                border: 0.5px solid var(--border);
-                border-radius: 12px;
-                background: var(--bg);
-                overflow: hidden;
-                margin-bottom: 10px;
-            }
-
-            .apis-card-button {
-                border-radius: 8px;
-                font-size: 12px;
-                padding: 7px 16px;
-                transition: background 0.12s, border-color 0.12s, color 0.12s;
-            }
-
-            .apis-toolbar-control,
-            .apis-remarks-control {
-                width: 100%;
-                border-radius: 8px;
-                padding: 10px 12px;
-                font-size: 12px;
-                line-height: 1.5;
-                color: var(--text);
-                background: var(--bg);
-                outline: none;
-                border: 0.5px solid var(--border2);
-                transition: border-color 0.15s, box-shadow 0.15s;
-                box-shadow: none;
-                -webkit-appearance: none;
-                appearance: none;
-            }
-
-            .apis-toolbar-control {
-                min-height: 34px;
-                padding-top: 0;
-                padding-bottom: 0;
-            }
-
-            .apis-remarks-control {
-                min-height: 74px;
-                resize: vertical;
-            }
-
-            .apis-toolbar-control:focus,
-            .apis-remarks-control:focus {
-                border-color: #378add;
-                box-shadow: 0 0 0 3px rgba(55, 138, 221, 0.1);
-            }
-        </style>
-
         @if ($actionMessage)
             @include('partials.apis.alert', ['type' => $actionTone, 'message' => $actionMessage])
         @endif

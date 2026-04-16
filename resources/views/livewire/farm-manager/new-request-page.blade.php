@@ -4,92 +4,9 @@
 @section('header', 'New Request')
 @section('subheader', 'Create and submit a project initialization request.')
 
-@section('sidebar')
-    <a href="#"
-       class="flex items-center rounded-md px-3 py-2 text-sm font-medium bg-apis-bg text-apis-text"
-       style="border: 0.5px solid var(--border2)">
-        New Request
-    </a>
-    <a href="#"
-       class="flex items-center rounded-md px-3 py-2 text-sm text-apis-text2 transition-colors hover:bg-apis-bg hover:text-apis-text">
-        My Requests
-    </a>
-@endsection
-
-@section('sidebarFooter')
-    <p class="mb-1 text-[10px] text-apis-text3">Signed in as</p>
-    <p class="text-xs font-medium leading-tight text-apis-text">Jose Santos</p>
-    <p class="mt-0.5 text-[11px] text-apis-blue">Farm Manager</p>
-@endsection
-
 @section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="max-w-[640px]">
-
-        <style>
-            .apis-form-label {
-                font-size: 12px;
-                color: var(--text2);
-                display: block;
-                margin-bottom: 4px;
-            }
-
-            .apis-form-control {
-                width: 100%;
-                border-radius: 8px;
-                padding: 7px 10px;
-                font-size: 13px;
-                line-height: 1.4;
-                color: var(--text);
-                background: var(--bg);
-                outline: none;
-                border: 0.5px solid var(--border2);
-                transition: border-color 0.15s, box-shadow 0.15s;
-                -webkit-appearance: none;
-                appearance: none;
-                box-shadow: none;
-            }
-
-            .apis-form-control::placeholder {
-                color: var(--text3);
-            }
-
-            .apis-form-control:focus {
-                border-color: #378add;
-                box-shadow: 0 0 0 3px rgba(55, 138, 221, 0.1);
-            }
-
-            .apis-form-control.apis-error {
-                border-color: var(--red);
-            }
-
-            .apis-form-control[type="date"],
-            .apis-form-control[type="time"],
-            .apis-form-control[type="file"],
-            select.apis-form-control {
-                min-height: 33px;
-            }
-
-            textarea.apis-form-control {
-                resize: vertical;
-                line-height: 1.6;
-            }
-
-            select.apis-form-control {
-                padding-right: 30px;
-                background-image: linear-gradient(45deg, transparent 50%, var(--text2) 50%), linear-gradient(135deg, var(--text2) 50%, transparent 50%);
-                background-position: calc(100% - 14px) calc(50% - 1px), calc(100% - 10px) calc(50% - 1px);
-                background-size: 4px 4px, 4px 4px;
-                background-repeat: no-repeat;
-            }
-
-            .apis-error-text {
-                margin-top: 4px;
-                font-size: 11px;
-                color: var(--red);
-                line-height: 1.45;
-            }
-        </style>
 
         @if ($submitted)
             <div class="flex flex-col items-center text-center gap-3 max-w-[480px] mx-auto mt-10 px-2">
