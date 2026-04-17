@@ -145,6 +145,66 @@
 
         <livewire:shared.confirmation-modal />
 
+        <div
+            x-data="{
+                visible: false,
+                message: '',
+                type: 'info',
+                timeout: null,
+                show(detail) {
+                    this.message = detail?.message ?? '';
+                    this.type = detail?.type ?? 'info';
+
+                    if (!this.message) {
+                        return;
+                    }
+
+                    this.visible = true;
+
+                    if (this.timeout) {
+                        clearTimeout(this.timeout);
+                    }
+
+                    this.timeout = setTimeout(() => {
+                        this.visible = false;
+                    }, 3800);
+                },
+                close() {
+                    this.visible = false;
+
+                    if (this.timeout) {
+                        clearTimeout(this.timeout);
+                        this.timeout = null;
+                    }
+                }
+            }"
+            x-on:notify.window="show($event.detail)"
+            class="apis-toast-stack"
+        >
+            <div
+                x-show="visible"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 translate-y-2"
+                x-transition:enter-end="opacity-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 translate-y-0"
+                x-transition:leave-end="opacity-0 translate-y-2"
+                class="apis-toast"
+                :class="{
+                    'is-info': type === 'info',
+                    'is-warn': type === 'warn',
+                    'is-danger': type === 'danger'
+                }"
+            >
+                <div class="flex items-start gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="apis-toast-message" x-text="message"></p>
+                    </div>
+                    <button type="button" @click="close()" class="apis-toast-close">✕</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     @livewireScripts

@@ -277,3 +277,69 @@ select.apis-form-control {
   background: var(--bg);
   padding: 12px 14px;
 }
+
+.apis-toast-stack {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 70;
+  width: min(360px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.apis-toast {
+  pointer-events: auto;
+  border-radius: 14px;
+  border: 0.5px solid var(--border);
+  background: var(--bg);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.18);
+  padding: 14px 16px;
+}
+
+.apis-toast.is-info {
+  background: var(--blue-bg);
+  border-color: var(--blue-bd);
+}
+
+.apis-toast.is-warn {
+  background: var(--amber-bg);
+  border-color: var(--amber-bd);
+}
+
+.apis-toast.is-danger {
+  background: var(--red-bg);
+  border-color: var(--red-bd);
+}
+
+.apis-toast-message {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.apis-toast.is-info .apis-toast-message {
+  color: var(--blue);
+}
+
+.apis-toast.is-warn .apis-toast-message {
+  color: var(--amber);
+}
+
+.apis-toast.is-danger .apis-toast-message {
+  color: var(--red);
+}
+
+.apis-toast-close {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text2);
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px;
+}
+
+button {
+  cursor: pointer;
+}

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -46,5 +47,25 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function submittedRequests(): HasMany
+    {
+        return $this->hasMany(ProjectRequest::class, 'requestor_id');
+    }
+
+    public function assignedRequests(): HasMany
+    {
+        return $this->hasMany(ProjectRequest::class, 'current_owner_id');
+    }
+
+    public function requestTransitions(): HasMany
+    {
+        return $this->hasMany(RequestTransition::class, 'acted_by_id');
+    }
+
+    public function requestAttachments(): HasMany
+    {
+        return $this->hasMany(RequestAttachment::class, 'uploaded_by_id');
     }
 }

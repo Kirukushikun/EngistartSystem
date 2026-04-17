@@ -9,12 +9,6 @@ use Livewire\Attributes\On;
 
 class LateFilingsPage extends Component
 {
-    public ?string $actionMessage = null;
-
-    public string $actionTone = 'info';
-
-    public string $livewireTestIndicator = 'Waiting for Livewire click';
-
     public array $remarks = [];
 
     public string $search = '';
@@ -72,10 +66,12 @@ class LateFilingsPage extends Component
         $request = $this->loadLateFilings()->firstWhere('id', $requestId);
         $remarks = trim($this->remarks[$requestId] ?? '');
 
-        $this->actionTone = 'warn';
-        $this->actionMessage = $request
-            ? "Dummy action: {$request['id']} late filing was approved for workflow continuation." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
-            : 'Dummy action completed.';
+        $this->dispatch('notify',
+            type: 'warn',
+            message: $request
+                ? "{$request['id']} late filing approved for workflow continuation." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
+                : 'Late filing action completed.'
+        );
     }
 
     #[On('lateFilingRejectionConfirmed')]
@@ -85,15 +81,12 @@ class LateFilingsPage extends Component
         $request = $this->loadLateFilings()->firstWhere('id', $requestId);
         $remarks = trim($this->remarks[$requestId] ?? '');
 
-        $this->actionTone = 'danger';
-        $this->actionMessage = $request
-            ? "Dummy action: {$request['id']} late filing was rejected." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
-            : 'Dummy action completed.';
-    }
-
-    public function testLivewireClick(): void
-    {
-        $this->livewireTestIndicator = 'Livewire click worked at ' . now()->format('h:i:s A');
+        $this->dispatch('notify',
+            type: 'danger',
+            message: $request
+                ? "{$request['id']} late filing rejected." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
+                : 'Late filing action completed.'
+        );
     }
 
     public function updatedSearch(): void { $this->page = 1; }

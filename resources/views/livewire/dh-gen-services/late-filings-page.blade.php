@@ -1,27 +1,5 @@
 <div class="p-6 overflow-y-auto h-full">
-    <div class="w-full" x-data="{ jsIndicator: 'Waiting for JS click' }">
-        @if ($actionMessage)
-            @include('partials.apis.alert', ['type' => $actionTone, 'message' => $actionMessage])
-        @endif
-
-        <div class="apis-card p-[14px_18px] mb-[14px]">
-            <p class="text-[12px] font-medium text-apis-text mb-3">Interaction test</p>
-            <div class="flex flex-wrap gap-2 mb-3">
-                <button type="button" @click="jsIndicator = 'JS click worked at ' + new Date().toLocaleTimeString()" class="apis-card-button">Test JS Click</button>
-                <button type="button" wire:click="testLivewireClick" class="apis-card-button">Test Livewire Click</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">
-                <div class="rounded-[8px] p-[10px_12px]" style="background: var(--bg2)">
-                    <p class="text-[10px] text-apis-text2 mb-1 font-medium uppercase tracking-[0.07em]">JS indicator</p>
-                    <p class="m-0 text-apis-text" x-text="jsIndicator"></p>
-                </div>
-                <div class="rounded-[8px] p-[10px_12px]" style="background: var(--bg2)">
-                    <p class="text-[10px] text-apis-text2 mb-1 font-medium uppercase tracking-[0.07em]">Livewire indicator</p>
-                    <p class="m-0 text-apis-text">{{ $livewireTestIndicator }}</p>
-                </div>
-            </div>
-        </div>
-
+    <div class="w-full">
         @if ($this->filteredItems->isNotEmpty())
             @include('partials.apis.alert', ['type' => 'warn', 'message' => $this->filteredItems->count() . ' late filing' . ($this->filteredItems->count() !== 1 ? 's' : '') . ' pending your validation.'])
         @endif
