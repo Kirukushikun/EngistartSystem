@@ -219,6 +219,10 @@ class InboxPage extends Component
     public function render()
     {
         return view('livewire.ed-manager.inbox-page')
-            ->layout('layouts.app');
+            ->layout('layouts.app', [
+                'title' => 'For Acceptance | EngiStart',
+                'header' => 'For Acceptance',
+                'subheader' => 'Review noted requests and issue the final acceptance decision.',
+            ]);
     }
 }

@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Status Override | EngiStart')
-@section('header', 'Status Override')
-@section('subheader', 'Apply exceptional workflow changes with proper authorization.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     @include('partials.apis.alert', ['type' => 'warn', 'message' => 'Status overrides are logged in the audit trail. Use only in exceptional circumstances and ensure proper authorization.'])
 
@@ -36,4 +29,3 @@
         </div>
     @endforeach
 </div>
-@endsection

@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'My Requests | EngiStart')
-@section('header', 'My Requests')
-@section('subheader', 'Track the status of your submitted project requests.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="max-w-[760px]">
         <div class="flex gap-1.5 mb-4 flex-wrap">
@@ -91,4 +84,3 @@
         @endif
     </div>
 </div>
-@endsection

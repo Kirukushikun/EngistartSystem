@@ -1,8 +1,4 @@
 <div>
-    @section('header', $this->pageTitle)
-    @section('subheader', $this->pageDescription)
-    @section('content')
-
     <div class="p-6 overflow-y-auto h-full">
         <div class="w-full">
             @include('partials.apis.alert', [
@@ -109,5 +105,4 @@
             ])
         </div>
     </div>
-    @endsection
 </div>

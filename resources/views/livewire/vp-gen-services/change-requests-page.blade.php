@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Change Requests | EngiStart')
-@section('header', 'Change Requests')
-@section('subheader', 'Review settings change requests before they are forwarded for implementation.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="w-full">
         @if ($actionMessage)
@@ -115,4 +108,3 @@
         ])
     </div>
 </div>
-@endsection

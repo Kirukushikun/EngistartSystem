@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'All Requests | EngiStart')
-@section('header', 'All Requests')
-@section('subheader', 'Monitor request flow across the entire system.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
         <div class="rounded-[12px] p-[14px_16px]" style="background: var(--bg2); border: 0.5px solid var(--border)"><p class="text-[11px] text-apis-text2 m-0 mb-1">Total</p><p class="text-[26px] font-medium m-0 text-apis-text">1</p></div>
@@ -54,4 +47,3 @@
         </div>
     </div>
 </div>
-@endsection

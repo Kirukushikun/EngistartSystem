@@ -180,6 +180,11 @@ class NotingPage extends Component
 
     public function render()
     {
-        return view('livewire.dh-gen-services.noting-page')->layout('layouts.app');
+        return view('livewire.dh-gen-services.noting-page')
+            ->layout('layouts.app', [
+                'title' => 'For Noting | EngiStart',
+                'header' => 'For Noting',
+                'subheader' => 'Note VP-approved requests and forward them to ED Manager.',
+            ]);
     }
 }

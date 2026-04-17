@@ -151,6 +151,11 @@ class NewRequestPage extends Component
 
     public function render()
     {
-        return view('livewire.farm-manager.new-request-page');
+        return view('livewire.farm-manager.new-request-page')
+            ->layout('layouts.app', [
+                'title' => 'New Request | EngiStart',
+                'header' => 'New Request',
+                'subheader' => 'Create and submit a project initialization request.',
+            ]);
     }
 }

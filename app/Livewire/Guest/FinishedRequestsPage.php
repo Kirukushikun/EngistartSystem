@@ -68,6 +68,11 @@ class FinishedRequestsPage extends Component
 
     public function render()
     {
-        return view('livewire.guest.finished-requests-page')->layout('layouts.app');
+        return view('livewire.guest.finished-requests-page')
+            ->layout('layouts.app', [
+                'title' => 'Finished Requests | EngiStart',
+                'header' => 'Finished Requests',
+                'subheader' => 'View completed request outcomes only. In-progress requests are not visible here.',
+            ]);
     }
 }

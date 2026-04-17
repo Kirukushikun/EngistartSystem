@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'User Management | EngiStart')
-@section('header', 'User Management')
-@section('subheader', 'Maintain access and roles for system users.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="flex justify-end mb-4">
         <button type="button" class="text-[12px] px-4 py-2 rounded-[8px] font-medium" style="border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text)">+ Add User</button>
@@ -39,4 +32,3 @@
         </div>
     </div>
 </div>
-@endsection

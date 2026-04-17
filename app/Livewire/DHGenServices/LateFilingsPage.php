@@ -2,14 +2,18 @@
 
 namespace App\Livewire\DHGenServices;
 
+use App\Livewire\Shared\ConfirmationModal;
 use Illuminate\Support\Collection;
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 class LateFilingsPage extends Component
 {
     public ?string $actionMessage = null;
 
     public string $actionTone = 'info';
+
+    public string $livewireTestIndicator = 'Waiting for Livewire click';
 
     public array $remarks = [];
 
@@ -23,8 +27,48 @@ class LateFilingsPage extends Component
 
     public int $page = 1;
 
-    public function approve(string $requestId): void
+    public function confirmApprove(string $requestId): void
     {
+        $request = $this->loadLateFilings()->firstWhere('id', $requestId);
+
+        if (! $request) {
+            return;
+        }
+
+        $this->dispatch('openConfirmationModal', config: [
+            'title' => 'Approve late filing?',
+            'message' => 'Approve ' . $request['id'] . ' using the current remarks entered on this request?',
+            'tone' => 'warn',
+            'confirmText' => 'Approve',
+            'confirmEvent' => 'lateFilingApprovalConfirmed',
+            'confirmTarget' => self::class,
+            'payload' => ['requestId' => $requestId],
+        ])->to(ConfirmationModal::class);
+    }
+
+    public function confirmReject(string $requestId): void
+    {
+        $request = $this->loadLateFilings()->firstWhere('id', $requestId);
+
+        if (! $request) {
+            return;
+        }
+
+        $this->dispatch('openConfirmationModal', config: [
+            'title' => 'Reject late filing?',
+            'message' => 'Reject ' . $request['id'] . ' using the current remarks entered on this request?',
+            'tone' => 'danger',
+            'confirmText' => 'Reject',
+            'confirmEvent' => 'lateFilingRejectionConfirmed',
+            'confirmTarget' => self::class,
+            'payload' => ['requestId' => $requestId],
+        ])->to(ConfirmationModal::class);
+    }
+
+    #[On('lateFilingApprovalConfirmed')]
+    public function approve(array $payload): void
+    {
+        $requestId = (string) ($payload['requestId'] ?? '');
         $request = $this->loadLateFilings()->firstWhere('id', $requestId);
         $remarks = trim($this->remarks[$requestId] ?? '');
 
@@ -34,8 +78,10 @@ class LateFilingsPage extends Component
             : 'Dummy action completed.';
     }
 
-    public function reject(string $requestId): void
+    #[On('lateFilingRejectionConfirmed')]
+    public function reject(array $payload): void
     {
+        $requestId = (string) ($payload['requestId'] ?? '');
         $request = $this->loadLateFilings()->firstWhere('id', $requestId);
         $remarks = trim($this->remarks[$requestId] ?? '');
 
@@ -43,6 +89,11 @@ class LateFilingsPage extends Component
         $this->actionMessage = $request
             ? "Dummy action: {$request['id']} late filing was rejected." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
             : 'Dummy action completed.';
+    }
+
+    public function testLivewireClick(): void
+    {
+        $this->livewireTestIndicator = 'Livewire click worked at ' . now()->format('h:i:s A');
     }
 
     public function updatedSearch(): void { $this->page = 1; }
@@ -185,6 +236,11 @@ class LateFilingsPage extends Component
 
     public function render()
     {
-        return view('livewire.dh-gen-services.late-filings-page')->layout('layouts.app');
+        return view('livewire.dh-gen-services.late-filings-page')
+            ->layout('layouts.app', [
+                'title' => 'Late Filings | EngiStart',
+                'header' => 'Late Filings',
+                'subheader' => 'Validate urgent or late-filed requests before they enter the approval flow.',
+            ]);
     }
 }

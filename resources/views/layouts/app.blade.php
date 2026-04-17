@@ -13,7 +13,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'EngiStart')</title>
+    <title>{{ $title ?? trim($__env->yieldContent('title')) ?: 'EngiStart' }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -96,11 +96,11 @@
                     style="border-bottom: 0.5px solid var(--border)">
                 <div>
                     <span class="text-sm font-medium text-apis-text">
-                        @yield('header', '')
+                        {{ $header ?? trim($__env->yieldContent('header')) }}
                     </span>
-                    @hasSection('subheader')
+                    @if (! empty($subheader ?? trim($__env->yieldContent('subheader'))))
                         <p class="text-xs text-apis-text2 mt-0.5">
-                            @yield('subheader')
+                            {{ $subheader ?? trim($__env->yieldContent('subheader')) }}
                         </p>
                     @endif
                 </div>
@@ -135,9 +135,15 @@
 
             {{-- Scrollable content --}}
             <main class="flex-1 overflow-y-auto bg-apis-bg">
-                @yield('content')
+                @if (isset($slot))
+                    {{ $slot }}
+                @else
+                    @yield('content')
+                @endif
             </main>
         </div>
+
+        <livewire:shared.confirmation-modal />
 
     </div>
 

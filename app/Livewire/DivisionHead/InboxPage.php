@@ -244,6 +244,10 @@ class InboxPage extends Component
     public function render()
     {
         return view('livewire.division-head.inbox-page')
-            ->layout('layouts.app');
+            ->layout('layouts.app', [
+                'title' => 'For Recommendation | EngiStart',
+                'header' => 'For Recommendation',
+                'subheader' => 'Review incoming project requests and recommend them for approval.',
+            ]);
     }
 }

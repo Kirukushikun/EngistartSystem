@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'For Noting | EngiStart')
-@section('header', 'For Noting')
-@section('subheader', 'Note VP-approved requests and forward them to ED Manager.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="w-full">
         @if ($actionMessage) @include('partials.apis.alert', ['type' => $actionTone, 'message' => $actionMessage]) @endif
@@ -82,4 +75,3 @@
         ])
     </div>
 </div>
-@endsection

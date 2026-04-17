@@ -32,6 +32,11 @@ class PendingChangesPage extends Component
 
     public function render()
     {
-        return view('livewire.it-admin.pending-changes-page')->layout('layouts.app');
+        return view('livewire.it-admin.pending-changes-page')
+            ->layout('layouts.app', [
+                'title' => 'Pending Changes | EngiStart',
+                'header' => 'Pending Changes',
+                'subheader' => 'Implement VP-approved settings changes.',
+            ]);
     }
 }

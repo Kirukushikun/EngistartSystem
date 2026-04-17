@@ -74,6 +74,10 @@ class SettingsChangeRequestPage extends Component
     public function render()
     {
         return view('livewire.ed-manager.settings-change-request-page')
-            ->layout('layouts.app');
+            ->layout('layouts.app', [
+                'title' => 'Settings Change Request | EngiStart',
+                'header' => 'Settings Change Request',
+                'subheader' => 'Submit a system-wide settings change request for VP approval.',
+            ]);
     }
 }

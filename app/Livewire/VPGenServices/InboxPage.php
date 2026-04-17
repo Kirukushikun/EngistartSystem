@@ -237,6 +237,10 @@ class InboxPage extends Component
     public function render()
     {
         return view('livewire.vp-gen-services.inbox-page')
-            ->layout('layouts.app');
+            ->layout('layouts.app', [
+                'title' => 'For Approval | EngiStart',
+                'header' => 'For Approval',
+                'subheader' => 'Review Division Head recommendations and issue VP approval decisions.',
+            ]);
     }
 }

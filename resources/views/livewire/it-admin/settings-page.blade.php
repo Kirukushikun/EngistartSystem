@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Settings | EngiStart')
-@section('header', 'Settings')
-@section('subheader', 'Review current system values and control information.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     @include('partials.apis.alert', ['type' => 'warn', 'message' => 'Settings values are governed by the Change Management Control workflow. To change a value, DH Gen Services or ED Manager must submit a Settings Change Request, which requires VP Gen Services approval before IT Admin can implement it.'])
 
@@ -37,4 +30,3 @@
         </div>
     </div>
 </div>
-@endsection

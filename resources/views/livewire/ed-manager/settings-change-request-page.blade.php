@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Settings Change Request | EngiStart')
-@section('header', 'Settings Change Request')
-@section('subheader', 'Submit a system-wide settings change request for VP approval.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="max-w-[640px]">
         @if ($submitted)
@@ -73,4 +66,3 @@
         @endif
     </div>
 </div>
-@endsection

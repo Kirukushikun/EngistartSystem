@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Pending Changes | EngiStart')
-@section('header', 'Pending Changes')
-@section('subheader', 'Implement VP-approved settings changes.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     @include('partials.apis.alert', ['type' => 'info', 'message' => '1 VP-approved change ready for implementation.'])
 
@@ -33,4 +26,3 @@
         </div>
     @endforeach
 </div>
-@endsection

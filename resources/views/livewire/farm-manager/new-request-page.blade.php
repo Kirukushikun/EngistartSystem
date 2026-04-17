@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'New Request | EngiStart')
-@section('header', 'New Request')
-@section('subheader', 'Create and submit a project initialization request.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="max-w-[640px]">
 
@@ -216,6 +209,3 @@
                 </div>
             </form>
         @endif
-    </div>
-</div>
-@endsection

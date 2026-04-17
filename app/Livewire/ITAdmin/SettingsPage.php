@@ -28,6 +28,11 @@ class SettingsPage extends Component
 
     public function render()
     {
-        return view('livewire.it-admin.settings-page')->layout('layouts.app');
+        return view('livewire.it-admin.settings-page')
+            ->layout('layouts.app', [
+                'title' => 'Settings | EngiStart',
+                'header' => 'Settings',
+                'subheader' => 'Review current system values and control information.',
+            ]);
     }
 }

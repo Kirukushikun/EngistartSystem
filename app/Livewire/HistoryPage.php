@@ -353,7 +353,10 @@ class HistoryPage extends Component
         abort_unless(array_key_exists($this->role, $this->historyConfig()), 403);
 
         return view('livewire.history-page')
-            ->layout('layouts.app')
-            ->layoutData(['title' => $this->pageTitle . ' | EngiStart']);
+            ->layout('layouts.app', [
+                'title' => $this->pageTitle . ' | EngiStart',
+                'header' => $this->pageTitle,
+                'subheader' => $this->pageDescription,
+            ]);
     }
 }

@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Finished Requests | EngiStart')
-@section('header', 'Finished Requests')
-@section('subheader', 'View completed request outcomes only. In-progress requests are not visible here.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     @include('partials.apis.alert', ['type' => 'info', 'message' => 'This guest view only displays finished requests. Submitted, recommended, approved, noted, and other in-progress records are hidden.'])
 
@@ -77,4 +70,3 @@
         </div>
     @endforelse
 </div>
-@endsection

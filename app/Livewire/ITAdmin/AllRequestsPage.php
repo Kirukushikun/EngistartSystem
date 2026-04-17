@@ -25,6 +25,11 @@ class AllRequestsPage extends Component
 
     public function render()
     {
-        return view('livewire.it-admin.all-requests-page')->layout('layouts.app');
+        return view('livewire.it-admin.all-requests-page')
+            ->layout('layouts.app', [
+                'title' => 'All Requests | EngiStart',
+                'header' => 'All Requests',
+                'subheader' => 'Monitor request flow across the entire system.',
+            ]);
     }
 }

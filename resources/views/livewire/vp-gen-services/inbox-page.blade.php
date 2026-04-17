@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'For Approval | EngiStart')
-@section('header', 'For Approval')
-@section('subheader', 'Review Division Head recommendations and issue VP approval decisions.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="w-full">
         @if ($actionMessage)
@@ -153,4 +146,3 @@
         ])
     </div>
 </div>
-@endsection

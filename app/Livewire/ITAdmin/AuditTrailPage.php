@@ -23,6 +23,11 @@ class AuditTrailPage extends Component
 
     public function render()
     {
-        return view('livewire.it-admin.audit-trail-page')->layout('layouts.app');
+        return view('livewire.it-admin.audit-trail-page')
+            ->layout('layouts.app', [
+                'title' => 'Audit Trail | EngiStart',
+                'header' => 'Audit Trail',
+                'subheader' => 'Track system activities and approval actions.',
+            ]);
     }
 }

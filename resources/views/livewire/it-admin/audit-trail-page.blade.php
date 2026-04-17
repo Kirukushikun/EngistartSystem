@@ -1,10 +1,3 @@
-@extends('layouts.app')
-
-@section('title', 'Audit Trail | EngiStart')
-@section('header', 'Audit Trail')
-@section('subheader', 'Track system activities and approval actions.')
-
-@section('content')
 <div class="p-6 overflow-y-auto h-full">
     <div class="rounded-[12px] overflow-hidden" style="border: 0.5px solid var(--border); background: var(--bg)">
         <div class="px-[18px] py-[12px] flex justify-between items-center" style="border-bottom: 0.5px solid var(--border); background: var(--bg2)">
@@ -39,4 +32,3 @@
         </div>
     </div>
 </div>
-@endsection

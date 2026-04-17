@@ -73,6 +73,11 @@ class SettingsChangeRequestPage extends Component
 
     public function render()
     {
-        return view('livewire.dh-gen-services.settings-change-request-page')->layout('layouts.app');
+        return view('livewire.dh-gen-services.settings-change-request-page')
+            ->layout('layouts.app', [
+                'title' => 'Settings Change Request | EngiStart',
+                'header' => 'Settings Change Request',
+                'subheader' => 'Submit a system-wide settings change request for VP approval.',
+            ]);
     }
 }

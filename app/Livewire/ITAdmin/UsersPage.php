@@ -22,6 +22,11 @@ class UsersPage extends Component
 
     public function render()
     {
-        return view('livewire.it-admin.users-page')->layout('layouts.app');
+        return view('livewire.it-admin.users-page')
+            ->layout('layouts.app', [
+                'title' => 'User Management | EngiStart',
+                'header' => 'User Management',
+                'subheader' => 'Maintain access and roles for system users.',
+            ]);
     }
 }
