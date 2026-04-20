@@ -13,11 +13,48 @@ use Livewire\Component;
 
 class MyRequestsPage extends Component
 {
-    public string $filter = 'all';
+    public string $search = '';
 
-    public function setFilter(string $filter): void
+    public string $statusFilter = 'all';
+
+    public string $sortBy = 'latest';
+
+    public int $perPage = 5;
+
+    public int $page = 1;
+
+    public function updatedSearch(): void
     {
-        $this->filter = $filter;
+        $this->page = 1;
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->page = 1;
+    }
+
+    public function updatedSortBy(): void
+    {
+        $this->page = 1;
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->page = 1;
+    }
+
+    public function previousPage(): void
+    {
+        if ($this->page > 1) {
+            $this->page--;
+        }
+    }
+
+    public function nextPage(): void
+    {
+        if ($this->page < $this->totalPages) {
+            $this->page++;
+        }
     }
 
     protected function loadRequests(): Collection
@@ -29,8 +66,10 @@ class MyRequestsPage extends Component
         }
 
         return ProjectRequest::query()
+            ->with('transitions')
             ->where('requestor_id', $user->id)
-            ->latest('submitted_at')
+            ->orderByDesc('submitted_at')
+            ->orderByDesc('created_at')
             ->get()
             ->map(fn (ProjectRequest $request): array => $this->mapRequestRecord($request))
             ->values();
@@ -38,6 +77,12 @@ class MyRequestsPage extends Component
 
     protected function mapRequestRecord(ProjectRequest $request): array
     {
+        $statusLabel = match ($request->current_status) {
+            'late_pending' => 'Late Pending',
+            'returned_to_requestor' => 'Returned to Requestor',
+            default => str_replace('_', ' ', str($request->current_status)->title()),
+        };
+
         return [
             'dbId' => $request->id,
             'id' => $request->request_number,
@@ -45,6 +90,7 @@ class MyRequestsPage extends Component
             'needed' => optional($request->date_needed)->toDateString(),
             'submitted' => optional($request->submitted_at ?? $request->created_at)->toDateString(),
             'status' => $request->current_status,
+            'statusLabel' => $statusLabel,
             'isLate' => $request->is_late,
             'isEditable' => $request->isEditableByRequestor(),
             'isWithdrawn' => $request->withdrawn_at !== null,
@@ -146,20 +192,60 @@ class MyRequestsPage extends Component
 
     protected function buildChain(ProjectRequest $request): array
     {
+        $transitions = $request->transitions->keyBy('acted_by_role');
+
         if ($request->is_late) {
             return [
                 ['role' => 'Farm Manager', 'st' => 'done'],
-                ['role' => 'DH Gen Services', 'st' => in_array($request->current_status, ['rejected', 'returned_to_requestor'], true) ? 'rejected' : 'pending'],
-                ['role' => 'Division Head', 'st' => $request->current_owner_role === 'division_head' ? 'pending' : 'waiting'],
+                [
+                    'role' => 'DH Gen Services',
+                    'st' => $request->current_owner_role === 'dh_gen_services'
+                        ? 'pending'
+                        : ($transitions->has('dh_gen_services') || in_array($request->current_owner_role, ['division_head', 'vp_gen_services', 'ed_manager'], true)
+                            ? 'done'
+                            : (in_array($request->current_status, ['rejected', 'returned_to_requestor'], true) ? 'rejected' : 'waiting')),
+                ],
+                [
+                    'role' => 'Division Head',
+                    'st' => $request->current_owner_role === 'division_head'
+                        ? 'pending'
+                        : ($transitions->has('division_head') || in_array($request->current_owner_role, ['vp_gen_services', 'dh_gen_services', 'ed_manager'], true)
+                            ? 'done'
+                            : 'waiting'),
+                ],
             ];
         }
 
         return [
             ['role' => 'Farm Manager', 'st' => 'done'],
-            ['role' => 'Division Head', 'st' => $request->current_owner_role === 'division_head' ? 'pending' : 'waiting'],
-            ['role' => 'VP Gen Services', 'st' => $request->current_owner_role === 'vp_gen_services' ? 'pending' : 'waiting'],
-            ['role' => 'DH Gen Services', 'st' => $request->current_owner_role === 'dh_gen_services' ? 'pending' : 'waiting'],
-            ['role' => 'ED Manager', 'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : 'waiting'],
+            [
+                'role' => 'Division Head',
+                'st' => $request->current_owner_role === 'division_head'
+                    ? 'pending'
+                    : ($transitions->has('division_head') || in_array($request->current_owner_role, ['vp_gen_services', 'dh_gen_services', 'ed_manager'], true)
+                        ? 'done'
+                        : (in_array($request->current_status, ['returned_to_requestor'], true) ? 'rejected' : 'waiting')),
+            ],
+            [
+                'role' => 'VP Gen Services',
+                'st' => $request->current_owner_role === 'vp_gen_services'
+                    ? 'pending'
+                    : ($transitions->has('vp_gen_services') || in_array($request->current_owner_role, ['dh_gen_services', 'ed_manager'], true)
+                        ? 'done'
+                        : (in_array($request->current_status, ['returned_to_requestor'], true) && $transitions->has('division_head') ? 'rejected' : 'waiting')),
+            ],
+            [
+                'role' => 'DH Gen Services',
+                'st' => $request->current_owner_role === 'dh_gen_services'
+                    ? 'pending'
+                    : ($transitions->has('dh_gen_services') || $request->current_owner_role === 'ed_manager'
+                        ? 'done'
+                        : 'waiting'),
+            ],
+            [
+                'role' => 'ED Manager',
+                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? 'done' : 'waiting'),
+            ],
         ];
     }
 
@@ -168,13 +254,72 @@ class MyRequestsPage extends Component
         return $this->loadRequests();
     }
 
-    public function getShownRequestsProperty(): Collection
+    public function getFilteredRequestsProperty(): Collection
     {
-        if ($this->filter === 'all') {
-            return $this->requests;
+        $items = $this->requests;
+
+        if ($this->search !== '') {
+            $needle = mb_strtolower($this->search);
+
+            $items = $items->filter(function (array $request) use ($needle): bool {
+                return str_contains(mb_strtolower($request['id']), $needle)
+                    || str_contains(mb_strtolower($request['title']), $needle)
+                    || str_contains(mb_strtolower($request['statusLabel']), $needle);
+            })->values();
         }
 
-        return $this->requests->where('status', $this->filter)->values();
+        if ($this->statusFilter !== 'all') {
+            $items = $items->where('status', $this->statusFilter)->values();
+        }
+
+        return match ($this->sortBy) {
+            'needed_asc' => $items->sortBy('needed')->values(),
+            'needed_desc' => $items->sortByDesc('needed')->values(),
+            default => $items->sortByDesc('submitted')->values(),
+        };
+    }
+
+    public function getPaginatedRequestsProperty(): Collection
+    {
+        if ($this->page > $this->totalPages) {
+            $this->page = $this->totalPages;
+        }
+
+        return $this->filteredRequests
+            ->slice(($this->page - 1) * $this->perPage, $this->perPage)
+            ->values();
+    }
+
+    public function getTotalPagesProperty(): int
+    {
+        return max(1, (int) ceil($this->filteredRequests->count() / $this->perPage));
+    }
+
+    public function getShowingFromProperty(): int
+    {
+        if ($this->filteredRequests->isEmpty()) {
+            return 0;
+        }
+
+        return (($this->page - 1) * $this->perPage) + 1;
+    }
+
+    public function getShowingToProperty(): int
+    {
+        if ($this->filteredRequests->isEmpty()) {
+            return 0;
+        }
+
+        return min($this->page * $this->perPage, $this->filteredRequests->count());
+    }
+
+    public function getStatusOptionsProperty(): array
+    {
+        return $this->requests
+            ->map(fn (array $request): array => ['value' => $request['status'], 'label' => $request['statusLabel']])
+            ->unique('value')
+            ->values()
+            ->all();
     }
 
     public function render()

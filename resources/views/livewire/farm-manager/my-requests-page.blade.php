@@ -1,29 +1,66 @@
 <div class="p-6 overflow-y-auto h-full">
     <div class="w-full">
-        <div class="flex gap-1.5 mb-4 flex-wrap">
-            @foreach (['all' => 'All', 'submitted' => 'submitted', 'late_pending' => 'late pending', 'accepted' => 'accepted', 'rejected' => 'rejected'] as $value => $label)
-                <button type="button"
-                        wire:click="setFilter('{{ $value }}')"
-                        class="apis-filter-chip {{ $filter === $value ? 'is-active' : '' }}">
-                    {{ $label }}
-                </button>
-            @endforeach
-        </div>
+        @include('partials.apis.filter-toolbar', [
+            'gridClass' => 'grid-cols-1 md:grid-cols-[minmax(0,1.5fr)_190px_190px]',
+            'fields' => [
+                [
+                    'label' => 'Search',
+                    'type' => 'text',
+                    'placeholder' => 'Search by request ID, title, or status...',
+                    'class' => 'apis-toolbar-control w-full',
+                    'attributes' => ['wire:model.live.debounce.300ms' => 'search'],
+                ],
+                [
+                    'label' => 'Status',
+                    'type' => 'select',
+                    'class' => 'apis-toolbar-control w-full',
+                    'attributes' => ['wire:model.live' => 'statusFilter'],
+                    'options' => array_merge(
+                        [['value' => 'all', 'label' => 'All statuses']],
+                        $this->statusOptions
+                    ),
+                ],
+                [
+                    'label' => 'Sort',
+                    'type' => 'select',
+                    'class' => 'apis-toolbar-control w-full',
+                    'attributes' => ['wire:model.live' => 'sortBy'],
+                    'options' => [
+                        ['value' => 'latest', 'label' => 'Latest submitted'],
+                        ['value' => 'needed_asc', 'label' => 'Date needed: earliest'],
+                        ['value' => 'needed_desc', 'label' => 'Date needed: latest'],
+                    ],
+                ],
+            ],
+            'trailingFields' => [
+                [
+                    'label' => 'Per page',
+                    'type' => 'select',
+                    'class' => 'apis-toolbar-control w-[92px]',
+                    'attributes' => ['wire:model.live' => 'perPage'],
+                    'options' => [
+                        ['value' => '5', 'label' => '5'],
+                        ['value' => '10', 'label' => '10'],
+                        ['value' => '15', 'label' => '15'],
+                    ],
+                ],
+            ],
+        ])
 
-        @if ($this->shownRequests->isEmpty())
+        @if ($this->filteredRequests->isEmpty())
             <div class="text-center py-[60px] text-[13px] text-apis-text2">
-                No requests match this filter.
+                No requests match the current filters.
             </div>
         @else
-            @foreach ($this->shownRequests as $request)
+            @foreach ($this->paginatedRequests as $request)
                 @php
-                    $statusMap = [
-                        'submitted' => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)', 'label' => 'Submitted'],
-                        'late_pending' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)', 'label' => 'Late – Pending'],
-                        'accepted' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)', 'label' => 'Accepted'],
-                        'rejected' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)', 'label' => 'Rejected'],
-                        'withdrawn' => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)', 'label' => 'Withdrawn'],
-                    ];
+                    $statusLabel = match ($request['status']) {
+                        'recommended' => 'DH Recommended',
+                        'vp_approved' => 'VP Approved',
+                        'late_pending' => 'Late – Pending',
+                        'returned_to_requestor' => 'Returned to Requestor',
+                        default => ucfirst(str_replace('_', ' ', $request['status'])),
+                    };
 
                     $stepMap = [
                         'done' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)', 'dotBg' => 'var(--green-bg)', 'dotColor' => 'var(--green)', 'symbol' => '✓'],
@@ -31,8 +68,6 @@
                         'rejected' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)', 'dotBg' => 'var(--red-bg)', 'dotColor' => 'var(--red)', 'symbol' => '✕'],
                         'waiting' => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)', 'dotBg' => 'var(--gray-bg)', 'dotColor' => 'var(--text3)', 'symbol' => '○'],
                     ];
-
-                    $status = $statusMap[$request['status']] ?? ['bg' => 'var(--gray-bg)', 'color' => 'var(--gray)', 'label' => ucfirst(str_replace('_', ' ', $request['status']))];
                 @endphp
 
                 <div class="rounded-[12px] bg-apis-bg p-[14px_18px] mb-2.5"
@@ -40,9 +75,7 @@
                     <div class="flex items-start justify-between gap-4 mb-1 flex-wrap">
                         <div class="flex gap-[7px] items-center flex-wrap">
                             <span class="font-mono text-[11px] text-apis-text2">{{ $request['id'] }}</span>
-                            <span class="apis-badge" style="background: {{ $status['bg'] }}; color: {{ $status['color'] }};">
-                                {{ $status['label'] }}
-                            </span>
+                            @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $statusLabel])
                             @if ($request['isLate'])
                                 <span class="text-[10px] px-[6px] py-[1px] rounded-[3px] font-medium"
                                       style="background: var(--amber-bg); color: var(--amber)">
@@ -106,6 +139,12 @@
                     </div>
                 </div>
             @endforeach
+
+            @include('partials.apis.simple-pagination', [
+                'summary' => 'Showing ' . $this->showingFrom . '-' . $this->showingTo . ' of ' . $this->filteredRequests->count() . ' request' . ($this->filteredRequests->count() !== 1 ? 's' : ''),
+                'page' => $page,
+                'totalPages' => $this->totalPages,
+            ])
         @endif
     </div>
 </div>

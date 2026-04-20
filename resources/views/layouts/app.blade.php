@@ -44,6 +44,40 @@
             'green' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)'],
             'red' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)'],
         ];
+
+        $dynamicBadges = [];
+
+        if ($authUser?->role === 'division_head') {
+            $dynamicBadges['division-head.inbox'] = [
+                'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where(function ($query) {
+                        $query->where('current_owner_role', 'division_head')
+                            ->orWhereHas('transitions', function ($transitionQuery) {
+                                $transitionQuery->where('acted_by_role', 'division_head');
+                            });
+                    })
+                    ->whereNull('withdrawn_at')
+                    ->count(),
+                'tone' => 'blue',
+            ];
+
+            $dynamicBadges['division-head.history'] = [
+                'text' => (string) \App\Models\RequestTransition::query()
+                    ->where('acted_by_role', 'division_head')
+                    ->count(),
+                'tone' => 'blue',
+            ];
+        }
+
+        if ($authUser?->role === 'vp_gen_services') {
+            $dynamicBadges['vp-gen-services.inbox'] = [
+                'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where('current_owner_role', 'vp_gen_services')
+                    ->whereNull('withdrawn_at')
+                    ->count(),
+                'tone' => 'blue',
+            ];
+        }
     @endphp
 
     <div class="flex h-screen overflow-hidden bg-apis-bg3">
@@ -65,7 +99,7 @@
                 @foreach ($sidebarItems as $item)
                     @php
                         $isActive = collect($item['active'] ?? [$item['route']])->contains(fn ($pattern) => request()->routeIs($pattern));
-                        $badge = $item['badge'] ?? null;
+                        $badge = $dynamicBadges[$item['route']] ?? ($item['badge'] ?? null);
                         $tone = $badge ? ($badgeTones[$badge['tone'] ?? 'blue'] ?? $badgeTones['blue']) : null;
                     @endphp
 

@@ -2,6 +2,11 @@
     @if ($isOpen)
         @php
             $tones = [
+                'success' => [
+                    'accent' => 'var(--green)',
+                    'background' => 'var(--green-bg)',
+                    'border' => 'var(--green-bd)',
+                ],
                 'info' => [
                     'accent' => 'var(--blue)',
                     'background' => 'var(--blue-bg)',

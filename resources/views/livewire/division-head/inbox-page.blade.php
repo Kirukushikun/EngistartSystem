@@ -1,19 +1,5 @@
 <div class="p-6 overflow-y-auto h-full">
     <div class="w-full">
-        @if ($actionMessage)
-            @include('partials.apis.alert', [
-                'type' => $actionTone,
-                'message' => $actionMessage,
-            ])
-        @endif
-
-        @if ($this->inboxItems->isNotEmpty())
-            @include('partials.apis.alert', [
-                'type' => 'warn',
-                'message' => $this->inboxItems->count() . ' request' . ($this->inboxItems->count() !== 1 ? 's' : '') . ' pending your recommendation.',
-            ])
-        @endif
-
         @include('partials.apis.filter-toolbar', [
             'gridClass' => 'grid-cols-1 md:grid-cols-[minmax(0,1.5fr)_180px_180px]',
             'fields' => [
@@ -70,10 +56,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                             <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['id'] }}</span>
-                            <span class="text-[11px] px-2 py-0.5 rounded font-medium"
-                                  style="background: var(--blue-bg); color: var(--blue)">
-                                Submitted
-                            </span>
+                            @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['statusLabel']])
                         </div>
                         <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">
                             {{ $request['title'] }}
@@ -142,29 +125,59 @@
                             </div>
                         </div>
 
-                        <div class="mb-[14px]">
+                        <div>
                             <label class="block text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">
                                 Remarks
                             </label>
-                            <textarea
-                                wire:model.live="remarks.{{ $request['id'] }}"
-                                class="apis-remarks-control"
-                                placeholder="Add your recommendation or rejection remarks here..."></textarea>
+                            <div class="rounded-[12px] p-[12px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
+                                @if (!empty($request['remarkHistory']))
+                                    <div class="space-y-[10px] mb-[12px]">
+                                        @foreach ($request['remarkHistory'] as $entry)
+                                            @php
+                                                $entryStyle = match ($entry['tone']) {
+                                                    'danger' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)', 'border' => 'var(--red-bd)'],
+                                                    default => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)', 'border' => 'var(--blue-bd)'],
+                                                };
+                                            @endphp
+                                            <div class="rounded-[10px] p-[10px_12px]" style="background: {{ $entryStyle['bg'] }}; border: 0.5px solid {{ $entryStyle['border'] }};">
+                                                <div class="mb-1">
+                                                    <p class="text-[12px] m-0 text-apis-text font-medium">{{ $entry['role'] }}@if($entry['actor']) · {{ $entry['actor'] }}@endif</p>
+                                                    <p class="text-[11px] m-0" style="color: {{ $entryStyle['color'] }};">{{ $entry['label'] }}</p>
+                                                </div>
+                                                <p class="text-[12px] text-apis-text m-0 leading-[1.6]">{{ $entry['remarks'] }}</p>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                @if ($request['isPendingHere'])
+                                    <textarea
+                                        wire:model.live="remarks.{{ $request['id'] }}"
+                                        class="apis-remarks-control"
+                                        placeholder="Add your recommendation or rejection remarks here..."></textarea>
+                                @endif
+                            </div>
                         </div>
 
                         <div class="flex gap-2 flex-wrap">
-                            <button type="button"
-                                    wire:click="recommend(@js($request['id']))"
-                                    class="apis-card-button font-medium"
-                                    style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
-                                Recommend for Approval
-                            </button>
-                            <button type="button"
-                                    wire:click="reject(@js($request['id']))"
-                                    class="apis-card-button font-medium"
-                                    style="background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd)">
-                                Reject
-                            </button>
+                            @if ($request['isPendingHere'])
+                                <button type="button"
+                                        wire:click="confirmRecommend(@js($request['id']))"
+                                        class="apis-card-button font-medium"
+                                        style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
+                                    Recommend for Approval
+                                </button>
+                                <button type="button"
+                                        wire:click="confirmReject(@js($request['id']))"
+                                        class="apis-card-button font-medium"
+                                        style="background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd)">
+                                    Reject
+                                </button>
+                            @else
+                                <p class="text-[11px] text-apis-text2 m-0">
+                                    Retained here for transparency after your action.
+                                </p>
+                            @endif
                         </div>
                 </div>
             </div>

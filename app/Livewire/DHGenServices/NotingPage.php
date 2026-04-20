@@ -2,15 +2,18 @@
 
 namespace App\Livewire\DHGenServices;
 
+use App\Livewire\Shared\ConfirmationModal;
+use App\Models\ProjectRequest;
+use App\Models\RequestTransition;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class NotingPage extends Component
 {
-    public ?string $actionMessage = null;
-
-    public string $actionTone = 'info';
-
     public array $remarks = [];
 
     public string $search = '';
@@ -23,15 +26,83 @@ class NotingPage extends Component
 
     public int $page = 1;
 
-    public function noteForward(string $requestId): void
+    public function confirmNoteForward(string $requestId): void
     {
         $request = $this->loadNotingItems()->firstWhere('id', $requestId);
+
+        if (! $request || ! $request['isPendingHere']) {
+            return;
+        }
+
+        $this->dispatch('openConfirmationModal', config: [
+            'title' => 'Note request and forward?',
+            'message' => 'Mark ' . $request['id'] . ' as noted using the current remarks entered on this request?',
+            'tone' => 'success',
+            'confirmText' => 'Note & Forward',
+            'confirmEvent' => 'dhGenServicesNotingConfirmed',
+            'confirmTarget' => self::class,
+            'payload' => ['requestId' => $requestId],
+        ])->to(ConfirmationModal::class);
+    }
+
+    #[On('dhGenServicesNotingConfirmed')]
+    public function noteForward(array $payload): void
+    {
+        $requestId = (string) ($payload['requestId'] ?? '');
+        $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
 
-        $this->actionTone = 'info';
-        $this->actionMessage = $request
-            ? "Dummy action: {$request['id']} was noted and forwarded to ED Manager." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
-            : 'Dummy action completed.';
+        abort_unless($user, 403);
+
+        DB::transaction(function () use ($requestId, $remarks, $user) {
+            $projectRequest = ProjectRequest::query()
+                ->where('request_number', $requestId)
+                ->where('current_owner_role', 'dh_gen_services')
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $previousStatus = $projectRequest->current_status;
+            $previousStep = $projectRequest->current_step;
+            $previousOwnerRole = $projectRequest->current_owner_role;
+
+            $projectRequest->fill([
+                'current_status' => 'noted',
+                'current_step' => 'ed_manager_acceptance',
+                'current_owner_role' => 'ed_manager',
+                'current_owner_id' => null,
+                'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
+                'locked_at' => $projectRequest->locked_at ?? now(),
+                'last_transitioned_at' => now(),
+                'latest_remarks' => $remarks !== '' ? $remarks : 'Noted by DH Gen Services.',
+            ]);
+            $projectRequest->save();
+
+            RequestTransition::create([
+                'project_request_id' => $projectRequest->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'noted',
+                'from_status' => $previousStatus,
+                'to_status' => 'noted',
+                'from_step' => $previousStep,
+                'to_step' => 'ed_manager_acceptance',
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => 'ed_manager',
+                'to_owner_id' => null,
+                'is_rework' => false,
+                'is_exception_path' => $projectRequest->is_late,
+                'is_terminal' => false,
+                'remarks' => $remarks !== '' ? $remarks : 'Noted by DH Gen Services.',
+                'context' => [
+                    'review_stage' => 'dh_gen_services',
+                ],
+                'acted_at' => now(),
+            ]);
+        });
+
+        unset($this->remarks[$requestId]);
+
+        $this->dispatch('notify', type: 'info', message: $requestId . ' was noted and forwarded to ED Manager.');
     }
 
     public function updatedSearch(): void { $this->page = 1; }
@@ -114,68 +185,150 @@ class NotingPage extends Component
 
     protected function loadNotingItems(): Collection
     {
-        return collect([
+        return ProjectRequest::query()
+            ->with(['requestor', 'transitions.actedBy'])
+            ->where(function ($query) {
+                $query->where('current_owner_role', 'dh_gen_services')
+                    ->orWhereHas('transitions', function ($transitionQuery) {
+                        $transitionQuery->where('acted_by_role', 'dh_gen_services');
+                    });
+            })
+            ->whereNull('withdrawn_at')
+            ->orderByDesc('submitted_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (ProjectRequest $request): array {
+                $submittedAt = $request->submitted_at ?? $request->created_at;
+                $hasDhGenAction = $request->transitions->contains(fn ($transition) => $transition->acted_by_role === 'dh_gen_services');
+
+                return [
+                    'dbId' => $request->id,
+                    'id' => $request->request_number,
+                    'title' => $request->title,
+                    'farm' => $request->farm_name ?? 'Farm not yet specified',
+                    'type' => $request->request_type,
+                    'purpose' => $request->purpose ?? 'No purpose provided',
+                    'needed' => optional($request->date_needed)->format('Y-m-d'),
+                    'submitted' => optional($submittedAt)->format('Y-m-d'),
+                    'days' => $request->date_needed ? max(0, Carbon::today()->diffInDays($request->date_needed, false)) : 0,
+                    'status' => $request->current_status,
+                    'statusLabel' => match ($request->current_status) {
+                        'vp_approved' => 'VP Approved',
+                        'noted' => 'Noted',
+                        'accepted' => 'Accepted',
+                        'returned_to_requestor' => 'Returned to Requestor',
+                        default => str_replace('_', ' ', str($request->current_status)->title()),
+                    },
+                    'by' => $request->requestor?->name ?? 'Unknown requester',
+                    'desc' => $request->description,
+                    'chickin' => optional($request->chick_in_date)->format('Y-m-d'),
+                    'cap' => $request->capacity,
+                    'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
+                    'mtgTime' => $request->preferred_meeting_time,
+                    'remarkHistory' => $this->buildRemarkHistory($request),
+                    'isLate' => $request->is_late,
+                    'isPendingHere' => $request->current_owner_role === 'dh_gen_services',
+                    'isTransparentCopy' => $request->current_owner_role !== 'dh_gen_services' && $hasDhGenAction,
+                    'chain' => $this->buildApprovalChain($request),
+                ];
+            })
+            ->values();
+    }
+
+    protected function buildRemarkHistory(ProjectRequest $request): array
+    {
+        $entries = [];
+
+        foreach ($request->transitions->sortBy('acted_at') as $transition) {
+            if ($transition->acted_by_role === 'farm_manager' || blank($transition->remarks)) {
+                continue;
+            }
+
+            $entries[] = [
+                'role' => $this->roleLabel($transition->acted_by_role),
+                'actor' => $transition->actedBy?->name ?? 'Unknown approver',
+                'label' => $this->remarkLabel($transition->action),
+                'remarks' => $transition->remarks,
+                'tone' => $this->remarkTone($transition->action),
+            ];
+        }
+
+        return $entries;
+    }
+
+    protected function buildApprovalChain(ProjectRequest $request): array
+    {
+        $transitions = $request->transitions->keyBy('acted_by_role');
+
+        return [
             [
-                'id' => 'APIS-2026-003',
-                'title' => 'Irrigation System Phase 2',
-                'farm' => 'Farm B – Capas, Tarlac',
-                'type' => 'Infrastructure',
-                'purpose' => 'Water supply improvement',
-                'needed' => '2026-05-15',
-                'submitted' => '2026-03-05',
-                'days' => 53,
-                'status' => 'vp_approved',
-                'by' => 'Maria Cruz',
-                'desc' => 'Drip irrigation system installation covering 15 hectares.',
-                'chain' => [
-                    ['role' => 'Farm Manager', 'user' => 'Maria Cruz', 'action' => 'Submitted', 'date' => '2026-03-05', 'st' => 'done'],
-                    ['role' => 'Division Head', 'user' => 'Div. Head Santos', 'action' => 'Recommended', 'date' => '2026-03-08', 'st' => 'done'],
-                    ['role' => 'VP Gen Services', 'user' => 'Atty. T. Dizon', 'action' => 'Approved', 'date' => '2026-03-12', 'st' => 'done'],
-                    ['role' => 'DH Gen Services', 'user' => null, 'action' => 'Noted', 'date' => null, 'st' => 'pending'],
-                    ['role' => 'ED Manager', 'user' => null, 'action' => 'Acceptance', 'date' => null, 'st' => 'waiting'],
-                ],
+                'role' => 'Farm Manager',
+                'user' => $request->requestor?->name,
+                'action' => 'Submitted',
+                'date' => optional($request->submitted_at ?? $request->created_at)?->format('Y-m-d'),
+                'st' => 'done',
             ],
             [
-                'id' => 'APIS-2026-021',
-                'title' => 'Exhaust Fan Upgrade',
-                'farm' => 'Farm D – Angeles, Pampanga',
-                'type' => 'Equipment',
-                'purpose' => 'Improve ventilation efficiency',
-                'needed' => '2026-05-28',
-                'submitted' => '2026-03-11',
-                'days' => 65,
-                'status' => 'vp_approved',
-                'by' => 'Ramon Torres',
-                'desc' => 'Upgrade of exhaust fans in two poultry houses to address heat buildup and airflow imbalance.',
-                'chain' => [
-                    ['role' => 'Farm Manager', 'user' => 'Ramon Torres', 'action' => 'Submitted', 'date' => '2026-03-11', 'st' => 'done'],
-                    ['role' => 'Division Head', 'user' => 'Div. Head Santos', 'action' => 'Recommended', 'date' => '2026-03-14', 'st' => 'done'],
-                    ['role' => 'VP Gen Services', 'user' => 'Atty. T. Dizon', 'action' => 'Approved', 'date' => '2026-03-18', 'st' => 'done'],
-                    ['role' => 'DH Gen Services', 'user' => null, 'action' => 'Noted', 'date' => null, 'st' => 'pending'],
-                    ['role' => 'ED Manager', 'user' => null, 'action' => 'Acceptance', 'date' => null, 'st' => 'waiting'],
-                ],
+                'role' => 'Division Head',
+                'user' => $transitions->get('division_head')?->actedBy?->name,
+                'action' => 'Recommendation',
+                'date' => optional($transitions->get('division_head')?->acted_at)->format('Y-m-d'),
+                'st' => $transitions->has('division_head') ? 'done' : 'waiting',
             ],
             [
-                'id' => 'APIS-2026-022',
-                'title' => 'Substation Fencing Improvement',
-                'farm' => 'Farm A – Bamban, Tarlac',
-                'type' => 'Utility',
-                'purpose' => 'Improve power area safety',
-                'needed' => '2026-06-03',
-                'submitted' => '2026-03-15',
-                'days' => 80,
-                'status' => 'vp_approved',
-                'by' => 'Jose Santos',
-                'desc' => 'Install reinforced safety fencing and access control around the electrical substation area.',
-                'chain' => [
-                    ['role' => 'Farm Manager', 'user' => 'Jose Santos', 'action' => 'Submitted', 'date' => '2026-03-15', 'st' => 'done'],
-                    ['role' => 'Division Head', 'user' => 'Div. Head Santos', 'action' => 'Recommended', 'date' => '2026-03-17', 'st' => 'done'],
-                    ['role' => 'VP Gen Services', 'user' => 'Atty. T. Dizon', 'action' => 'Approved', 'date' => '2026-03-20', 'st' => 'done'],
-                    ['role' => 'DH Gen Services', 'user' => null, 'action' => 'Noted', 'date' => null, 'st' => 'pending'],
-                    ['role' => 'ED Manager', 'user' => null, 'action' => 'Acceptance', 'date' => null, 'st' => 'waiting'],
-                ],
+                'role' => 'VP Gen Services',
+                'user' => $transitions->get('vp_gen_services')?->actedBy?->name,
+                'action' => 'Approval',
+                'date' => optional($transitions->get('vp_gen_services')?->acted_at)->format('Y-m-d'),
+                'st' => $transitions->has('vp_gen_services') ? 'done' : 'waiting',
             ],
-        ]);
+            [
+                'role' => 'DH Gen Services',
+                'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
+                'action' => 'Noted',
+                'date' => optional($transitions->get('dh_gen_services')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'dh_gen_services' ? 'pending' : ($transitions->has('dh_gen_services') ? 'done' : 'waiting'),
+            ],
+            [
+                'role' => 'ED Manager',
+                'user' => $transitions->get('ed_manager')?->actedBy?->name,
+                'action' => 'Acceptance',
+                'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
+            ],
+        ];
+    }
+
+    protected function roleLabel(string $role): string
+    {
+        return match ($role) {
+            'division_head' => 'Division Head',
+            'vp_gen_services' => 'VP Gen Services',
+            'dh_gen_services' => 'DH Gen Services',
+            'ed_manager' => 'ED Manager',
+            default => str_replace('_', ' ', str($role)->title()),
+        };
+    }
+
+    protected function remarkTone(string $action): string
+    {
+        return match ($action) {
+            'approve', 'approved', 'noted', 'accepted' => 'success',
+            'reject', 'rejected', 'return', 'returned' => 'danger',
+            default => 'info',
+        };
+    }
+
+    protected function remarkLabel(string $action): string
+    {
+        return match ($action) {
+            'noted' => 'Noted',
+            'approve', 'approved' => 'Approved',
+            'accepted' => 'Accepted',
+            'reject', 'rejected' => 'Rejected',
+            'return', 'returned' => 'Returned',
+            default => str_replace('_', ' ', str($action)->title()),
+        };
     }
 
     public function render()

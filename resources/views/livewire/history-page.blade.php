@@ -56,41 +56,19 @@
 
             @forelse ($this->paginatedHistoryItems as $item)
                 <div class="apis-card">
-                    <div class="p-[14px_18px] border-b" style="border-color: var(--border)">
+                    <div class="p-[14px_18px]">
                         <div class="flex items-start justify-between gap-3 flex-wrap">
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                                     <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $item['id'] }}</span>
                                     <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--blue-bg); color: var(--blue)">{{ $item['action'] }}</span>
-                                    <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--gray-bg); color: var(--gray)">{{ $item['current_status'] }}</span>
                                 </div>
                                 <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $item['title'] }}</p>
                                 <p class="text-[11px] text-apis-text2 m-0">{{ $item['farm'] }} · {{ $item['type'] }} · Requested by {{ $item['requestedBy'] }}</p>
+                                <p class="text-[11px] text-apis-text2 m-0 mt-1">Requested {{ $item['requested_at'] }} · Acted {{ $item['acted_at'] }}</p>
+                                <p class="text-[11px] text-apis-text m-0 mt-2 leading-[1.6]">{{ $item['remarks'] }}</p>
                             </div>
-                            <div class="text-right min-w-[138px]">
-                                <p class="text-[10px] text-apis-text2 m-0 mb-1 font-medium uppercase tracking-[0.07em]">Acted on</p>
-                                <p class="text-[12px] text-apis-text m-0">{{ $item['acted_at'] }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-[16px_18px] space-y-3">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-[8px_18px] text-[12px]">
-                            <div>
-                                <span class="text-apis-text2 mr-1">Requested:</span>
-                                <span class="text-apis-text">{{ $item['requested_at'] }}</span>
-                            </div>
-                            <div>
-                                <span class="text-apis-text2 mr-1">Action:</span>
-                                <span class="text-apis-text">{{ $item['action'] }}</span>
-                            </div>
-                            <div>
-                                <span class="text-apis-text2 mr-1">Current status:</span>
-                                <span class="text-apis-text">{{ $item['current_status'] }}</span>
-                            </div>
-                        </div>
-                        <div class="rounded-[8px] p-[12px_14px] text-[12px] leading-[1.6]" style="background: var(--bg2)">
-                            <p class="text-[10px] text-apis-text2 mb-1 font-medium uppercase tracking-[0.07em]">Remarks</p>
-                            <p class="m-0 text-apis-text">{{ $item['remarks'] }}</p>
+                            <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--gray-bg); color: var(--gray)">{{ $item['current_status'] }}</span>
                         </div>
                     </div>
                 </div>

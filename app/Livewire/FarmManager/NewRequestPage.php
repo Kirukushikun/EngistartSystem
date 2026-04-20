@@ -156,11 +156,7 @@ class NewRequestPage extends Component
                 'cancelled_at' => null,
                 'withdrawn_at' => null,
                 'last_transitioned_at' => now(),
-                'latest_remarks' => $this->isEditing
-                    ? 'Request updated by requestor before first reviewer action.'
-                    : ($this->isLate
-                        ? 'Late filing acknowledged by requestor with justification letter attached.'
-                        : 'Initial request submission created by requestor.'),
+                'latest_remarks' => null,
                 'meta' => array_merge($projectRequest->meta ?? [], [
                     'days_away' => $this->daysAway,
                     'submission_channel' => 'farm_manager_livewire',
@@ -184,11 +180,7 @@ class NewRequestPage extends Component
                 'is_rework' => false,
                 'is_exception_path' => $this->isLate,
                 'is_terminal' => false,
-                'remarks' => $this->isEditing
-                    ? 'Request details updated by requestor before reviewer pickup.'
-                    : ($this->isLate
-                        ? 'Late filing submitted and routed to DH Gen Services for review.'
-                        : 'Request submitted into the standard approval workflow.'),
+                'remarks' => null,
                 'context' => [
                     'is_late' => $this->isLate,
                     'days_away' => $this->daysAway,

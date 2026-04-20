@@ -3,7 +3,13 @@
 namespace App\Livewire\DHGenServices;
 
 use App\Livewire\Shared\ConfirmationModal;
+use App\Models\ProjectRequest;
+use App\Models\RequestAttachment;
+use App\Models\RequestTransition;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Attributes\On;
 
@@ -25,14 +31,14 @@ class LateFilingsPage extends Component
     {
         $request = $this->loadLateFilings()->firstWhere('id', $requestId);
 
-        if (! $request) {
+        if (! $request || ! $request['isPendingHere']) {
             return;
         }
 
         $this->dispatch('openConfirmationModal', config: [
             'title' => 'Approve late filing?',
             'message' => 'Approve ' . $request['id'] . ' using the current remarks entered on this request?',
-            'tone' => 'warn',
+            'tone' => 'success',
             'confirmText' => 'Approve',
             'confirmEvent' => 'lateFilingApprovalConfirmed',
             'confirmTarget' => self::class,
@@ -44,7 +50,7 @@ class LateFilingsPage extends Component
     {
         $request = $this->loadLateFilings()->firstWhere('id', $requestId);
 
-        if (! $request) {
+        if (! $request || ! $request['isPendingHere']) {
             return;
         }
 
@@ -63,30 +69,124 @@ class LateFilingsPage extends Component
     public function approve(array $payload): void
     {
         $requestId = (string) ($payload['requestId'] ?? '');
-        $request = $this->loadLateFilings()->firstWhere('id', $requestId);
+        $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
 
-        $this->dispatch('notify',
-            type: 'warn',
-            message: $request
-                ? "{$request['id']} late filing approved for workflow continuation." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
-                : 'Late filing action completed.'
-        );
+        abort_unless($user, 403);
+
+        DB::transaction(function () use ($requestId, $remarks, $user) {
+            $projectRequest = ProjectRequest::query()
+                ->where('request_number', $requestId)
+                ->where('current_owner_role', 'dh_gen_services')
+                ->where('current_status', 'late_pending')
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $previousStatus = $projectRequest->current_status;
+            $previousStep = $projectRequest->current_step;
+            $previousOwnerRole = $projectRequest->current_owner_role;
+
+            $projectRequest->fill([
+                'current_status' => 'submitted',
+                'current_step' => 'division_head_review',
+                'current_owner_role' => 'division_head',
+                'current_owner_id' => null,
+                'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
+                'locked_at' => $projectRequest->locked_at ?? now(),
+                'last_transitioned_at' => now(),
+                'latest_remarks' => $remarks !== '' ? $remarks : 'Late filing approved by DH Gen Services.',
+            ]);
+            $projectRequest->save();
+
+            RequestTransition::create([
+                'project_request_id' => $projectRequest->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'approved',
+                'from_status' => $previousStatus,
+                'to_status' => 'submitted',
+                'from_step' => $previousStep,
+                'to_step' => 'division_head_review',
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => 'division_head',
+                'to_owner_id' => null,
+                'is_rework' => false,
+                'is_exception_path' => true,
+                'is_terminal' => false,
+                'remarks' => $remarks !== '' ? $remarks : 'Late filing approved by DH Gen Services.',
+                'context' => [
+                    'review_stage' => 'dh_gen_services_late_filing',
+                    'late_filing_decision' => 'approved',
+                ],
+                'acted_at' => now(),
+            ]);
+        });
+
+        unset($this->remarks[$requestId]);
+
+        $this->dispatch('notify', type: 'success', message: $requestId . ' late filing was approved and routed to Division Head.');
     }
 
     #[On('lateFilingRejectionConfirmed')]
     public function reject(array $payload): void
     {
         $requestId = (string) ($payload['requestId'] ?? '');
-        $request = $this->loadLateFilings()->firstWhere('id', $requestId);
+        $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
 
-        $this->dispatch('notify',
-            type: 'danger',
-            message: $request
-                ? "{$request['id']} late filing rejected." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
-                : 'Late filing action completed.'
-        );
+        abort_unless($user, 403);
+
+        DB::transaction(function () use ($requestId, $remarks, $user) {
+            $projectRequest = ProjectRequest::query()
+                ->where('request_number', $requestId)
+                ->where('current_owner_role', 'dh_gen_services')
+                ->where('current_status', 'late_pending')
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $previousStatus = $projectRequest->current_status;
+            $previousStep = $projectRequest->current_step;
+            $previousOwnerRole = $projectRequest->current_owner_role;
+
+            $projectRequest->fill([
+                'current_status' => 'returned_to_requestor',
+                'current_step' => 'requestor_revision',
+                'current_owner_role' => $projectRequest->requestor_role,
+                'current_owner_id' => $projectRequest->requestor_id,
+                'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
+                'locked_at' => $projectRequest->locked_at ?? now(),
+                'last_transitioned_at' => now(),
+                'latest_remarks' => $remarks !== '' ? $remarks : 'Late filing rejected by DH Gen Services.',
+            ]);
+            $projectRequest->save();
+
+            RequestTransition::create([
+                'project_request_id' => $projectRequest->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'rejected',
+                'from_status' => $previousStatus,
+                'to_status' => 'returned_to_requestor',
+                'from_step' => $previousStep,
+                'to_step' => 'requestor_revision',
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => $projectRequest->requestor_role,
+                'to_owner_id' => $projectRequest->requestor_id,
+                'is_rework' => true,
+                'is_exception_path' => true,
+                'is_terminal' => false,
+                'remarks' => $remarks !== '' ? $remarks : 'Late filing rejected by DH Gen Services.',
+                'context' => [
+                    'review_stage' => 'dh_gen_services_late_filing',
+                    'late_filing_decision' => 'rejected',
+                ],
+                'acted_at' => now(),
+            ]);
+        });
+
+        unset($this->remarks[$requestId]);
+
+        $this->dispatch('notify', type: 'danger', message: $requestId . ' late filing was returned to the requestor.');
     }
 
     public function updatedSearch(): void { $this->page = 1; }
@@ -169,62 +269,150 @@ class LateFilingsPage extends Component
 
     protected function loadLateFilings(): Collection
     {
-        return collect([
+        return ProjectRequest::query()
+            ->with([
+                'requestor',
+                'transitions.actedBy',
+                'attachments' => fn ($query) => $query
+                    ->where('attachment_type', 'justification_letter')
+                    ->where('is_active', true)
+                    ->latest('uploaded_at'),
+            ])
+            ->where('is_late', true)
+            ->where(function ($query) {
+                $query->where('current_owner_role', 'dh_gen_services')
+                    ->orWhereHas('transitions', function ($transitionQuery) {
+                        $transitionQuery->where('acted_by_role', 'dh_gen_services')
+                            ->where('context->review_stage', 'dh_gen_services_late_filing');
+                    });
+            })
+            ->whereNull('withdrawn_at')
+            ->orderByDesc('submitted_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (ProjectRequest $request): array {
+                $submittedAt = $request->submitted_at ?? $request->created_at;
+                $hasDhLateAction = $request->transitions->contains(fn ($transition) => $transition->acted_by_role === 'dh_gen_services' && data_get($transition->context, 'review_stage') === 'dh_gen_services_late_filing');
+                $justificationLetter = $request->attachments->first();
+
+                return [
+                    'dbId' => $request->id,
+                    'id' => $request->request_number,
+                    'title' => $request->title,
+                    'farm' => $request->farm_name ?? 'Farm not yet specified',
+                    'type' => $request->request_type,
+                    'purpose' => $request->purpose ?? 'No purpose provided',
+                    'needed' => optional($request->date_needed)->format('Y-m-d'),
+                    'submitted' => optional($submittedAt)->format('Y-m-d'),
+                    'days' => $request->date_needed ? max(0, Carbon::today()->diffInDays($request->date_needed, false)) : 0,
+                    'status' => $request->current_status,
+                    'statusLabel' => match ($request->current_status) {
+                        'late_pending' => 'Late Pending',
+                        'submitted' => 'Submitted',
+                        'returned_to_requestor' => 'Returned to Requestor',
+                        default => str_replace('_', ' ', str($request->current_status)->title()),
+                    },
+                    'by' => $request->requestor?->name ?? 'Unknown requester',
+                    'desc' => $request->description,
+                    'jl' => $justificationLetter?->original_name,
+                    'remarkHistory' => $this->buildRemarkHistory($request),
+                    'isPendingHere' => $request->current_owner_role === 'dh_gen_services' && $request->current_status === 'late_pending',
+                    'isTransparentCopy' => $request->current_owner_role !== 'dh_gen_services' && $hasDhLateAction,
+                    'chain' => $this->buildApprovalChain($request),
+                ];
+            })
+            ->values();
+    }
+
+    protected function buildRemarkHistory(ProjectRequest $request): array
+    {
+        $entries = [];
+
+        foreach ($request->transitions->sortBy('acted_at') as $transition) {
+            if (blank($transition->remarks) || $transition->acted_by_role === 'farm_manager') {
+                continue;
+            }
+
+            $entries[] = [
+                'role' => $this->roleLabel($transition->acted_by_role),
+                'actor' => $transition->actedBy?->name ?? 'Unknown approver',
+                'label' => $this->remarkLabel($transition->action),
+                'remarks' => $transition->remarks,
+                'tone' => $this->remarkTone($transition->action),
+            ];
+        }
+
+        return $entries;
+    }
+
+    protected function buildApprovalChain(ProjectRequest $request): array
+    {
+        $transitions = $request->transitions->keyBy(function ($transition) {
+            if ($transition->acted_by_role === 'dh_gen_services' && data_get($transition->context, 'review_stage') === 'dh_gen_services_late_filing') {
+                return 'dh_gen_services_late_filing';
+            }
+
+            return $transition->acted_by_role;
+        });
+
+        return [
             [
-                'id' => 'APIS-2026-005',
-                'title' => 'Irrigation Pump Emergency Repair',
-                'farm' => 'Farm B – Capas, Tarlac',
-                'type' => 'Infrastructure',
-                'purpose' => 'Emergency pump replacement',
-                'needed' => '2026-04-10',
-                'submitted' => '2026-03-22',
-                'days' => 18,
-                'status' => 'late_pending',
-                'by' => 'Maria Cruz',
-                'desc' => 'Urgent replacement of main irrigation pump.',
-                'jl' => 'JL_APIS-2026-005.pdf',
-                'chain' => [
-                    ['role' => 'Farm Manager', 'user' => 'Maria Cruz', 'action' => 'Submitted (Late Filing)', 'date' => '2026-03-22', 'st' => 'done'],
-                    ['role' => 'DH Gen Services', 'user' => null, 'action' => 'Validation / Decision', 'date' => null, 'st' => 'pending'],
-                ],
+                'role' => 'Farm Manager',
+                'user' => $request->requestor?->name,
+                'action' => 'Submitted (Late Filing)',
+                'date' => optional($request->submitted_at ?? $request->created_at)?->format('Y-m-d'),
+                'st' => 'done',
             ],
             [
-                'id' => 'APIS-2026-019',
-                'title' => 'Brooder Heater Replacement',
-                'farm' => 'Farm C – Concepcion, Tarlac',
-                'type' => 'Equipment',
-                'purpose' => 'Prevent temperature loss in brooder section',
-                'needed' => '2026-04-06',
-                'submitted' => '2026-03-24',
-                'days' => 13,
-                'status' => 'late_pending',
-                'by' => 'Pedro Reyes',
-                'desc' => 'Replacement of failed brooder heaters affecting chick survival rates.',
-                'jl' => 'JL_APIS-2026-019.pdf',
-                'chain' => [
-                    ['role' => 'Farm Manager', 'user' => 'Pedro Reyes', 'action' => 'Submitted (Late Filing)', 'date' => '2026-03-24', 'st' => 'done'],
-                    ['role' => 'DH Gen Services', 'user' => null, 'action' => 'Validation / Decision', 'date' => null, 'st' => 'pending'],
-                ],
+                'role' => 'DH Gen Services',
+                'user' => $transitions->get('dh_gen_services_late_filing')?->actedBy?->name,
+                'action' => 'Validation / Decision',
+                'date' => optional($transitions->get('dh_gen_services_late_filing')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'dh_gen_services' && $request->current_status === 'late_pending'
+                    ? 'pending'
+                    : ($transitions->has('dh_gen_services_late_filing') ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
             ],
             [
-                'id' => 'APIS-2026-020',
-                'title' => 'Water Tank Leak Rectification',
-                'farm' => 'Farm A – Bamban, Tarlac',
-                'type' => 'Utility',
-                'purpose' => 'Prevent supply interruption',
-                'needed' => '2026-04-08',
-                'submitted' => '2026-03-25',
-                'days' => 14,
-                'status' => 'late_pending',
-                'by' => 'Jose Santos',
-                'desc' => 'Immediate patching and reinforcement of the elevated water tank line due to rapid leakage.',
-                'jl' => 'JL_APIS-2026-020.pdf',
-                'chain' => [
-                    ['role' => 'Farm Manager', 'user' => 'Jose Santos', 'action' => 'Submitted (Late Filing)', 'date' => '2026-03-25', 'st' => 'done'],
-                    ['role' => 'DH Gen Services', 'user' => null, 'action' => 'Validation / Decision', 'date' => null, 'st' => 'pending'],
-                ],
+                'role' => 'Division Head',
+                'user' => $transitions->get('division_head')?->actedBy?->name,
+                'action' => 'Recommendation',
+                'date' => optional($transitions->get('division_head')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'division_head' ? 'pending' : ($transitions->has('division_head') ? 'done' : 'waiting'),
             ],
-        ]);
+        ];
+    }
+
+    protected function roleLabel(string $role): string
+    {
+        return match ($role) {
+            'division_head' => 'Division Head',
+            'vp_gen_services' => 'VP Gen Services',
+            'dh_gen_services' => 'DH Gen Services',
+            'ed_manager' => 'ED Manager',
+            default => str_replace('_', ' ', str($role)->title()),
+        };
+    }
+
+    protected function remarkTone(string $action): string
+    {
+        return match ($action) {
+            'approve', 'approved', 'recommend', 'recommended', 'noted', 'accepted' => 'success',
+            'reject', 'rejected', 'return', 'returned' => 'danger',
+            default => 'info',
+        };
+    }
+
+    protected function remarkLabel(string $action): string
+    {
+        return match ($action) {
+            'approve', 'approved' => 'Approved',
+            'recommend', 'recommended' => 'Recommended',
+            'noted' => 'Noted',
+            'accepted' => 'Accepted',
+            'reject', 'rejected' => 'Rejected',
+            'return', 'returned' => 'Returned',
+            default => str_replace('_', ' ', str($action)->title()),
+        };
     }
 
     public function render()
