@@ -1,5 +1,5 @@
 <div class="p-6 overflow-y-auto h-full">
-    <div class="max-w-[760px]">
+    <div class="w-full">
         <div class="flex gap-1.5 mb-4 flex-wrap">
             @foreach (['all' => 'All', 'submitted' => 'submitted', 'late_pending' => 'late pending', 'accepted' => 'accepted', 'rejected' => 'rejected'] as $value => $label)
                 <button type="button"
@@ -22,6 +22,7 @@
                         'late_pending' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)', 'label' => 'Late – Pending'],
                         'accepted' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)', 'label' => 'Accepted'],
                         'rejected' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)', 'label' => 'Rejected'],
+                        'withdrawn' => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)', 'label' => 'Withdrawn'],
                     ];
 
                     $stepMap = [
@@ -36,16 +37,34 @@
 
                 <div class="rounded-[12px] bg-apis-bg p-[14px_18px] mb-2.5"
                      style="border: 0.5px solid var(--border)">
-                    <div class="flex gap-[7px] items-center mb-1 flex-wrap">
-                        <span class="font-mono text-[11px] text-apis-text2">{{ $request['id'] }}</span>
-                        <span class="apis-badge" style="background: {{ $status['bg'] }}; color: {{ $status['color'] }};">
-                            {{ $status['label'] }}
-                        </span>
-                        @if ($request['isLate'])
-                            <span class="text-[10px] px-[6px] py-[1px] rounded-[3px] font-medium"
-                                  style="background: var(--amber-bg); color: var(--amber)">
-                                LATE
+                    <div class="flex items-start justify-between gap-4 mb-1 flex-wrap">
+                        <div class="flex gap-[7px] items-center flex-wrap">
+                            <span class="font-mono text-[11px] text-apis-text2">{{ $request['id'] }}</span>
+                            <span class="apis-badge" style="background: {{ $status['bg'] }}; color: {{ $status['color'] }};">
+                                {{ $status['label'] }}
                             </span>
+                            @if ($request['isLate'])
+                                <span class="text-[10px] px-[6px] py-[1px] rounded-[3px] font-medium"
+                                      style="background: var(--amber-bg); color: var(--amber)">
+                                    LATE
+                                </span>
+                            @endif
+                        </div>
+
+                        @if ($request['isEditable'])
+                            <div class="flex gap-2 flex-wrap justify-end">
+                                <a href="{{ route('farm-manager.requests.new', ['edit' => $request['dbId']]) }}"
+                                   class="text-[11px] font-medium px-3 py-1.5 rounded-[8px] no-underline"
+                                   style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd)">
+                                    Edit before review
+                                </a>
+                                <button type="button"
+                                        wire:click="confirmWithdraw({{ $request['dbId'] }})"
+                                        class="text-[11px] font-medium px-3 py-1.5 rounded-[8px]"
+                                        style="background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd)">
+                                    Withdraw
+                                </button>
+                            </div>
                         @endif
                     </div>
 
@@ -53,6 +72,12 @@
                     <p class="text-[11px] text-apis-text2 m-0 mb-[10px]">
                         Needed: {{ $request['needed'] }} · Submitted: {{ $request['submitted'] }}
                     </p>
+
+                    @if ($request['isWithdrawn'])
+                        <p class="text-[11px] text-apis-text2 m-0 mb-[10px]">
+                            This request was withdrawn before reviewer pickup.
+                        </p>
+                    @endif
 
                     <p class="text-[10px] text-apis-text2 mb-[7px] font-medium uppercase tracking-[0.07em]">Status chain</p>
                     <div class="flex items-center gap-1 flex-wrap">

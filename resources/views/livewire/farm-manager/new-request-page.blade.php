@@ -1,8 +1,8 @@
 <div class="p-6 overflow-y-auto h-full">
-    <div class="max-w-[640px]">
+    <div class="max-w-[640px] @if($submitted) mx-auto min-h-full flex items-center justify-center @endif">
 
         @if ($submitted)
-            <div class="flex flex-col items-center text-center gap-3 max-w-[480px] mx-auto mt-10 px-2">
+            <div class="flex w-full flex-col items-center justify-center text-center gap-3 max-w-[480px] px-2">
                 <div class="w-[52px] h-[52px] rounded-full flex items-center justify-center text-[22px]"
                      style="background: var(--green-bg); color: var(--green)">✓</div>
 
@@ -34,7 +34,16 @@
                 </button>
             </div>
         @else
-            <form wire:submit="submit" class="contents">
+            <form wire:submit="openSubmissionReview" class="contents">
+
+                @if ($isEditing)
+                    <div class="rounded-[8px] p-[10px_14px] mb-[14px]"
+                         style="background: var(--amber-bg); border: 0.5px solid var(--amber-bd)">
+                        <p class="text-[12px] leading-[1.6] m-0 font-normal" style="color: var(--amber)">
+                            You are editing an existing request. Changes are only allowed until the first reviewer action.
+                        </p>
+                    </div>
+                @endif
 
                 {{-- Memo header --}}
                 <div class="grid grid-cols-2 gap-x-5 gap-y-1 text-[12px] rounded-[8px] p-[11px_16px] mb-4"
@@ -198,7 +207,7 @@
                     <button type="submit"
                             class="text-[13px] font-medium px-6 py-[9px] rounded-[8px] transition-colors"
                             style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd)">
-                        Submit Request
+                        {{ $isEditing ? 'Review and Save Changes' : 'Review Before Submit' }}
                     </button>
                     <button type="button"
                             wire:click="resetForm"

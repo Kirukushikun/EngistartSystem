@@ -33,9 +33,12 @@ class ProjectRequest extends Model
         'preferred_meeting_date',
         'preferred_meeting_time',
         'submitted_at',
+        'first_reviewed_at',
+        'locked_at',
         'last_transitioned_at',
         'completed_at',
         'cancelled_at',
+        'withdrawn_at',
         'latest_remarks',
         'meta',
     ];
@@ -50,11 +53,19 @@ class ProjectRequest extends Model
             'preferred_meeting_date' => 'date',
             'preferred_meeting_time' => 'string',
             'submitted_at' => 'datetime',
+            'first_reviewed_at' => 'datetime',
+            'locked_at' => 'datetime',
             'last_transitioned_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'withdrawn_at' => 'datetime',
             'meta' => 'array',
         ];
+    }
+
+    public function isEditableByRequestor(): bool
+    {
+        return $this->withdrawn_at === null && $this->first_reviewed_at === null && $this->locked_at === null;
     }
 
     public function requestor(): BelongsTo

@@ -34,6 +34,21 @@
                     <p class="mt-1 text-[13px] leading-[1.6] text-apis-text2">{{ $message }}</p>
                 </div>
 
+                @if ($summary !== [])
+                    <div class="p-[18px_20px] border-b" style="border-color: var(--border)">
+                        <div class="rounded-[12px] p-[12px_14px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
+                            <div class="space-y-2.5">
+                                @foreach ($summary as $item)
+                                    <div class="flex items-start justify-between gap-4 text-[12px]">
+                                        <span class="text-apis-text2">{{ $item['label'] ?? 'Detail' }}</span>
+                                        <span class="text-right text-apis-text font-medium">{{ $item['value'] ?? '—' }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 @if ($fields !== [])
                     <div class="p-[18px_20px] space-y-4">
                         @foreach ($fields as $field)

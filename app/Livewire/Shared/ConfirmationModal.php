@@ -31,6 +31,8 @@ class ConfirmationModal extends Component
 
     public array $fields = [];
 
+    public array $summary = [];
+
     public array $values = [];
 
     public function open(array $config = []): void
@@ -44,6 +46,7 @@ class ConfirmationModal extends Component
         $this->confirmTarget = isset($config['confirmTarget']) ? (string) $config['confirmTarget'] : null;
         $this->payload = is_array($config['payload'] ?? null) ? $config['payload'] : [];
         $this->fields = is_array($config['fields'] ?? null) ? $config['fields'] : [];
+        $this->summary = is_array($config['summary'] ?? null) ? $config['summary'] : [];
         $this->values = [];
 
         foreach ($this->fields as $field) {
@@ -64,6 +67,7 @@ class ConfirmationModal extends Component
         $this->reset([
             'isOpen',
             'fields',
+            'summary',
             'values',
             'payload',
         ]);

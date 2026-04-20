@@ -31,15 +31,19 @@ return new class extends Migration
             $table->date('preferred_meeting_date')->nullable();
             $table->time('preferred_meeting_time')->nullable();
             $table->timestamp('submitted_at')->nullable();
+            $table->timestamp('first_reviewed_at')->nullable();
+            $table->timestamp('locked_at')->nullable();
             $table->timestamp('last_transitioned_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('cancelled_at')->nullable();
+            $table->timestamp('withdrawn_at')->nullable();
             $table->longText('latest_remarks')->nullable();
             $table->json('meta')->nullable();
             $table->timestamps();
 
             $table->index(['current_status', 'current_owner_role']);
             $table->index(['requestor_id', 'current_status']);
+            $table->index(['requestor_id', 'withdrawn_at']);
         });
     }
 

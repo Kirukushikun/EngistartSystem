@@ -40,7 +40,34 @@
 
             <div class="mt-5 rounded-[10px] px-4 py-3 text-[11px] leading-[1.6]" style="background: var(--bg2); border: 0.5px solid var(--border)">
                 <p class="m-0 text-apis-text"><span class="font-medium">Demo password:</span> 1234</p>
-                <p class="m-0 mt-1 text-apis-text2">Example logins: `j.santos@brooksidegroup.org`, `dh.santos@brooksidegroup.org`, `t.dizon@brooksidegroup.org`, `a.roque@brooksidegroup.org`, `d.baniaga@brooksidegroup.org`, `j.montiano@brooksidegroup.org`, `guest@brooksidegroup.org`</p>
+                <p class="m-0 mt-1 text-apis-text2">
+                    Example logins:<br/>
+
+                    <span class="copy-email" data-email="j.santos@brooksidegroup.org">j.santos@brooksidegroup.org</span><br/>
+                    <span class="copy-email" data-email="dh.santos@brooksidegroup.org">dh.santos@brooksidegroup.org</span><br/>
+                    <span class="copy-email" data-email="t.dizon@brooksidegroup.org">t.dizon@brooksidegroup.org</span><br/>
+                    <span class="copy-email" data-email="a.roque@brooksidegroup.org">a.roque@brooksidegroup.org</span><br/>
+                    <span class="copy-email" data-email="d.baniaga@brooksidegroup.org">d.baniaga@brooksidegroup.org</span><br/>
+                    <span class="copy-email" data-email="j.montiano@brooksidegroup.org">j.montiano@brooksidegroup.org</span><br/>
+                    <span class="copy-email" data-email="guest@brooksidegroup.org">guest@brooksidegroup.org</span>
+                    </p>
+
+                    <script>
+                    document.querySelectorAll('.copy-email').forEach(el => {
+                        el.style.cursor = 'pointer';
+
+                        el.addEventListener('click', () => {
+                        const email = el.getAttribute('data-email');
+
+                        navigator.clipboard.writeText(email).then(() => {
+                            el.textContent = "Copied!";
+                            setTimeout(() => {
+                            el.textContent = email;
+                            }, 1000);
+                        });
+                        });
+                    });
+                    </script>
             </div>
         </div>
     </div>
