@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\RequestTransition;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -78,7 +79,37 @@ class HistoryPage extends Component
 
     public function getHistoryItemsProperty(): Collection
     {
-        return collect($this->historyConfig()[$this->role]['items'] ?? []);
+        return RequestTransition::query()
+            ->with(['projectRequest.requestor', 'actedBy'])
+            ->where('acted_by_role', $this->role)
+            ->whereHas('projectRequest', function ($query) {
+                $query->whereNull('withdrawn_at');
+            })
+            ->orderByDesc('acted_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (RequestTransition $transition): array {
+                $request = $transition->projectRequest;
+
+                return [
+                    'id' => $request?->request_number ?? 'Unknown Request',
+                    'title' => $request?->title ?? 'Untitled Request',
+                    'farm' => $request?->farm_name ?? 'Farm not yet specified',
+                    'type' => $request?->request_type ?? 'Unknown type',
+                    'requestedBy' => $request?->requestor?->name ?? 'Unknown requester',
+                    'requested_at' => optional($request?->submitted_at ?? $request?->created_at)->format('Y-m-d h:i A') ?? '—',
+                    'requested_sort' => ($request?->submitted_at ?? $request?->created_at)?->timestamp ?? 0,
+                    'action' => $this->historyActionLabel($transition),
+                    'action_key' => $this->historyActionKey($transition),
+                    'acted_at' => optional($transition->acted_at)->format('Y-m-d h:i A') ?? '—',
+                    'acted_sort' => $transition->acted_at?->timestamp ?? 0,
+                    'actor' => $transition->actedBy?->name ?? $this->roleLabel($transition->acted_by_role),
+                    'current_status' => $request?->current_status ?? ($transition->to_status ?? 'unknown'),
+                    'current_status_label' => $this->statusLabel($request?->current_status ?? $transition->to_status),
+                    'remarks' => $transition->remarks ?: 'No remarks provided.',
+                ];
+            })
+            ->values();
     }
 
     public function getFilteredHistoryItemsProperty(): Collection
@@ -103,10 +134,10 @@ class HistoryPage extends Component
         }
 
         return match ($this->sortBy) {
-            'acted_asc' => $items->sortBy('acted_at')->values(),
-            'requested_asc' => $items->sortBy('requested_at')->values(),
-            'requested_desc' => $items->sortByDesc('requested_at')->values(),
-            default => $items->sortByDesc('acted_at')->values(),
+            'acted_asc' => $items->sortBy('acted_sort')->values(),
+            'requested_asc' => $items->sortBy('requested_sort')->values(),
+            'requested_desc' => $items->sortByDesc('requested_sort')->values(),
+            default => $items->sortByDesc('acted_sort')->values(),
         };
     }
 
@@ -165,187 +196,96 @@ class HistoryPage extends Component
                 'label' => 'Division Head',
                 'page_title' => 'History',
                 'page_description' => 'Review the requests you already evaluated for recommendation.',
-                'items' => [
-                    [
-                        'id' => 'APIS-2026-002',
-                        'title' => 'Feed Storage Expansion',
-                        'farm' => 'Farm C – Concepcion, Tarlac',
-                        'type' => 'Building',
-                        'requestedBy' => 'Pedro Reyes',
-                        'requested_at' => '2026-03-10',
-                        'action' => 'Recommended',
-                        'action_key' => 'recommended',
-                        'acted_at' => '2026-03-14',
-                        'current_status' => 'recommended',
-                        'remarks' => 'Aligned with projected storage demand and budget assumptions.',
-                    ],
-                    [
-                        'id' => 'APIS-2026-009',
-                        'title' => 'Drainage Line Rehabilitation',
-                        'farm' => 'Farm B – Capas, Tarlac',
-                        'type' => 'Infrastructure',
-                        'requestedBy' => 'Maria Cruz',
-                        'requested_at' => '2026-03-07',
-                        'action' => 'Returned',
-                        'action_key' => 'returned',
-                        'acted_at' => '2026-03-09',
-                        'current_status' => 'submitted',
-                        'remarks' => 'Requested additional site sketches before endorsement.',
-                    ],
-                    [
-                        'id' => 'APIS-2026-010',
-                        'title' => 'Service Road Extension',
-                        'farm' => 'Farm D – Angeles, Pampanga',
-                        'type' => 'Infrastructure',
-                        'requestedBy' => 'Ramon Torres',
-                        'requested_at' => '2026-03-05',
-                        'action' => 'Rejected',
-                        'action_key' => 'rejected',
-                        'acted_at' => '2026-03-06',
-                        'current_status' => 'rejected',
-                        'remarks' => 'Proposal lacked revised cost basis and supporting scope details.',
-                    ],
-                ],
             ],
             'vp_gen_services' => [
                 'label' => 'VP Gen Services',
                 'page_title' => 'History',
                 'page_description' => 'Review the requests and settings changes you already decided on.',
-                'items' => [
-                    [
-                        'id' => 'APIS-2026-003',
-                        'title' => 'Irrigation System Phase 2',
-                        'farm' => 'Farm B – Capas, Tarlac',
-                        'type' => 'Infrastructure',
-                        'requestedBy' => 'Maria Cruz',
-                        'requested_at' => '2026-03-05',
-                        'action' => 'Approved',
-                        'action_key' => 'approved',
-                        'acted_at' => '2026-03-12',
-                        'current_status' => 'vp_approved',
-                        'remarks' => 'Approved after verifying urgency, scope, and downstream readiness.',
-                    ],
-                    [
-                        'id' => 'SCR-2026-014',
-                        'title' => 'Settings Change: Reminder Interval',
-                        'farm' => 'System-wide',
-                        'type' => 'Settings Change',
-                        'requestedBy' => 'Engr. D. Baniaga',
-                        'requested_at' => '2026-03-11',
-                        'action' => 'Rejected',
-                        'action_key' => 'rejected',
-                        'acted_at' => '2026-03-13',
-                        'current_status' => 'cr_rejected',
-                        'remarks' => 'Requested a more complete impact analysis before approval.',
-                    ],
-                    [
-                        'id' => 'SCR-2026-011',
-                        'title' => 'Settings Change: Lead Time Threshold',
-                        'farm' => 'System-wide',
-                        'type' => 'Settings Change',
-                        'requestedBy' => 'Ancel Roque',
-                        'requested_at' => '2026-03-09',
-                        'action' => 'Approved',
-                        'action_key' => 'approved',
-                        'acted_at' => '2026-03-10',
-                        'current_status' => 'pending_it',
-                        'remarks' => 'Approved for IT implementation after workflow review.',
-                    ],
-                ],
             ],
             'dh_gen_services' => [
                 'label' => 'DH Gen Services',
                 'page_title' => 'History',
                 'page_description' => 'Review late-filing decisions and requests you already noted.',
-                'items' => [
-                    [
-                        'id' => 'APIS-2026-004',
-                        'title' => 'Equipment Shed Phase 2',
-                        'farm' => 'Farm D – Angeles, Pampanga',
-                        'type' => 'Building',
-                        'requestedBy' => 'Ramon Torres',
-                        'requested_at' => '2026-03-01',
-                        'action' => 'Noted',
-                        'action_key' => 'noted',
-                        'acted_at' => '2026-03-10',
-                        'current_status' => 'noted',
-                        'remarks' => 'Forwarded to ED Manager after VP approval review.',
-                    ],
-                    [
-                        'id' => 'APIS-2026-007',
-                        'title' => 'Biogas Plant Construction',
-                        'farm' => 'Farm A – Bamban, Tarlac',
-                        'type' => 'Infrastructure',
-                        'requestedBy' => 'Jose Santos',
-                        'requested_at' => '2026-03-20',
-                        'action' => 'Rejected Late Filing',
-                        'action_key' => 'rejected_late',
-                        'acted_at' => '2026-03-21',
-                        'current_status' => 'rejected',
-                        'remarks' => 'Insufficient justification and incomplete late-filing support documents.',
-                    ],
-                    [
-                        'id' => 'APIS-2026-005',
-                        'title' => 'Irrigation Pump Emergency Repair',
-                        'farm' => 'Farm B – Capas, Tarlac',
-                        'type' => 'Infrastructure',
-                        'requestedBy' => 'Maria Cruz',
-                        'requested_at' => '2026-03-22',
-                        'action' => 'Approved Late Filing',
-                        'action_key' => 'approved_late',
-                        'acted_at' => '2026-03-23',
-                        'current_status' => 'submitted',
-                        'remarks' => 'Validated urgency and accepted the justification letter.',
-                    ],
-                ],
             ],
             'ed_manager' => [
                 'label' => 'ED Manager',
                 'page_title' => 'History',
                 'page_description' => 'Review the requests you already accepted or returned for revision.',
-                'items' => [
-                    [
-                        'id' => 'APIS-2026-006',
-                        'title' => 'Biogas Plant Repair',
-                        'farm' => 'Farm A – Bamban, Tarlac',
-                        'type' => 'Infrastructure',
-                        'requestedBy' => 'Jose Santos',
-                        'requested_at' => '2026-02-01',
-                        'action' => 'Accepted',
-                        'action_key' => 'accepted',
-                        'acted_at' => '2026-02-14',
-                        'current_status' => 'accepted',
-                        'remarks' => 'Final acceptance issued after full review of supporting approvals.',
-                    ],
-                    [
-                        'id' => 'APIS-2026-012',
-                        'title' => 'Power Room Ventilation Retrofit',
-                        'farm' => 'Farm C – Concepcion, Tarlac',
-                        'type' => 'Utility',
-                        'requestedBy' => 'Pedro Reyes',
-                        'requested_at' => '2026-03-02',
-                        'action' => 'Returned',
-                        'action_key' => 'returned',
-                        'acted_at' => '2026-03-08',
-                        'current_status' => 'noted',
-                        'remarks' => 'Returned for updated meeting notes and revised execution timing.',
-                    ],
-                    [
-                        'id' => 'APIS-2026-013',
-                        'title' => 'Water Tank Platform Upgrade',
-                        'farm' => 'Farm B – Capas, Tarlac',
-                        'type' => 'Infrastructure',
-                        'requestedBy' => 'Maria Cruz',
-                        'requested_at' => '2026-03-04',
-                        'action' => 'Accepted',
-                        'action_key' => 'accepted',
-                        'acted_at' => '2026-03-11',
-                        'current_status' => 'accepted',
-                        'remarks' => 'Accepted after confirming all prior approvals and readiness checks.',
-                    ],
-                ],
             ],
         ];
+    }
+
+    protected function historyActionLabel(RequestTransition $transition): string
+    {
+        $reviewStage = data_get($transition->context, 'review_stage');
+
+        return match (true) {
+            $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['approve', 'approved'], true) => 'Approved Late Filing',
+            $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['reject', 'rejected'], true) => 'Rejected Late Filing',
+            $reviewStage === 'division_head_reroute_request' && in_array($transition->action, ['recommend', 'approve', 'approved'], true) => 'Approved Reroute Request',
+            $reviewStage === 'division_head_reroute_request' && in_array($transition->action, ['reject', 'rejected'], true) => 'Rejected Reroute Request',
+            $reviewStage === 'vp_gen_services_reroute_request' && in_array($transition->action, ['approve', 'approved'], true) => 'Approved Reroute Request',
+            $reviewStage === 'vp_gen_services_reroute_request' && in_array($transition->action, ['reject', 'rejected'], true) => 'Rejected Reroute Request',
+            $reviewStage === 'division_head_final_reroute' && in_array($transition->action, ['recommend', 'approve', 'approved'], true) => 'Approved Final Reroute',
+            $reviewStage === 'division_head_final_reroute' && in_array($transition->action, ['reject', 'rejected'], true) => 'Rejected Final Reroute',
+            default => match ($transition->action) {
+                'recommend', 'recommended' => 'Recommended',
+                'approve', 'approved' => 'Approved',
+                'reject', 'rejected' => 'Rejected',
+                'return', 'returned' => 'Returned',
+                'accepted' => 'Accepted',
+                'noted' => 'Noted',
+                default => str_replace('_', ' ', str($transition->action)->title()),
+            },
+        };
+    }
+
+    protected function historyActionKey(RequestTransition $transition): string
+    {
+        $reviewStage = data_get($transition->context, 'review_stage');
+
+        return match (true) {
+            $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['approve', 'approved'], true) => 'approved_late',
+            $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['reject', 'rejected'], true) => 'rejected_late',
+            $reviewStage === 'division_head_reroute_request' && in_array($transition->action, ['recommend', 'approve', 'approved'], true) => 'approved_reroute',
+            $reviewStage === 'division_head_reroute_request' && in_array($transition->action, ['reject', 'rejected'], true) => 'rejected_reroute',
+            $reviewStage === 'vp_gen_services_reroute_request' && in_array($transition->action, ['approve', 'approved'], true) => 'approved_reroute',
+            $reviewStage === 'vp_gen_services_reroute_request' && in_array($transition->action, ['reject', 'rejected'], true) => 'rejected_reroute',
+            $reviewStage === 'division_head_final_reroute' && in_array($transition->action, ['recommend', 'approve', 'approved'], true) => 'approved_final_reroute',
+            $reviewStage === 'division_head_final_reroute' && in_array($transition->action, ['reject', 'rejected'], true) => 'rejected_final_reroute',
+            default => $transition->action,
+        };
+    }
+
+    protected function roleLabel(?string $role): string
+    {
+        return match ($role) {
+            'division_head' => 'Division Head',
+            'vp_gen_services' => 'VP Gen Services',
+            'dh_gen_services' => 'DH Gen Services',
+            'ed_manager' => 'ED Manager',
+            'farm_manager' => 'Farm Manager',
+            default => str_replace('_', ' ', str((string) $role)->title()),
+        };
+    }
+
+    protected function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'for_dh_reroute_approval' => 'For Approval of Division Head',
+            'for_vp_reroute_approval' => 'For Approval of VP Gen Services',
+            'for_dh_final_reroute_approval' => 'For Approval of Division Head',
+            'late_pending' => 'Late Pending',
+            'recommended' => 'DH Recommended',
+            'vp_approved' => 'VP Approved',
+            'returned_to_requestor' => 'Returned to Requestor',
+            'accepted' => 'Accepted',
+            'rejected' => 'Rejected',
+            'noted' => 'Noted',
+            'submitted' => 'Submitted',
+            null => 'Unknown',
+            default => str_replace('_', ' ', str($status)->title()),
+        };
     }
 
     public function render()

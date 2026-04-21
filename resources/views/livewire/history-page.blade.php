@@ -61,14 +61,14 @@
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                                     <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $item['id'] }}</span>
-                                    <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--blue-bg); color: var(--blue)">{{ $item['action'] }}</span>
+                                    @include('partials.apis.request-status-badge', ['status' => $item['action_key'], 'label' => $item['action']])
                                 </div>
                                 <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $item['title'] }}</p>
                                 <p class="text-[11px] text-apis-text2 m-0">{{ $item['farm'] }} · {{ $item['type'] }} · Requested by {{ $item['requestedBy'] }}</p>
-                                <p class="text-[11px] text-apis-text2 m-0 mt-1">Requested {{ $item['requested_at'] }} · Acted {{ $item['acted_at'] }}</p>
+                                <p class="text-[11px] text-apis-text2 m-0 mt-1">Requested {{ $item['requested_at'] }} · Acted {{ $item['acted_at'] }} by {{ $item['actor'] }}</p>
                                 <p class="text-[11px] text-apis-text m-0 mt-2 leading-[1.6]">{{ $item['remarks'] }}</p>
                             </div>
-                            <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--gray-bg); color: var(--gray)">{{ $item['current_status'] }}</span>
+                            @include('partials.apis.request-status-badge', ['status' => $item['current_status'], 'label' => $item['current_status_label']])
                         </div>
                     </div>
                 </div>

@@ -1,9 +1,9 @@
 <div class="p-6 overflow-y-auto h-full">
-    @include('partials.apis.alert', ['type' => 'info', 'message' => 'This guest view only displays finished requests. Submitted, recommended, approved, noted, and other in-progress records are hidden.'])
+    @include('partials.apis.alert', ['type' => 'info', 'message' => 'This guest view only displays accepted requests. Rejected, submitted, recommended, approved, noted, and other in-progress records are hidden.'])
 
     @include('partials.apis.filter-toolbar', [
         'background' => 'var(--bg)',
-        'gridClass' => 'grid-cols-1 md:grid-cols-[minmax(0,1.5fr)_180px]',
+        'gridClass' => 'grid-cols-1',
         'fields' => [
             [
                 'label' => 'Search',
@@ -11,17 +11,6 @@
                 'placeholder' => 'Search by ID, title, farm, or requester...',
                 'class' => 'apis-toolbar-control',
                 'attributes' => ['wire:model.live.debounce.300ms' => 'search'],
-            ],
-            [
-                'label' => 'Status',
-                'type' => 'select',
-                'class' => 'apis-toolbar-control',
-                'attributes' => ['wire:model.live' => 'statusFilter'],
-                'options' => [
-                    ['value' => 'all', 'label' => 'All finished requests'],
-                    ['value' => 'accepted', 'label' => 'Accepted'],
-                    ['value' => 'rejected', 'label' => 'Rejected'],
-                ],
             ],
         ],
     ])
@@ -32,11 +21,7 @@
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                         <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['id'] }}</span>
-                        @if ($request['status'] === 'accepted')
-                            <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--green-bg); color: var(--green)">Accepted</span>
-                        @else
-                            <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--red-bg); color: var(--red)">Rejected</span>
-                        @endif
+                        @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => 'Accepted'])
                     </div>
                     <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $request['title'] }}</p>
                     <p class="text-[11px] text-apis-text2 m-0">{{ $request['farm'] }} · Needed {{ $request['needed'] }} · Requested by {{ $request['by'] }} · Finished {{ $request['completedAt'] }}</p>
