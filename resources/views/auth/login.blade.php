@@ -39,35 +39,83 @@
             </form>
 
             <div class="mt-5 rounded-[10px] px-4 py-3 text-[11px] leading-[1.6]" style="background: var(--bg2); border: 0.5px solid var(--border)">
-                <p class="m-0 text-apis-text"><span class="font-medium">Demo password:</span> 1234</p>
-                <p class="m-0 mt-1 text-apis-text2">
-                    Example logins:<br/>
+                <p class="m-0 font-medium text-apis-text">Demo password: <code class="demo-password">1234</code></p>
 
-                    <span class="copy-email" data-email="j.santos@brooksidegroup.org">j.santos@brooksidegroup.org</span><br/>
-                    <span class="copy-email" data-email="dh.santos@brooksidegroup.org">dh.santos@brooksidegroup.org</span><br/>
-                    <span class="copy-email" data-email="t.dizon@brooksidegroup.org">t.dizon@brooksidegroup.org</span><br/>
-                    <span class="copy-email" data-email="a.roque@brooksidegroup.org">a.roque@brooksidegroup.org</span><br/>
-                    <span class="copy-email" data-email="d.baniaga@brooksidegroup.org">d.baniaga@brooksidegroup.org</span><br/>
-                    <span class="copy-email" data-email="j.montiano@brooksidegroup.org">j.montiano@brooksidegroup.org</span><br/>
-                    <span class="copy-email" data-email="guest@brooksidegroup.org">guest@brooksidegroup.org</span>
-                    </p>
+                <div class="mt-2 text-apis-text2">
+                    <p class="m-0 mb-1 font-medium text-apis-text">Example logins</p>
 
-                    <script>
+                    <div class="demo-logins">
+                        <?php
+                        $logins = [
+                            'Farm Manager'      => 'j.santos@brooksidegroup.org',
+                            'Division Head'     => 'dh.santos@brooksidegroup.org',
+                            'VP Gen Services'   => 't.dizon@brooksidegroup.org',
+                            'DH Gen Services'   => 'a.roque@brooksidegroup.org',
+                            'ED Manager'        => 'd.baniaga@brooksidegroup.org',
+                            'IT Admin'          => 'j.montiano@brooksidegroup.org',
+                            'Guest'             => 'guest@brooksidegroup.org',
+                        ];
+
+                        foreach ($logins as $role => $email): ?>
+                            <div class="demo-login-row">
+                                <span class="demo-role"><?= htmlspecialchars($role) ?></span>
+                                <span class="copy-email" data-email="<?= htmlspecialchars($email) ?>"><?= htmlspecialchars($email) ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <style>
+                    .demo-password {
+                        font-family: monospace;
+                        background: var(--border);
+                        padding: 0px 5px;
+                        border-radius: 4px;
+                    }
+                    .demo-logins {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                    }
+                    .demo-login-row {
+                        display: grid;
+                        grid-template-columns: 110px 1fr;
+                        align-items: center;
+                        gap: 8px;
+                    }
+                    .demo-role {
+                        color: var(--apis-text2);
+                        opacity: 0.6;
+                        white-space: nowrap;
+                    }
+                    .copy-email {
+                        color: var(--blue-400, #60a5fa);
+                        cursor: pointer;
+                        transition: opacity 0.15s;
+                    }
+                    .copy-email:hover {
+                        opacity: 0.75;
+                    }
+                    .copy-email.copied {
+                        color: var(--green-400, #4ade80);
+                    }
+                </style>
+
+                <script>
                     document.querySelectorAll('.copy-email').forEach(el => {
-                        el.style.cursor = 'pointer';
-
+                        const original = el.textContent;
                         el.addEventListener('click', () => {
-                        const email = el.getAttribute('data-email');
-
-                        navigator.clipboard.writeText(email).then(() => {
-                            el.textContent = "Copied!";
-                            setTimeout(() => {
-                            el.textContent = email;
-                            }, 1000);
-                        });
+                            navigator.clipboard.writeText(el.dataset.email).then(() => {
+                                el.textContent = 'Copied!';
+                                el.classList.add('copied');
+                                setTimeout(() => {
+                                    el.textContent = original;
+                                    el.classList.remove('copied');
+                                }, 1500);
+                            });
                         });
                     });
-                    </script>
+                </script>
             </div>
         </div>
     </div>

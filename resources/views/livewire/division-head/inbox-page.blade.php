@@ -49,6 +49,9 @@
 
         @forelse ($this->paginatedInboxItems as $request)
             <div class="apis-card" x-data="{ open: false }">
+                @php
+                    $isRerouteStage = in_array($request['status'], ['for_dh_reroute_approval', 'for_dh_final_reroute_approval'], true);
+                @endphp
                 <button type="button"
                         @click="open = !open"
                         class="w-full text-left p-[14px_18px] flex justify-between items-start gap-3"
@@ -125,39 +128,12 @@
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">
-                                Remarks
-                            </label>
-                            <div class="rounded-[12px] p-[12px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
-                                @if (!empty($request['remarkHistory']))
-                                    <div class="space-y-[10px] mb-[12px]">
-                                        @foreach ($request['remarkHistory'] as $entry)
-                                            @php
-                                                $entryStyle = match ($entry['tone']) {
-                                                    'danger' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)', 'border' => 'var(--red-bd)'],
-                                                    default => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)', 'border' => 'var(--blue-bd)'],
-                                                };
-                                            @endphp
-                                            <div class="rounded-[10px] p-[10px_12px]" style="background: {{ $entryStyle['bg'] }}; border: 0.5px solid {{ $entryStyle['border'] }};">
-                                                <div class="mb-1">
-                                                    <p class="text-[12px] m-0 text-apis-text font-medium">{{ $entry['role'] }}@if($entry['actor']) · {{ $entry['actor'] }}@endif</p>
-                                                    <p class="text-[11px] m-0" style="color: {{ $entryStyle['color'] }};">{{ $entry['label'] }}</p>
-                                                </div>
-                                                <p class="text-[12px] text-apis-text m-0 leading-[1.6]">{{ $entry['remarks'] }}</p>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                @if ($request['isPendingHere'])
-                                    <textarea
-                                        wire:model.live="remarks.{{ $request['id'] }}"
-                                        class="apis-remarks-control"
-                                        placeholder="Add your recommendation or rejection remarks here..."></textarea>
-                                @endif
-                            </div>
-                        </div>
+                        @include('partials.apis.remarks-section', [
+                            'history' => $request['remarkHistory'],
+                            'showInput' => $request['isPendingHere'],
+                            'textareaModel' => 'remarks.' . $request['id'],
+                            'textareaPlaceholder' => $isRerouteStage ? 'Add reroute approval or rejection remarks here...' : 'Add your recommendation or rejection remarks here...',
+                        ])
 
                         <div class="flex gap-2 flex-wrap">
                             @if ($request['isPendingHere'])
@@ -165,7 +141,7 @@
                                         wire:click="confirmRecommend(@js($request['id']))"
                                         class="apis-card-button font-medium"
                                         style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
-                                    Recommend for Approval
+                                    {{ $isRerouteStage ? 'Approve reroute' : 'Recommend for Approval' }}
                                 </button>
                                 <button type="button"
                                         wire:click="confirmReject(@js($request['id']))"

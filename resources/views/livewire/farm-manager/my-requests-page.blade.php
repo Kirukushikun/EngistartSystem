@@ -55,10 +55,13 @@
             @foreach ($this->paginatedRequests as $request)
                 @php
                     $statusLabel = match ($request['status']) {
+                        'for_dh_reroute_approval', 'for_dh_final_reroute_approval' => 'For Approval of Division Head',
+                        'for_vp_reroute_approval' => 'For Approval of VP Gen Services',
                         'recommended' => 'DH Recommended',
                         'vp_approved' => 'VP Approved',
                         'late_pending' => 'Late – Pending',
                         'returned_to_requestor' => 'Returned to Requestor',
+                        'rejected' => 'Rejected',
                         default => ucfirst(str_replace('_', ' ', $request['status'])),
                     };
 
@@ -98,6 +101,15 @@
                                     Withdraw
                                 </button>
                             </div>
+                        @elseif ($request['canRequestLateReroute'])
+                            <div class="flex gap-2 flex-wrap justify-end">
+                                <button type="button"
+                                        wire:click="confirmRequestLateReroute({{ $request['dbId'] }})"
+                                        class="text-[11px] font-medium px-3 py-1.5 rounded-[8px]"
+                                        style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd)">
+                                    Request reroute approval
+                                </button>
+                            </div>
                         @endif
                     </div>
 
@@ -115,25 +127,31 @@
                     <p class="text-[10px] text-apis-text2 mb-[7px] font-medium uppercase tracking-[0.07em]">Status chain</p>
                     <div class="flex items-center gap-1 flex-wrap">
                         @foreach ($request['chain'] as $index => $step)
-                            @php
-                                $stepStyle = $stepMap[$step['st']] ?? $stepMap['waiting'];
-                            @endphp
-
                             <div class="flex items-center gap-1">
                                 @if ($index > 0)
                                     <span class="text-[10px] text-apis-text3 mr-[2px]">›</span>
                                 @endif
 
-                                <div class="apis-step-pill" style="background: {{ $stepStyle['bg'] }};">
-                                    <span class="apis-step-dot"
-                                          style="background: {{ $stepStyle['dotBg'] }}; color: {{ $stepStyle['dotColor'] }};">
-                                        {{ $stepStyle['symbol'] }}
+                                @if ($step['kind'] === 'marker')
+                                    <span class="text-[10px] whitespace-nowrap px-1"
+                                          style="color: var(--text3); font-style: italic;">
+                                        — {{ $step['label'] }}
                                     </span>
-                                    <span class="text-[10px] whitespace-nowrap"
-                                          style="color: {{ $stepStyle['color'] }}; font-weight: {{ $step['st'] === 'pending' ? '500' : '400' }};">
-                                        {{ $step['role'] }}
-                                    </span>
-                                </div>
+                                @else
+                                    @php
+                                        $stepStyle = $stepMap[$step['state']] ?? $stepMap['waiting'];
+                                    @endphp
+                                    <div class="apis-step-pill" style="background: {{ $stepStyle['bg'] }};">
+                                        <span class="apis-step-dot"
+                                              style="background: {{ $stepStyle['dotBg'] }}; color: {{ $stepStyle['dotColor'] }};">
+                                            {{ $stepStyle['symbol'] }}
+                                        </span>
+                                        <span class="text-[10px] whitespace-nowrap"
+                                              style="color: {{ $stepStyle['color'] }}; font-weight: {{ $step['state'] === 'pending' ? '500' : '400' }};">
+                                            {{ $step['role'] }}
+                                        </span>
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>

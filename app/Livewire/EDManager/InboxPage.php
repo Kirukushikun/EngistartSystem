@@ -308,9 +308,13 @@ class InboxPage extends Component
                     'days' => $request->date_needed ? max(0, Carbon::today()->diffInDays($request->date_needed, false)) : 0,
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
+                        'for_dh_reroute_approval' => 'For Approval of Division Head',
+                        'for_vp_reroute_approval' => 'For Approval of VP Gen Services',
+                        'for_dh_final_reroute_approval' => 'For Approval of Division Head',
                         'noted' => 'Awaiting Acceptance',
                         'accepted' => 'Accepted',
                         'returned_to_requestor' => 'Returned to Requestor',
+                        'rejected' => 'Rejected',
                         default => str_replace('_', ' ', str($request->current_status)->title()),
                     },
                     'by' => $request->requestor?->name ?? 'Unknown requester',
@@ -352,6 +356,139 @@ class InboxPage extends Component
 
     protected function buildApprovalChain(ProjectRequest $request): array
     {
+        $transitions = $request->transitions->keyBy(function (RequestTransition $transition) {
+            if ($transition->acted_by_role === 'dh_gen_services' && data_get($transition->context, 'review_stage') === 'dh_gen_services_late_filing') {
+                return 'dh_gen_services_late';
+            }
+
+            if ($transition->acted_by_role === 'division_head' && data_get($transition->context, 'review_stage') === 'division_head_reroute_request') {
+                return 'division_head_reroute_request';
+            }
+
+            if ($transition->acted_by_role === 'division_head' && data_get($transition->context, 'review_stage') === 'division_head_final_reroute') {
+                return 'division_head_final_reroute';
+            }
+
+            if ($transition->acted_by_role === 'vp_gen_services' && data_get($transition->context, 'review_stage') === 'vp_gen_services_reroute_request') {
+                return 'vp_gen_services_reroute_request';
+            }
+
+            return $transition->acted_by_role;
+        });
+
+        if ($request->is_late) {
+            $hasLateDh = $transitions->has('dh_gen_services_late');
+            $hasRerouteDh = $transitions->has('division_head_reroute_request');
+            $hasRerouteVp = $transitions->has('vp_gen_services_reroute_request');
+            $hasFinalDh = $transitions->has('division_head_final_reroute');
+            $hasNormalDh = $transitions->has('division_head');
+            $hasNormalVp = $hasNormalDh && $transitions->has('vp_gen_services');
+            $hasNormalDhGen = $transitions->has('dh_gen_services') && ! $transitions->has('dh_gen_services_late');
+            $hasEd = $transitions->has('ed_manager');
+            $isRerouteFlow = in_array($request->current_status, ['for_dh_reroute_approval', 'for_vp_reroute_approval', 'for_dh_final_reroute_approval', 'rejected'], true)
+                || $hasRerouteDh || $hasRerouteVp || $hasFinalDh;
+
+            $chain = [
+                [
+                    'role' => 'Farm Manager',
+                    'user' => $request->requestor?->name,
+                    'action' => 'Submitted (Late Filing)',
+                    'date' => optional($request->submitted_at ?? $request->created_at)?->format('Y-m-d'),
+                    'st' => 'done',
+                ],
+                [
+                    'role' => 'DH Gen Services',
+                    'user' => $transitions->get('dh_gen_services_late')?->actedBy?->name,
+                    'action' => 'Late Filing Review',
+                    'date' => optional($transitions->get('dh_gen_services_late')?->acted_at)->format('Y-m-d'),
+                    'st' => $request->current_owner_role === 'dh_gen_services' && $request->current_status === 'late_pending'
+                        ? 'pending'
+                        : ($hasLateDh ? ($request->current_status === 'returned_to_requestor' && ! $isRerouteFlow ? 'rejected' : 'done') : 'waiting'),
+                ],
+            ];
+
+            if ($isRerouteFlow) {
+                return array_merge($chain, [
+                    [
+                        'role' => 'Division Head',
+                        'user' => $transitions->get('division_head_reroute_request')?->actedBy?->name,
+                        'action' => 'Reroute Review',
+                        'date' => optional($transitions->get('division_head_reroute_request')?->acted_at)->format('Y-m-d'),
+                        'st' => $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_reroute_review'
+                            ? 'pending'
+                            : ($hasRerouteDh ? ($request->current_status === 'rejected' && ! $hasRerouteVp ? 'rejected' : 'done') : 'waiting'),
+                    ],
+                    [
+                        'role' => 'VP Gen Services',
+                        'user' => $transitions->get('vp_gen_services_reroute_request')?->actedBy?->name,
+                        'action' => 'Reroute Review',
+                        'date' => optional($transitions->get('vp_gen_services_reroute_request')?->acted_at)->format('Y-m-d'),
+                        'st' => $request->current_owner_role === 'vp_gen_services' && $request->current_step === 'vp_gen_services_reroute_review'
+                            ? 'pending'
+                            : ($hasRerouteVp ? ($request->current_status === 'rejected' && ! $hasFinalDh ? 'rejected' : 'done') : 'waiting'),
+                    ],
+                    [
+                        'role' => 'Division Head',
+                        'user' => $transitions->get('division_head_final_reroute')?->actedBy?->name,
+                        'action' => 'Final Reroute Review',
+                        'date' => optional($transitions->get('division_head_final_reroute')?->acted_at)->format('Y-m-d'),
+                        'st' => $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_final_reroute_review'
+                            ? 'pending'
+                            : ($hasFinalDh ? ($request->current_status === 'rejected' ? 'rejected' : 'done') : 'waiting'),
+                    ],
+                    [
+                        'role' => 'DH Gen Services',
+                        'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
+                        'action' => 'Noted',
+                        'date' => optional($transitions->get('dh_gen_services')?->acted_at)->format('Y-m-d'),
+                        'st' => $request->current_owner_role === 'dh_gen_services' && $request->current_status !== 'late_pending'
+                            ? 'pending'
+                            : ($hasNormalDhGen ? 'done' : 'waiting'),
+                    ],
+                    [
+                        'role' => 'ED Manager',
+                        'user' => $transitions->get('ed_manager')?->actedBy?->name,
+                        'action' => 'Acceptance',
+                        'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
+                        'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($hasEd ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
+                    ],
+                ]);
+            }
+
+            return array_merge($chain, [
+                [
+                    'role' => 'Division Head',
+                    'user' => $transitions->get('division_head')?->actedBy?->name,
+                    'action' => 'Recommendation',
+                    'date' => optional($transitions->get('division_head')?->acted_at)->format('Y-m-d'),
+                    'st' => $request->current_owner_role === 'division_head' ? 'pending' : ($hasNormalDh ? 'done' : 'waiting'),
+                ],
+                [
+                    'role' => 'VP Gen Services',
+                    'user' => $transitions->get('vp_gen_services')?->actedBy?->name,
+                    'action' => 'Approval',
+                    'date' => optional($transitions->get('vp_gen_services')?->acted_at)->format('Y-m-d'),
+                    'st' => $request->current_owner_role === 'vp_gen_services' ? 'pending' : ($hasNormalVp ? 'done' : 'waiting'),
+                ],
+                [
+                    'role' => 'DH Gen Services',
+                    'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
+                    'action' => 'Noted',
+                    'date' => optional($transitions->get('dh_gen_services')?->acted_at)->format('Y-m-d'),
+                    'st' => $request->current_owner_role === 'dh_gen_services' && $request->current_status !== 'late_pending'
+                        ? 'pending'
+                        : ($hasNormalDhGen ? 'done' : 'waiting'),
+                ],
+                [
+                    'role' => 'ED Manager',
+                    'user' => $transitions->get('ed_manager')?->actedBy?->name,
+                    'action' => 'Acceptance',
+                    'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
+                    'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($hasEd ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
+                ],
+            ]);
+        }
+
         $transitions = $request->transitions->keyBy('acted_by_role');
 
         return [

@@ -79,7 +79,11 @@ class MyRequestsPage extends Component
     {
         $statusLabel = match ($request->current_status) {
             'late_pending' => 'Late Pending',
+            'for_dh_reroute_approval' => 'For Approval of Division Head',
+            'for_vp_reroute_approval' => 'For Approval of VP Gen Services',
+            'for_dh_final_reroute_approval' => 'For Approval of Division Head',
             'returned_to_requestor' => 'Returned to Requestor',
+            'rejected' => 'Rejected',
             default => str_replace('_', ' ', str($request->current_status)->title()),
         };
 
@@ -94,8 +98,52 @@ class MyRequestsPage extends Component
             'isLate' => $request->is_late,
             'isEditable' => $request->isEditableByRequestor(),
             'isWithdrawn' => $request->withdrawn_at !== null,
+            'canRequestLateReroute' => $request->is_late
+                && $request->current_status === 'returned_to_requestor'
+                && $request->current_owner_id === $request->requestor_id
+                && $request->transitions->contains(fn (RequestTransition $transition) => $transition->acted_by_role === 'dh_gen_services' && data_get($transition->context, 'review_stage') === 'dh_gen_services_late_filing')
+                && ! $request->transitions->contains(fn (RequestTransition $transition) => data_get($transition->context, 'review_stage') === 'division_head_reroute_request'),
             'chain' => $this->buildChain($request),
         ];
+    }
+
+    public function confirmRequestLateReroute(int $requestId): void
+    {
+        $request = ProjectRequest::query()
+            ->with('transitions')
+            ->whereKey($requestId)
+            ->where('requestor_id', Auth::id())
+            ->where('is_late', true)
+            ->where('current_status', 'returned_to_requestor')
+            ->where('current_owner_id', Auth::id())
+            ->whereNull('withdrawn_at')
+            ->first();
+
+        if (! $request) {
+            return;
+        }
+
+        $hasDhLateRejection = $request->transitions->contains(fn (RequestTransition $transition) => $transition->acted_by_role === 'dh_gen_services' && data_get($transition->context, 'review_stage') === 'dh_gen_services_late_filing');
+        $hasRerouteRequest = $request->transitions->contains(fn (RequestTransition $transition) => data_get($transition->context, 'review_stage') === 'division_head_reroute_request');
+
+        if (! $hasDhLateRejection || $hasRerouteRequest) {
+            return;
+        }
+
+        $this->dispatch('openConfirmationModal', config: [
+            'title' => 'Request reroute approval?',
+            'message' => 'Send this rejected late filing to Division Head for reroute approval?',
+            'tone' => 'success',
+            'confirmText' => 'Request reroute',
+            'confirmEvent' => 'lateRequestRerouteConfirmed',
+            'confirmTarget' => self::class,
+            'summary' => [
+                ['label' => 'Request ID', 'value' => $request->request_number],
+                ['label' => 'Project Title', 'value' => $request->title],
+                ['label' => 'Current Status', 'value' => 'Returned to Requestor'],
+            ],
+            'payload' => ['requestId' => $request->id],
+        ])->to(ConfirmationModal::class);
     }
 
     public function confirmWithdraw(int $requestId): void
@@ -190,62 +238,250 @@ class MyRequestsPage extends Component
         $this->dispatch('notify', type: 'warn', message: 'Request withdrawn successfully.');
     }
 
+    #[On('lateRequestRerouteConfirmed')]
+    public function requestLateReroute(array $payload): void
+    {
+        $requestId = (int) ($payload['requestId'] ?? 0);
+        $user = Auth::user();
+
+        if (! $user || $requestId <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($requestId, $user) {
+            $request = ProjectRequest::query()
+                ->with('transitions')
+                ->whereKey($requestId)
+                ->where('requestor_id', $user->id)
+                ->where('is_late', true)
+                ->where('current_status', 'returned_to_requestor')
+                ->where('current_owner_id', $user->id)
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $hasDhLateRejection = $request->transitions->contains(fn (RequestTransition $transition) => $transition->acted_by_role === 'dh_gen_services' && data_get($transition->context, 'review_stage') === 'dh_gen_services_late_filing');
+            $hasRerouteRequest = $request->transitions->contains(fn (RequestTransition $transition) => data_get($transition->context, 'review_stage') === 'division_head_reroute_request');
+
+            abort_unless($hasDhLateRejection && ! $hasRerouteRequest, 403);
+
+            $previousStatus = $request->current_status;
+            $previousStep = $request->current_step;
+            $previousOwnerRole = $request->current_owner_role;
+
+            $request->fill([
+                'current_status' => 'for_dh_reroute_approval',
+                'current_step' => 'division_head_reroute_review',
+                'current_owner_role' => 'division_head',
+                'current_owner_id' => null,
+                'locked_at' => $request->locked_at ?? now(),
+                'last_transitioned_at' => now(),
+                'latest_remarks' => 'Late filing reroute requested by requestor.',
+            ]);
+            $request->save();
+
+            RequestTransition::create([
+                'project_request_id' => $request->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'requested_reroute',
+                'from_status' => $previousStatus,
+                'to_status' => 'for_dh_reroute_approval',
+                'from_step' => $previousStep,
+                'to_step' => 'division_head_reroute_review',
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => 'division_head',
+                'to_owner_id' => null,
+                'is_rework' => true,
+                'is_exception_path' => true,
+                'is_terminal' => false,
+                'remarks' => 'Late filing reroute requested by requestor.',
+                'context' => [
+                    'review_stage' => 'farm_manager_reroute_request',
+                ],
+                'acted_at' => now(),
+            ]);
+        });
+
+        $this->dispatch('notify', type: 'info', message: 'Late filing reroute request sent to Division Head.');
+    }
+
     protected function buildChain(ProjectRequest $request): array
     {
-        $transitions = $request->transitions->keyBy('acted_by_role');
+        $transitions = $request->transitions->keyBy(function (RequestTransition $transition) {
+            if ($transition->acted_by_role === 'dh_gen_services' && data_get($transition->context, 'review_stage') === 'dh_gen_services_late_filing') {
+                return 'dh_gen_services_late';
+            }
+
+            if ($transition->acted_by_role === 'division_head' && data_get($transition->context, 'review_stage') === 'division_head_reroute_request') {
+                return 'division_head_reroute_request';
+            }
+
+            if ($transition->acted_by_role === 'division_head' && data_get($transition->context, 'review_stage') === 'division_head_final_reroute') {
+                return 'division_head_final_reroute';
+            }
+
+            if ($transition->acted_by_role === 'vp_gen_services' && data_get($transition->context, 'review_stage') === 'vp_gen_services_reroute_request') {
+                return 'vp_gen_services_reroute_request';
+            }
+
+            return $transition->acted_by_role;
+        });
 
         if ($request->is_late) {
-            return [
-                ['role' => 'Farm Manager', 'st' => 'done'],
-                [
-                    'role' => 'DH Gen Services',
-                    'st' => $request->current_owner_role === 'dh_gen_services'
+            $hasLateDhDecision = $transitions->has('dh_gen_services_late') || $request->current_status !== 'late_pending';
+            $hasRerouteRequestDhDecision = $transitions->has('division_head_reroute_request');
+            $hasRerouteVpDecision = $transitions->has('vp_gen_services_reroute_request');
+            $hasFinalRerouteDhDecision = $transitions->has('division_head_final_reroute');
+            $hasStandardDivisionHeadDecision = $transitions->has('division_head');
+            $hasStandardVpDecision = $hasStandardDivisionHeadDecision && $transitions->has('vp_gen_services');
+            $hasStandardDhNoting = $transitions->has('dh_gen_services') && ! $transitions->has('dh_gen_services_late');
+            $hasEdAcceptance = $transitions->has('ed_manager');
+            $isRerouteFlow = $request->current_status === 'for_dh_reroute_approval'
+                || $request->current_status === 'for_vp_reroute_approval'
+                || $request->current_status === 'for_dh_final_reroute_approval'
+                || $hasRerouteRequestDhDecision
+                || $hasRerouteVpDecision
+                || $hasFinalRerouteDhDecision;
+
+            $chain = [
+                $this->chainStep('Farm Manager', 'done'),
+                $this->chainStep(
+                    'DH Gen Services',
+                    $request->current_owner_role === 'dh_gen_services' && $request->current_status === 'late_pending'
                         ? 'pending'
-                        : ($transitions->has('dh_gen_services') || in_array($request->current_owner_role, ['division_head', 'vp_gen_services', 'ed_manager'], true)
-                            ? 'done'
-                            : (in_array($request->current_status, ['rejected', 'returned_to_requestor'], true) ? 'rejected' : 'waiting')),
-                ],
-                [
-                    'role' => 'Division Head',
-                    'st' => $request->current_owner_role === 'division_head'
-                        ? 'pending'
-                        : ($transitions->has('division_head') || in_array($request->current_owner_role, ['vp_gen_services', 'dh_gen_services', 'ed_manager'], true)
-                            ? 'done'
-                            : 'waiting'),
-                ],
+                        : ($hasLateDhDecision ? 'done' : 'waiting')
+                ),
             ];
+
+            if (! $hasLateDhDecision) {
+                return $chain;
+            }
+
+            if (! $isRerouteFlow && $request->current_status === 'returned_to_requestor') {
+                $chain[] = $this->chainMarker('Optional reroute path');
+
+                return $chain;
+            }
+
+            if ($isRerouteFlow) {
+                $chain[] = $this->chainMarker('Reroute request');
+                $chain[] = $this->chainStep(
+                    'Division Head',
+                    $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_reroute_review'
+                        ? 'pending'
+                        : ($hasRerouteRequestDhDecision
+                            ? ($request->current_status === 'rejected' && $request->current_step === 'terminal_rejection' && ! $hasRerouteVpDecision ? 'rejected' : 'done')
+                            : 'waiting')
+                );
+
+                $chain[] = $this->chainStep(
+                    'VP Gen Services',
+                    $request->current_owner_role === 'vp_gen_services' && $request->current_step === 'vp_gen_services_reroute_review'
+                        ? 'pending'
+                        : ($hasRerouteVpDecision
+                            ? ($request->current_status === 'rejected' && $request->current_step === 'terminal_rejection' ? 'rejected' : 'done')
+                            : 'waiting')
+                );
+                $chain[] = $this->chainStep(
+                    'Division Head',
+                    $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_final_reroute_review'
+                        ? 'pending'
+                        : ($hasFinalRerouteDhDecision
+                            ? ($request->current_status === 'rejected' && $request->current_step === 'terminal_rejection' ? 'rejected' : 'done')
+                            : 'waiting')
+                );
+                $chain[] = $this->chainStep(
+                    'DH Gen Services',
+                    $request->current_owner_role === 'dh_gen_services' && $request->current_status !== 'late_pending'
+                        ? 'pending'
+                        : ($hasStandardDhNoting ? 'done' : 'waiting')
+                );
+                $chain[] = $this->chainStep(
+                    'ED Manager',
+                    $request->current_owner_role === 'ed_manager'
+                        ? 'pending'
+                        : ($hasEdAcceptance ? 'done' : 'waiting')
+                );
+
+                return $chain;
+            }
+
+            $chain[] = $this->chainMarker('Rerouted to standard flow');
+            $chain[] = $this->chainStep(
+                'Division Head',
+                $request->current_owner_role === 'division_head'
+                    ? 'pending'
+                    : ($hasStandardDivisionHeadDecision ? 'done' : 'waiting')
+            );
+            $chain[] = $this->chainStep(
+                'VP Gen Services',
+                $request->current_owner_role === 'vp_gen_services'
+                    ? 'pending'
+                    : ($hasStandardVpDecision ? 'done' : 'waiting')
+            );
+            $chain[] = $this->chainStep(
+                'DH Gen Services',
+                $request->current_owner_role === 'dh_gen_services' && $request->current_status !== 'late_pending'
+                    ? 'pending'
+                    : ($hasStandardDhNoting ? 'done' : 'waiting')
+            );
+            $chain[] = $this->chainStep(
+                'ED Manager',
+                $request->current_owner_role === 'ed_manager'
+                    ? 'pending'
+                    : ($hasEdAcceptance ? 'done' : 'waiting')
+            );
+
+            return $chain;
         }
 
         return [
-            ['role' => 'Farm Manager', 'st' => 'done'],
-            [
-                'role' => 'Division Head',
-                'st' => $request->current_owner_role === 'division_head'
+            $this->chainStep('Farm Manager', 'done'),
+            $this->chainStep(
+                'Division Head',
+                $request->current_owner_role === 'division_head'
                     ? 'pending'
                     : ($transitions->has('division_head') || in_array($request->current_owner_role, ['vp_gen_services', 'dh_gen_services', 'ed_manager'], true)
                         ? 'done'
-                        : (in_array($request->current_status, ['returned_to_requestor'], true) ? 'rejected' : 'waiting')),
-            ],
-            [
-                'role' => 'VP Gen Services',
-                'st' => $request->current_owner_role === 'vp_gen_services'
+                        : (in_array($request->current_status, ['returned_to_requestor'], true) ? 'rejected' : 'waiting'))
+            ),
+            $this->chainStep(
+                'VP Gen Services',
+                $request->current_owner_role === 'vp_gen_services'
                     ? 'pending'
                     : ($transitions->has('vp_gen_services') || in_array($request->current_owner_role, ['dh_gen_services', 'ed_manager'], true)
                         ? 'done'
-                        : (in_array($request->current_status, ['returned_to_requestor'], true) && $transitions->has('division_head') ? 'rejected' : 'waiting')),
-            ],
-            [
-                'role' => 'DH Gen Services',
-                'st' => $request->current_owner_role === 'dh_gen_services'
+                        : (in_array($request->current_status, ['returned_to_requestor'], true) && $transitions->has('division_head') ? 'rejected' : 'waiting'))
+            ),
+            $this->chainStep(
+                'DH Gen Services',
+                $request->current_owner_role === 'dh_gen_services'
                     ? 'pending'
                     : ($transitions->has('dh_gen_services') || $request->current_owner_role === 'ed_manager'
                         ? 'done'
-                        : 'waiting'),
-            ],
-            [
-                'role' => 'ED Manager',
-                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? 'done' : 'waiting'),
-            ],
+                        : 'waiting')
+            ),
+            $this->chainStep(
+                'ED Manager',
+                $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? 'done' : 'waiting')
+            ),
+        ];
+    }
+
+    protected function chainStep(string $role, string $state): array
+    {
+        return [
+            'kind' => 'step',
+            'role' => $role,
+            'state' => $state,
+        ];
+    }
+
+    protected function chainMarker(string $label): array
+    {
+        return [
+            'kind' => 'marker',
+            'label' => $label,
         ];
     }
 
