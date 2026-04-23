@@ -14,7 +14,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? trim($__env->yieldContent('title')) ?: 'EngiStart' }}</title>
-
+    <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -50,20 +50,9 @@
         if ($authUser?->role === 'division_head') {
             $dynamicBadges['division-head.inbox'] = [
                 'text' => (string) \App\Models\ProjectRequest::query()
-                    ->where(function ($query) {
-                        $query->where('current_owner_role', 'division_head')
-                            ->orWhereHas('transitions', function ($transitionQuery) {
-                                $transitionQuery->where('acted_by_role', 'division_head');
-                            });
-                    })
+                    ->where('request_type', '!=', 'Settings Change')
+                    ->where('current_owner_role', 'division_head')
                     ->whereNull('withdrawn_at')
-                    ->count(),
-                'tone' => 'blue',
-            ];
-
-            $dynamicBadges['division-head.history'] = [
-                'text' => (string) \App\Models\RequestTransition::query()
-                    ->where('acted_by_role', 'division_head')
                     ->count(),
                 'tone' => 'blue',
             ];
@@ -72,7 +61,63 @@
         if ($authUser?->role === 'vp_gen_services') {
             $dynamicBadges['vp-gen-services.inbox'] = [
                 'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where('request_type', '!=', 'Settings Change')
                     ->where('current_owner_role', 'vp_gen_services')
+                    ->whereNull('withdrawn_at')
+                    ->count(),
+                'tone' => 'blue',
+            ];
+
+            $dynamicBadges['vp-gen-services.change-requests'] = [
+                'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where('request_type', 'Settings Change')
+                    ->where('current_owner_role', 'vp_gen_services')
+                    ->where('current_status', 'pending_vp')
+                    ->whereNull('withdrawn_at')
+                    ->count(),
+                'tone' => 'amber',
+            ];
+        }
+
+        if ($authUser?->role === 'dh_gen_services') {
+            $dynamicBadges['dh-gen-services.late-filings'] = [
+                'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where('request_type', '!=', 'Settings Change')
+                    ->where('current_owner_role', 'dh_gen_services')
+                    ->where('current_status', 'late_pending')
+                    ->whereNull('withdrawn_at')
+                    ->count(),
+                'tone' => 'amber',
+            ];
+
+            $dynamicBadges['dh-gen-services.noting'] = [
+                'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where('request_type', '!=', 'Settings Change')
+                    ->where('current_owner_role', 'dh_gen_services')
+                    ->where('current_status', '!=', 'late_pending')
+                    ->whereNull('withdrawn_at')
+                    ->count(),
+                'tone' => 'blue',
+            ];
+        }
+
+        if ($authUser?->role === 'ed_manager') {
+            $dynamicBadges['ed-manager.inbox'] = [
+                'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where('request_type', '!=', 'Settings Change')
+                    ->where('current_owner_role', 'ed_manager')
+                    ->whereNull('withdrawn_at')
+                    ->count(),
+                'tone' => 'green',
+            ];
+        }
+
+        if ($authUser?->role === 'it_admin') {
+            $dynamicBadges['it-admin.pending-changes'] = [
+                'text' => (string) \App\Models\ProjectRequest::query()
+                    ->where('request_type', 'Settings Change')
+                    ->where('current_owner_role', 'it_admin')
+                    ->where('current_status', 'pending_it')
                     ->whereNull('withdrawn_at')
                     ->count(),
                 'tone' => 'blue',
@@ -100,6 +145,7 @@
                     @php
                         $isActive = collect($item['active'] ?? [$item['route']])->contains(fn ($pattern) => request()->routeIs($pattern));
                         $badge = $dynamicBadges[$item['route']] ?? ($item['badge'] ?? null);
+                        $badge = $badge && ($badge['text'] ?? null) !== '0' ? $badge : null;
                         $tone = $badge ? ($badgeTones[$badge['tone'] ?? 'blue'] ?? $badgeTones['blue']) : null;
                     @endphp
 
@@ -138,7 +184,7 @@
                         </p>
                     @endif
                 </div>
-
+                
                 <div class="flex items-center gap-3">
                     @auth
                         <form method="POST" action="{{ route('logout') }}">

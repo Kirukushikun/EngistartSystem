@@ -302,6 +302,7 @@ class InboxPage extends Component
     {
         return ProjectRequest::query()
             ->with(['requestor', 'transitions.actedBy'])
+            ->where('request_type', '!=', 'Settings Change')
             ->where(function ($query) {
                 $query->where('current_owner_role', 'vp_gen_services')
                     ->orWhereHas('transitions', function ($transitionQuery) {

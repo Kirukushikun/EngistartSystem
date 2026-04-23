@@ -220,6 +220,10 @@ class HistoryPage extends Component
         $reviewStage = data_get($transition->context, 'review_stage');
 
         return match (true) {
+            $reviewStage === 'settings_change_submission' => 'Submitted Change Request',
+            $reviewStage === 'vp_gen_services_change_request' && $transition->action === 'approved' => 'Approved Change Request',
+            $reviewStage === 'vp_gen_services_change_request' && $transition->action === 'rejected' => 'Rejected Change Request',
+            $reviewStage === 'it_admin_change_execution' && $transition->action === 'implemented' => 'Implemented Change Request',
             $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['approve', 'approved'], true) => 'Approved Late Filing',
             $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['reject', 'rejected'], true) => 'Rejected Late Filing',
             $reviewStage === 'division_head_reroute_request' && in_array($transition->action, ['recommend', 'approve', 'approved'], true) => 'Approved Reroute Request',
@@ -245,6 +249,10 @@ class HistoryPage extends Component
         $reviewStage = data_get($transition->context, 'review_stage');
 
         return match (true) {
+            $reviewStage === 'settings_change_submission' => 'submitted',
+            $reviewStage === 'vp_gen_services_change_request' && $transition->action === 'approved' => 'approved',
+            $reviewStage === 'vp_gen_services_change_request' && $transition->action === 'rejected' => 'cr_rejected',
+            $reviewStage === 'it_admin_change_execution' && $transition->action === 'implemented' => 'implemented',
             $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['approve', 'approved'], true) => 'approved_late',
             $transition->acted_by_role === 'dh_gen_services' && $reviewStage === 'dh_gen_services_late_filing' && in_array($transition->action, ['reject', 'rejected'], true) => 'rejected_late',
             $reviewStage === 'division_head_reroute_request' && in_array($transition->action, ['recommend', 'approve', 'approved'], true) => 'approved_reroute',
@@ -272,6 +280,10 @@ class HistoryPage extends Component
     protected function statusLabel(?string $status): string
     {
         return match ($status) {
+            'pending_vp' => 'Pending VP Review',
+            'pending_it' => 'Ready for IT Implementation',
+            'implemented' => 'Implemented',
+            'cr_rejected' => 'Rejected',
             'for_dh_reroute_approval' => 'For Approval of Division Head',
             'for_vp_reroute_approval' => 'For Approval of VP Gen Services',
             'for_dh_final_reroute_approval' => 'For Approval of Division Head',

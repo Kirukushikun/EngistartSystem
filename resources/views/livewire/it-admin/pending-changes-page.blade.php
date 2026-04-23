@@ -1,5 +1,5 @@
 <div class="p-6 overflow-y-auto h-full">
-    @include('partials.apis.alert', ['type' => 'info', 'message' => '1 VP-approved change ready for implementation.'])
+    @include('partials.apis.alert', ['type' => 'info', 'message' => $this->pendingChanges->count() . ' VP-approved change' . ($this->pendingChanges->count() !== 1 ? 's are' : ' is') . ' ready for implementation.'])
 
     @if ($message)
         @include('partials.apis.alert', ['type' => 'info', 'message' => $message])
@@ -12,7 +12,7 @@
                     <p class="text-[13px] font-medium m-0 text-apis-text">{{ $change['setting'] }}</p>
                     <p class="text-[11px] m-0 text-apis-text2">{{ $change['id'] }}</p>
                 </div>
-                <span class="text-[10px] px-2 py-0.5 rounded font-medium" style="background: var(--bg); color: var(--blue)">Ready for IT</span>
+                @include('partials.apis.request-status-badge', ['status' => $change['status'], 'label' => 'Ready for IT'])
             </div>
             <div class="p-[16px_18px] space-y-3">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">

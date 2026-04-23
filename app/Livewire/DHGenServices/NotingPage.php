@@ -57,6 +57,7 @@ class NotingPage extends Component
         DB::transaction(function () use ($requestId, $remarks, $user) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
+                ->where('request_type', '!=', 'Settings Change')
                 ->where('current_owner_role', 'dh_gen_services')
                 ->whereNull('withdrawn_at')
                 ->firstOrFail();
@@ -187,6 +188,7 @@ class NotingPage extends Component
     {
         return ProjectRequest::query()
             ->with(['requestor', 'transitions.actedBy'])
+            ->where('request_type', '!=', 'Settings Change')
             ->where(function ($query) {
                 $query->where('current_owner_role', 'dh_gen_services')
                     ->orWhereHas('transitions', function ($transitionQuery) {

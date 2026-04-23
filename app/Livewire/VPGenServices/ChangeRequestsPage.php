@@ -2,7 +2,12 @@
 
 namespace App\Livewire\VPGenServices;
 
+use App\Models\ProjectRequest;
+use App\Models\RequestTransition;
+use App\Support\SettingsChangeValueFormatter;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class ChangeRequestsPage extends Component
@@ -25,24 +30,125 @@ class ChangeRequestsPage extends Component
 
     public function approve(string $requestId): void
     {
-        $request = $this->loadChangeRequests()->firstWhere('id', $requestId);
+        $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
 
+        abort_unless($user, 403);
+
+        DB::transaction(function () use ($requestId, $remarks, $user) {
+            $projectRequest = ProjectRequest::query()
+                ->where('request_number', $requestId)
+                ->where('request_type', 'Settings Change')
+                ->where('current_owner_role', 'vp_gen_services')
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $previousStatus = $projectRequest->current_status;
+            $previousStep = $projectRequest->current_step;
+            $previousOwnerRole = $projectRequest->current_owner_role;
+
+            $projectRequest->fill([
+                'current_status' => 'pending_it',
+                'current_step' => 'it_admin_change_execution',
+                'current_owner_role' => 'it_admin',
+                'current_owner_id' => null,
+                'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
+                'locked_at' => $projectRequest->locked_at ?? now(),
+                'last_transitioned_at' => now(),
+                'latest_remarks' => $remarks !== '' ? $remarks : 'Approved by VP Gen Services for IT implementation.',
+            ]);
+            $projectRequest->save();
+
+            RequestTransition::create([
+                'project_request_id' => $projectRequest->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'approved',
+                'from_status' => $previousStatus,
+                'to_status' => 'pending_it',
+                'from_step' => $previousStep,
+                'to_step' => 'it_admin_change_execution',
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => 'it_admin',
+                'to_owner_id' => null,
+                'is_rework' => false,
+                'is_exception_path' => false,
+                'is_terminal' => false,
+                'remarks' => $remarks !== '' ? $remarks : 'Approved by VP Gen Services for IT implementation.',
+                'context' => [
+                    'review_stage' => 'vp_gen_services_change_request',
+                    'setting_change' => data_get($projectRequest->meta, 'setting_change', []),
+                ],
+                'acted_at' => now(),
+            ]);
+        });
+
+        unset($this->remarks[$requestId]);
+
         $this->actionTone = 'info';
-        $this->actionMessage = $request
-            ? "Dummy action: {$request['id']} was approved and routed for implementation." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
-            : 'Dummy action completed.';
+        $this->actionMessage = $requestId . ' was approved and routed to IT Admin for implementation.';
     }
 
     public function reject(string $requestId): void
     {
-        $request = $this->loadChangeRequests()->firstWhere('id', $requestId);
+        $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
 
+        abort_unless($user, 403);
+
+        DB::transaction(function () use ($requestId, $remarks, $user) {
+            $projectRequest = ProjectRequest::query()
+                ->where('request_number', $requestId)
+                ->where('request_type', 'Settings Change')
+                ->where('current_owner_role', 'vp_gen_services')
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $previousStatus = $projectRequest->current_status;
+            $previousStep = $projectRequest->current_step;
+            $previousOwnerRole = $projectRequest->current_owner_role;
+
+            $projectRequest->fill([
+                'current_status' => 'cr_rejected',
+                'current_step' => 'terminal_rejection',
+                'current_owner_role' => null,
+                'current_owner_id' => null,
+                'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
+                'locked_at' => now(),
+                'last_transitioned_at' => now(),
+                'completed_at' => now(),
+                'latest_remarks' => $remarks !== '' ? $remarks : 'Rejected by VP Gen Services.',
+            ]);
+            $projectRequest->save();
+
+            RequestTransition::create([
+                'project_request_id' => $projectRequest->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'rejected',
+                'from_status' => $previousStatus,
+                'to_status' => 'cr_rejected',
+                'from_step' => $previousStep,
+                'to_step' => 'terminal_rejection',
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => null,
+                'to_owner_id' => null,
+                'is_rework' => false,
+                'is_exception_path' => false,
+                'is_terminal' => true,
+                'remarks' => $remarks !== '' ? $remarks : 'Rejected by VP Gen Services.',
+                'context' => [
+                    'review_stage' => 'vp_gen_services_change_request',
+                    'setting_change' => data_get($projectRequest->meta, 'setting_change', []),
+                ],
+                'acted_at' => now(),
+            ]);
+        });
+
+        unset($this->remarks[$requestId]);
+
         $this->actionTone = 'danger';
-        $this->actionMessage = $request
-            ? "Dummy action: {$request['id']} was rejected by VP Gen Services." . ($remarks !== '' ? " Remarks: {$remarks}" : '')
-            : 'Dummy action completed.';
+        $this->actionMessage = $requestId . ' was rejected by VP Gen Services.';
     }
 
     public function updatedSearch(): void
@@ -106,7 +212,7 @@ class ChangeRequestsPage extends Component
         return match ($this->sortBy) {
             'setting_asc' => $items->sortBy('setting')->values(),
             'setting_desc' => $items->sortByDesc('setting')->values(),
-            default => $items->sortByDesc('requestedAt')->values(),
+            default => $items->sortByDesc('requestedSort')->values(),
         };
     }
 
@@ -146,44 +252,39 @@ class ChangeRequestsPage extends Component
 
     protected function loadChangeRequests(): Collection
     {
-        return collect([
-            [
-                'id' => 'SCR-2026-001',
-                'setting' => 'Small Project Cost Threshold',
-                'key' => 'small_threshold',
-                'oldVal' => '₱200,000',
-                'newVal' => '₱250,000',
-                'reason' => 'Project costs have increased due to inflation. The current threshold no longer reflects small vs large project distinction accurately.',
-                'requestedBy' => 'Engr. D. Baniaga',
-                'requestedRole' => 'ED Manager',
-                'requestedAt' => '2026-03-22',
-                'status' => 'pending_vp',
-            ],
-            [
-                'id' => 'SCR-2026-002',
-                'setting' => 'Required Advance Submission (days)',
-                'key' => 'lead_time_days',
-                'oldVal' => '45 days',
-                'newVal' => '50 days',
-                'reason' => 'Recent scheduling bottlenecks suggest a slightly longer lead time will improve planning and cross-functional coordination.',
-                'requestedBy' => 'Ancel Roque',
-                'requestedRole' => 'DH Gen Services',
-                'requestedAt' => '2026-03-20',
-                'status' => 'pending_vp',
-            ],
-            [
-                'id' => 'SCR-2026-003',
-                'setting' => 'Acceptance Lead Time (days)',
-                'key' => 'acceptance_lead_time',
-                'oldVal' => '3 days',
-                'newVal' => '5 days',
-                'reason' => 'The operations team needs additional time to validate readiness before final acceptance is completed in the field.',
-                'requestedBy' => 'Engr. D. Baniaga',
-                'requestedRole' => 'ED Manager',
-                'requestedAt' => '2026-03-18',
-                'status' => 'pending_vp',
-            ],
-        ]);
+        return ProjectRequest::query()
+            ->with('requestor')
+            ->where('request_type', 'Settings Change')
+            ->where(function ($query) {
+                $query->where('current_owner_role', 'vp_gen_services')
+                    ->orWhereHas('transitions', function ($transitionQuery) {
+                        $transitionQuery->where('acted_by_role', 'vp_gen_services')
+                            ->whereIn('to_status', ['pending_it', 'cr_rejected']);
+                    });
+            })
+            ->whereNull('withdrawn_at')
+            ->orderByDesc('submitted_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (ProjectRequest $request): array {
+                $settingChange = data_get($request->meta, 'setting_change', []);
+                $settingKey = data_get($settingChange, 'setting_key');
+
+                return [
+                    'id' => $request->request_number,
+                    'setting' => data_get($settingChange, 'setting_label', $request->title),
+                    'key' => $settingKey,
+                    'oldVal' => SettingsChangeValueFormatter::format($settingKey, data_get($settingChange, 'current_value', '—')),
+                    'newVal' => SettingsChangeValueFormatter::format($settingKey, data_get($settingChange, 'proposed_value', '—')),
+                    'reason' => $request->description,
+                    'requestedBy' => $request->requestor?->name ?? 'Unknown requester',
+                    'requestedRole' => str_replace('_', ' ', str($request->requestor_role)->title()),
+                    'requestedAt' => optional($request->submitted_at)->format('Y-m-d h:i A') ?? '—',
+                    'requestedSort' => $request->submitted_at?->timestamp ?? 0,
+                    'status' => $request->current_status,
+                ];
+            })
+            ->values();
     }
 
     public function render()

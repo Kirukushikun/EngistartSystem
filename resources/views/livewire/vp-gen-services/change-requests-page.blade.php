@@ -27,7 +27,7 @@
                     'class' => 'apis-toolbar-control',
                     'attributes' => ['wire:model.live' => 'statusFilter'],
                     'options' => [
-                        ['value' => 'pending_vp', 'label' => 'Pending VP Approval'],
+                        ['value' => 'pending_vp', 'label' => 'Pending VP Review'],
                         ['value' => 'all', 'label' => 'All statuses'],
                     ],
                 ],
@@ -64,7 +64,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                             <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['id'] }}</span>
-                            <span class="text-[11px] px-2 py-0.5 rounded font-medium" style="background: var(--amber-bg); color: var(--amber)">Pending VP Approval</span>
+                            @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['status'] === 'pending_it' ? 'Ready for IT Implementation' : ($request['status'] === 'cr_rejected' ? 'Rejected' : 'Pending VP Review')])
                         </div>
                         <p class="text-[14px] font-medium m-0 mb-[3px] text-apis-text">Change: {{ $request['setting'] }}</p>
                         <p class="text-[11px] text-apis-text2 m-0">Requested by {{ $request['requestedBy'] }} ({{ $request['requestedRole'] }}) · {{ $request['requestedAt'] }}</p>
