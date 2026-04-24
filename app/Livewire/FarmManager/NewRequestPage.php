@@ -9,6 +9,7 @@ use App\Models\RequestTransition;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -190,23 +191,56 @@ class NewRequestPage extends Component
             ]);
 
             if ($this->isLate && $this->justificationLetter) {
-                $storedPath = $this->justificationLetter->store('request-attachments', 'public');
+                try {
+                    Log::debug('[JustificationLetter] Upload attempt started', [
+                        'original_name' => $this->justificationLetter->getClientOriginalName(),
+                        'mime_type'     => $this->justificationLetter->getClientMimeType(),
+                        'size_bytes'    => $this->justificationLetter->getSize(),
+                        'tmp_path'      => $this->justificationLetter->getRealPath(),
+                        'tmp_exists'    => file_exists($this->justificationLetter->getRealPath()),
+                        'request_id'    => $projectRequest->id,
+                        'user_id'       => $user->id,
+                    ]);
 
-                RequestAttachment::create([
-                    'project_request_id' => $projectRequest->id,
-                    'uploaded_by_id' => $user->id,
-                    'attachment_type' => 'justification_letter',
-                    'original_name' => $this->justificationLetter->getClientOriginalName(),
-                    'disk' => 'public',
-                    'path' => $storedPath,
-                    'mime_type' => $this->justificationLetter->getClientMimeType(),
-                    'size_bytes' => $this->justificationLetter->getSize(),
-                    'is_active' => true,
-                    'meta' => [
-                        'required_for_late_filing' => true,
-                    ],
-                    'uploaded_at' => now(),
-                ]);
+                    $storedPath = $this->justificationLetter->store('request-attachments', 'public');
+
+                    Log::debug('[JustificationLetter] File stored successfully', [
+                        'stored_path' => $storedPath,
+                    ]);
+
+                    RequestAttachment::create([
+                        'project_request_id' => $projectRequest->id,
+                        'uploaded_by_id' => $user->id,
+                        'attachment_type' => 'justification_letter',
+                        'original_name' => $this->justificationLetter->getClientOriginalName(),
+                        'disk' => 'public',
+                        'path' => $storedPath,
+                        'mime_type' => $this->justificationLetter->getClientMimeType(),
+                        'size_bytes' => $this->justificationLetter->getSize(),
+                        'is_active' => true,
+                        'meta' => [
+                            'required_for_late_filing' => true,
+                        ],
+                        'uploaded_at' => now(),
+                    ]);
+
+                    Log::debug('[JustificationLetter] RequestAttachment record created successfully', [
+                        'request_id' => $projectRequest->id,
+                    ]);
+
+                } catch (\Throwable $e) {
+                    Log::error('[JustificationLetter] Upload failed', [
+                        'error'      => $e->getMessage(),
+                        'exception'  => get_class($e),
+                        'file'       => $e->getFile(),
+                        'line'       => $e->getLine(),
+                        'trace'      => $e->getTraceAsString(),
+                        'request_id' => $projectRequest->id ?? null,
+                        'user_id'    => $user->id ?? null,
+                    ]);
+
+                    throw $e; // Re-throws so DB::transaction rolls back cleanly
+                }
             }
 
             return $projectRequest;
