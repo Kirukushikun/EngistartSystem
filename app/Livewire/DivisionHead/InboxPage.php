@@ -41,11 +41,21 @@ class InboxPage extends Component
             return;
         }
 
+        $isLateRerouteRequest = $request['status'] === 'returned_to_division_head';
+
+        if ($isLateRerouteRequest && trim($this->remarks[$requestId] ?? '') === '') {
+            $this->dispatch('notify', type: 'danger', message: 'Please add reroute justification remarks before sending this late filing to VP Gen Services.');
+
+            return;
+        }
+
         $this->dispatch('openConfirmationModal', config: [
-            'title' => 'Recommend request for approval?',
-            'message' => 'Recommend ' . $request['id'] . ' using the current remarks entered on this request?',
+            'title' => $isLateRerouteRequest ? 'Send reroute request to VP Gen Services?' : 'Recommend request for approval?',
+            'message' => $isLateRerouteRequest
+                ? 'Send ' . $request['id'] . ' to VP Gen Services using the reroute justification remarks entered on this request?'
+                : 'Recommend ' . $request['id'] . ' using the current remarks entered on this request?',
             'tone' => 'success',
-            'confirmText' => 'Recommend',
+            'confirmText' => $isLateRerouteRequest ? 'Send to VP Gen Services' : 'Recommend',
             'confirmEvent' => 'divisionHeadRecommendationConfirmed',
             'confirmTarget' => self::class,
             'payload' => ['requestId' => $requestId],
@@ -99,6 +109,10 @@ class InboxPage extends Component
                 || $projectRequest->current_step === 'division_head_reroute_review';
             $isLateFinalReroute = $projectRequest->current_status === 'for_dh_final_reroute_approval'
                 || $projectRequest->current_step === 'division_head_final_reroute_review';
+
+            if ($isLateRerouteRequest && $remarks === '') {
+                throw new \RuntimeException('Division Head reroute justification remarks are required before sending this late filing to VP Gen Services.');
+            }
 
             $projectRequest->fill([
                 'current_status' => $isInitialLateReview
