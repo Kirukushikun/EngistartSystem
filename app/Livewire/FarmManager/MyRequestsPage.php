@@ -79,6 +79,7 @@ class MyRequestsPage extends Component
     {
         $statusLabel = match ($request->current_status) {
             'late_pending' => 'Late Pending',
+            'returned_to_division_head' => 'Returned to Division Head',
             'for_dh_reroute_approval' => 'For Approval of Division Head',
             'for_vp_reroute_approval' => 'For Approval of VP Gen Services',
             'for_dh_final_reroute_approval' => 'For Approval of Division Head',
@@ -349,36 +350,45 @@ class MyRequestsPage extends Component
         });
 
         if ($request->is_late) {
-            $hasLateDhDecision = $transitions->has('dh_gen_services_late') || $request->current_status !== 'late_pending';
-            $hasRerouteRequestDhDecision = $transitions->has('division_head_reroute_request');
+            $hasInitialDivisionHeadDecision = $transitions->has('division_head');
+            $hasLateDhDecision = $transitions->has('dh_gen_services_late');
             $hasRerouteVpDecision = $transitions->has('vp_gen_services_reroute_request');
             $hasFinalRerouteDhDecision = $transitions->has('division_head_final_reroute');
-            $hasStandardDivisionHeadDecision = $transitions->has('division_head');
-            $hasStandardVpDecision = $hasStandardDivisionHeadDecision && $transitions->has('vp_gen_services');
+            $hasStandardVpDecision = $transitions->has('vp_gen_services');
             $hasStandardDhNoting = $transitions->has('dh_gen_services') && ! $transitions->has('dh_gen_services_late');
             $hasEdAcceptance = $transitions->has('ed_manager');
-            $isRerouteFlow = $request->current_status === 'for_dh_reroute_approval'
-                || $request->current_status === 'for_vp_reroute_approval'
+            $isAwaitingOptionalReroute = $request->current_status === 'returned_to_division_head'
+                || ($request->current_owner_role === 'division_head' && $request->current_step === 'division_head_reroute_review' && ! $hasRerouteVpDecision && ! $hasFinalRerouteDhDecision);
+            $isRerouteFlow = $request->current_status === 'for_vp_reroute_approval'
                 || $request->current_status === 'for_dh_final_reroute_approval'
-                || $hasRerouteRequestDhDecision
                 || $hasRerouteVpDecision
                 || $hasFinalRerouteDhDecision;
 
             $chain = [
                 $this->chainStep('Farm Manager', 'done'),
                 $this->chainStep(
+                    'Division Head',
+                    $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_review'
+                        ? 'pending'
+                        : ($hasInitialDivisionHeadDecision
+                            ? ($request->current_status === 'returned_to_requestor' && ! $hasLateDhDecision ? 'rejected' : 'done')
+                            : 'waiting')
+                ),
+                $this->chainStep(
                     'DH Gen Services',
                     $request->current_owner_role === 'dh_gen_services' && $request->current_status === 'late_pending'
                         ? 'pending'
-                        : ($hasLateDhDecision ? 'done' : 'waiting')
+                        : ($hasLateDhDecision
+                            ? ($isAwaitingOptionalReroute ? 'rejected' : 'done')
+                            : 'waiting')
                 ),
             ];
 
-            if (! $hasLateDhDecision) {
+            if (! $hasInitialDivisionHeadDecision || ! $hasLateDhDecision) {
                 return $chain;
             }
 
-            if (! $isRerouteFlow && $request->current_status === 'returned_to_requestor') {
+            if ($isAwaitingOptionalReroute) {
                 $chain[] = $this->chainMarker('Optional reroute path');
 
                 return $chain;
@@ -387,22 +397,19 @@ class MyRequestsPage extends Component
             if ($isRerouteFlow) {
                 $chain[] = $this->chainMarker('Reroute request');
                 $chain[] = $this->chainStep(
-                    'Division Head',
-                    $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_reroute_review'
-                        ? 'pending'
-                        : ($hasRerouteRequestDhDecision
-                            ? ($request->current_status === 'rejected' && $request->current_step === 'terminal_rejection' && ! $hasRerouteVpDecision ? 'rejected' : 'done')
-                            : 'waiting')
-                );
-
-                $chain[] = $this->chainStep(
                     'VP Gen Services',
                     $request->current_owner_role === 'vp_gen_services' && $request->current_step === 'vp_gen_services_reroute_review'
                         ? 'pending'
                         : ($hasRerouteVpDecision
-                            ? ($request->current_status === 'rejected' && $request->current_step === 'terminal_rejection' ? 'rejected' : 'done')
+                            ? ($request->current_status === 'rejected' && $request->current_step === 'terminal_rejection' && ! $hasFinalRerouteDhDecision ? 'rejected' : 'done')
                             : 'waiting')
                 );
+
+                if (! $hasRerouteVpDecision && $request->current_owner_role === 'vp_gen_services') {
+                    return $chain;
+                }
+
+                $chain[] = $this->chainMarker('Rerouted to standard flow');
                 $chain[] = $this->chainStep(
                     'Division Head',
                     $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_final_reroute_review'
@@ -428,12 +435,6 @@ class MyRequestsPage extends Component
             }
 
             $chain[] = $this->chainMarker('Rerouted to standard flow');
-            $chain[] = $this->chainStep(
-                'Division Head',
-                $request->current_owner_role === 'division_head'
-                    ? 'pending'
-                    : ($hasStandardDivisionHeadDecision ? 'done' : 'waiting')
-            );
             $chain[] = $this->chainStep(
                 'VP Gen Services',
                 $request->current_owner_role === 'vp_gen_services'

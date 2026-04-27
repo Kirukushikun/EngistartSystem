@@ -108,7 +108,7 @@ class NewRequestPage extends Component
                 ['label' => 'Type', 'value' => $this->form['type']],
                 ['label' => 'Category', 'value' => $this->isPoultryRelated ? 'Poultry related' : 'Swine / non-poultry'],
                 ['label' => 'Date Needed', 'value' => Carbon::parse($this->form['needed'])->format('F j, Y')],
-                ['label' => 'Routing', 'value' => $this->isLate ? 'Late Filing → DH Gen Services' : 'Standard Workflow → Division Head'],
+                ['label' => 'Routing', 'value' => $this->isLate ? 'Late Filing → Division Head → DH Gen Services' : 'Standard Workflow → Division Head'],
                 ['label' => 'Late Filing', 'value' => $this->isLate ? 'Yes' : 'No'],
                 ['label' => 'Justification Letter', 'value' => $this->isLate ? ($this->justificationLetter ? 'Attached for this submission' : ($this->hasExistingJustificationLetter ? 'Existing attachment retained' : 'Required')) : 'Not required'],
                 ['label' => 'Supporting Document', 'value' => $this->supportingDocument ? 'Attached for this submission' : ($this->hasExistingSupportingDocument ? 'Existing attachment retained' : 'Optional')],
@@ -131,8 +131,8 @@ class NewRequestPage extends Component
 
         $submittedRequest = DB::transaction(function () use ($user) {
             $initialStatus = $this->isLate ? 'late_pending' : 'submitted';
-            $initialStep = $this->isLate ? 'dh_gen_late_review' : 'division_head_review';
-            $initialOwnerRole = $this->isLate ? 'dh_gen_services' : 'division_head';
+            $initialStep = 'division_head_review';
+            $initialOwnerRole = 'division_head';
 
             $projectRequest = $this->editingRequestId
                 ? ProjectRequest::query()
@@ -294,7 +294,7 @@ class NewRequestPage extends Component
             message: $wasEditing
                 ? 'Request updated successfully before reviewer pickup.'
                 : ($this->isLate
-                    ? 'Late filing submitted and routed to DH Gen Services for review.'
+                    ? 'Late filing submitted and routed to Division Head for review.'
                     : 'Request submitted successfully and routed to Division Head.')
         );
     }

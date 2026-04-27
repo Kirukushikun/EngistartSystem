@@ -87,9 +87,9 @@ class LateFilingsPage extends Component
             $previousOwnerRole = $projectRequest->current_owner_role;
 
             $projectRequest->fill([
-                'current_status' => 'submitted',
-                'current_step' => 'division_head_review',
-                'current_owner_role' => 'division_head',
+                'current_status' => 'recommended',
+                'current_step' => 'vp_gen_services_approval',
+                'current_owner_role' => 'vp_gen_services',
                 'current_owner_id' => null,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
@@ -104,11 +104,11 @@ class LateFilingsPage extends Component
                 'acted_by_role' => $user->role,
                 'action' => 'approved',
                 'from_status' => $previousStatus,
-                'to_status' => 'submitted',
+                'to_status' => 'recommended',
                 'from_step' => $previousStep,
-                'to_step' => 'division_head_review',
+                'to_step' => 'vp_gen_services_approval',
                 'from_owner_role' => $previousOwnerRole,
-                'to_owner_role' => 'division_head',
+                'to_owner_role' => 'vp_gen_services',
                 'to_owner_id' => null,
                 'is_rework' => false,
                 'is_exception_path' => true,
@@ -124,7 +124,7 @@ class LateFilingsPage extends Component
 
         unset($this->remarks[$requestId]);
 
-        $this->dispatch('notify', type: 'success', message: $requestId . ' late filing was approved and routed to Division Head.');
+        $this->dispatch('notify', type: 'success', message: $requestId . ' late filing was approved and routed to VP Gen Services.');
     }
 
     #[On('lateFilingRejectionConfirmed')]
@@ -149,10 +149,10 @@ class LateFilingsPage extends Component
             $previousOwnerRole = $projectRequest->current_owner_role;
 
             $projectRequest->fill([
-                'current_status' => 'returned_to_requestor',
-                'current_step' => 'requestor_revision',
-                'current_owner_role' => $projectRequest->requestor_role,
-                'current_owner_id' => $projectRequest->requestor_id,
+                'current_status' => 'returned_to_division_head',
+                'current_step' => 'division_head_reroute_review',
+                'current_owner_role' => 'division_head',
+                'current_owner_id' => null,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
@@ -166,12 +166,12 @@ class LateFilingsPage extends Component
                 'acted_by_role' => $user->role,
                 'action' => 'rejected',
                 'from_status' => $previousStatus,
-                'to_status' => 'returned_to_requestor',
+                'to_status' => 'returned_to_division_head',
                 'from_step' => $previousStep,
-                'to_step' => 'requestor_revision',
+                'to_step' => 'division_head_reroute_review',
                 'from_owner_role' => $previousOwnerRole,
-                'to_owner_role' => $projectRequest->requestor_role,
-                'to_owner_id' => $projectRequest->requestor_id,
+                'to_owner_role' => 'division_head',
+                'to_owner_id' => null,
                 'is_rework' => true,
                 'is_exception_path' => true,
                 'is_terminal' => false,
@@ -186,7 +186,7 @@ class LateFilingsPage extends Component
 
         unset($this->remarks[$requestId]);
 
-        $this->dispatch('notify', type: 'danger', message: $requestId . ' late filing was returned to the requestor.');
+        $this->dispatch('notify', type: 'danger', message: $requestId . ' late filing was returned to Division Head.');
     }
 
     public function updatedSearch(): void { $this->page = 1; }
@@ -308,6 +308,7 @@ class LateFilingsPage extends Component
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
                         'late_pending' => 'Late Pending',
+                        'returned_to_division_head' => 'Returned to Division Head',
                         'submitted' => 'Submitted',
                         'returned_to_requestor' => 'Returned to Requestor',
                         default => str_replace('_', ' ', str($request->current_status)->title()),
@@ -355,6 +356,9 @@ class LateFilingsPage extends Component
             return $transition->acted_by_role;
         });
 
+        $hasInitialDh = $transitions->has('division_head');
+        $hasLateDh = $transitions->has('dh_gen_services_late_filing');
+
         return [
             [
                 'role' => 'Farm Manager',
@@ -364,20 +368,22 @@ class LateFilingsPage extends Component
                 'st' => 'done',
             ],
             [
+                'role' => 'Division Head',
+                'user' => $transitions->get('division_head')?->actedBy?->name,
+                'action' => 'Late Filing Endorsement',
+                'date' => optional($transitions->get('division_head')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'division_head' && $request->current_step === 'division_head_review'
+                    ? 'pending'
+                    : ($hasInitialDh ? ($request->current_status === 'returned_to_requestor' && ! $hasLateDh ? 'rejected' : 'done') : 'waiting'),
+            ],
+            [
                 'role' => 'DH Gen Services',
                 'user' => $transitions->get('dh_gen_services_late_filing')?->actedBy?->name,
-                'action' => 'Validation / Decision',
+                'action' => 'Late Filing Review',
                 'date' => optional($transitions->get('dh_gen_services_late_filing')?->acted_at)->format('Y-m-d'),
                 'st' => $request->current_owner_role === 'dh_gen_services' && $request->current_status === 'late_pending'
                     ? 'pending'
-                    : ($transitions->has('dh_gen_services_late_filing') ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
-            ],
-            [
-                'role' => 'Division Head',
-                'user' => $transitions->get('division_head')?->actedBy?->name,
-                'action' => 'Recommendation',
-                'date' => optional($transitions->get('division_head')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'division_head' ? 'pending' : ($transitions->has('division_head') ? 'done' : 'waiting'),
+                    : ($hasLateDh ? ($request->current_status === 'returned_to_division_head' ? 'rejected' : 'done') : 'waiting'),
             ],
         ];
     }
