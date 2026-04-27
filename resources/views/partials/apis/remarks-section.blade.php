@@ -39,7 +39,7 @@
         @endif
 
         @if ($showInput && filled($textareaModel))
-            <textarea wire:model.live="{{ $textareaModel }}" class="apis-remarks-control" placeholder="{{ $textareaPlaceholder }}"></textarea>
+            <textarea wire:model.defer="{{ $textareaModel }}" class="apis-remarks-control" placeholder="{{ $textareaPlaceholder }}"></textarea>
         @endif
     </div>
 </div>

@@ -63,7 +63,7 @@ return [
             'match' => 'dh-gen-services.*',
             'items' => [
                 [
-                    'label' => 'Late Filings',
+                    'label' => 'Late Filing Review',
                     'route' => 'dh-gen-services.late-filings',
                     'active' => ['dh-gen-services.late-filings'],
                     'badge' => ['text' => '3', 'tone' => 'amber'],

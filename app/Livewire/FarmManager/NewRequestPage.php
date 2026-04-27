@@ -9,6 +9,7 @@ use App\Models\RequestTransition;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -41,6 +42,10 @@ class NewRequestPage extends Component
 
     public bool $hasExistingJustificationLetter = false;
 
+    public bool $hasExistingSupportingDocument = false;
+
+    public bool $isPoultryRelated = false;
+
     public ?int $daysAway = null;
 
     public bool $isLate = false;
@@ -48,6 +53,8 @@ class NewRequestPage extends Component
     public bool $isPast = false;
 
     public $justificationLetter;
+
+    public $supportingDocument;
 
     public function mount(): void
     {
@@ -72,6 +79,14 @@ class NewRequestPage extends Component
         }
     }
 
+    public function updatedIsPoultryRelated(): void
+    {
+        if (! $this->isPoultryRelated) {
+            $this->form['chickin'] = '';
+            $this->form['cap'] = '';
+        }
+    }
+
     public function openSubmissionReview(): void
     {
         $validated = $this->validate($this->rules(), $this->messages());
@@ -90,10 +105,12 @@ class NewRequestPage extends Component
             'summary' => [
                 ['label' => 'Project Title', 'value' => $this->form['title']],
                 ['label' => 'Type', 'value' => $this->form['type']],
+                ['label' => 'Category', 'value' => $this->isPoultryRelated ? 'Poultry related' : 'Swine / non-poultry'],
                 ['label' => 'Date Needed', 'value' => Carbon::parse($this->form['needed'])->format('F j, Y')],
                 ['label' => 'Routing', 'value' => $this->isLate ? 'Late Filing → DH Gen Services' : 'Standard Workflow → Division Head'],
                 ['label' => 'Late Filing', 'value' => $this->isLate ? 'Yes' : 'No'],
                 ['label' => 'Justification Letter', 'value' => $this->isLate ? ($this->justificationLetter ? 'Attached for this submission' : ($this->hasExistingJustificationLetter ? 'Existing attachment retained' : 'Required')) : 'Not required'],
+                ['label' => 'Supporting Document', 'value' => $this->supportingDocument ? 'Attached for this submission' : ($this->hasExistingSupportingDocument ? 'Existing attachment retained' : 'Optional')],
             ],
         ])->to(ConfirmationModal::class);
     }
@@ -147,8 +164,8 @@ class NewRequestPage extends Component
                 'farm_name' => null,
                 'purpose' => $this->form['purpose'] ?: null,
                 'date_needed' => $this->form['needed'],
-                'chick_in_date' => $this->form['chickin'] ?: null,
-                'capacity' => $this->form['cap'] ?: null,
+                'chick_in_date' => $this->isPoultryRelated ? ($this->form['chickin'] ?: null) : null,
+                'capacity' => $this->isPoultryRelated ? ($this->form['cap'] ?: null) : null,
                 'description' => $this->form['desc'],
                 'preferred_meeting_date' => $this->form['mtgDate'] ?: null,
                 'preferred_meeting_time' => $this->form['mtgTime'] ?: null,
@@ -161,6 +178,7 @@ class NewRequestPage extends Component
                     'days_away' => $this->daysAway,
                     'submission_channel' => 'farm_manager_livewire',
                     'last_saved_mode' => $this->isEditing ? 'edit_before_review' : 'new_submission',
+                    'is_poultry_related' => $this->isPoultryRelated,
                 ]),
             ]);
             $projectRequest->save();
@@ -190,6 +208,11 @@ class NewRequestPage extends Component
             ]);
 
             if ($this->isLate && $this->justificationLetter) {
+                $projectRequest->attachments()
+                    ->where('attachment_type', 'justification_letter')
+                    ->where('is_active', true)
+                    ->update(['is_active' => false]);
+
                 $storedPath = $this->justificationLetter->store('request-attachments', 'public');
 
                 RequestAttachment::create([
@@ -209,6 +232,32 @@ class NewRequestPage extends Component
                 ]);
             }
 
+            if ($this->supportingDocument) {
+                $projectRequest->attachments()
+                    ->where('attachment_type', 'supporting_document')
+                    ->where('is_active', true)
+                    ->update(['is_active' => false]);
+
+                $storedPath = $this->supportingDocument->store('request-attachments', 'public');
+
+                RequestAttachment::create([
+                    'project_request_id' => $projectRequest->id,
+                    'uploaded_by_id' => $user->id,
+                    'attachment_type' => 'supporting_document',
+                    'original_name' => $this->supportingDocument->getClientOriginalName(),
+                    'disk' => 'public',
+                    'path' => $storedPath,
+                    'mime_type' => $this->supportingDocument->getClientMimeType(),
+                    'size_bytes' => $this->supportingDocument->getSize(),
+                    'is_active' => true,
+                    'meta' => [
+                        'category' => Str::startsWith((string) $this->supportingDocument->getClientMimeType(), 'image/') ? 'image' : 'document',
+                        'optional_attachment' => true,
+                    ],
+                    'uploaded_at' => now(),
+                ]);
+            }
+
             return $projectRequest;
         });
 
@@ -219,6 +268,7 @@ class NewRequestPage extends Component
         $this->editingRequestId = $submittedRequest->id;
         $this->isEditing = false;
         $this->hasExistingJustificationLetter = $submittedRequest->attachments()->where('attachment_type', 'justification_letter')->where('is_active', true)->exists();
+        $this->hasExistingSupportingDocument = $submittedRequest->attachments()->where('attachment_type', 'supporting_document')->where('is_active', true)->exists();
 
         $this->dispatch('notify',
             type: $this->isLate ? 'warn' : 'info',
@@ -240,10 +290,13 @@ class NewRequestPage extends Component
             'editingRequestId',
             'isEditing',
             'hasExistingJustificationLetter',
+            'hasExistingSupportingDocument',
+            'isPoultryRelated',
             'daysAway',
             'isLate',
             'isPast',
             'justificationLetter',
+            'supportingDocument',
         ]);
 
         $this->form = [
@@ -303,6 +356,8 @@ class NewRequestPage extends Component
             }
         }
 
+        $rules['supportingDocument'] = ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,gif,webp,bmp'];
+
         return $rules;
     }
 
@@ -317,6 +372,7 @@ class NewRequestPage extends Component
             'proceed.accepted' => 'Please acknowledge the late filing requirement.',
             'justificationLetter.required' => 'The Justification Letter is required for late filings.',
             'justificationLetter.mimes' => 'The Justification Letter must be a PDF, DOC, or DOCX file.',
+            'supportingDocument.mimes' => 'The Supporting Document must be a PDF, DOC, DOCX, JPG, JPEG, PNG, GIF, WEBP, or BMP file.',
         ];
     }
 
@@ -347,6 +403,11 @@ class NewRequestPage extends Component
             ->where('attachment_type', 'justification_letter')
             ->where('is_active', true)
             ->exists();
+        $this->hasExistingSupportingDocument = $projectRequest->attachments()
+            ->where('attachment_type', 'supporting_document')
+            ->where('is_active', true)
+            ->exists();
+        $this->isPoultryRelated = (bool) data_get($projectRequest->meta, 'is_poultry_related', filled($projectRequest->chick_in_date) || filled($projectRequest->capacity));
         $this->form = [
             'title' => $projectRequest->title,
             'type' => $projectRequest->request_type,

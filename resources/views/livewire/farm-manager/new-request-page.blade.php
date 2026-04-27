@@ -158,20 +158,54 @@
                     @error('form.desc') <p class="apis-error-text">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mt-3">
-                    <div>
-                        <label class="apis-form-label">Chick-in Date (if applicable)</label>
-                        <input type="date"
-                               wire:model.live="form.chickin"
-                               class="apis-form-control">
+                <div class="mt-3 rounded-[8px] p-[12px_14px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
+                    <div class="flex items-start gap-2">
+                        <input type="checkbox"
+                               id="is-poultry-related"
+                               wire:model.live="isPoultryRelated"
+                               class="mt-0.5 cursor-pointer"
+                               style="width:auto">
+                        <label for="is-poultry-related" class="text-[12px] cursor-pointer m-0 text-apis-text">
+                            This request is poultry-related
+                        </label>
                     </div>
-                    <div>
-                        <label class="apis-form-label">Capacity</label>
-                        <input type="text"
-                               wire:model.live="form.cap"
-                               placeholder="e.g. 25,000 heads"
-                               class="apis-form-control">
+                    <p class="text-[11px] text-apis-text2 mt-2 mb-0">
+                        Enable this to show Chick-in Date and Capacity. Leave unchecked for swine or non-poultry requests.
+                    </p>
+                </div>
+
+                @if ($isPoultryRelated)
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="apis-form-label">Chick-in Date</label>
+                            <input type="date"
+                                   wire:model.live="form.chickin"
+                                   class="apis-form-control">
+                        </div>
+                        <div>
+                            <label class="apis-form-label">Capacity</label>
+                            <input type="text"
+                                   wire:model.live="form.cap"
+                                   placeholder="e.g. 25,000 heads"
+                                   class="apis-form-control">
+                        </div>
                     </div>
+                @endif
+
+                <div class="mt-3">
+                    <label class="apis-form-label">Supporting Document</label>
+                    <input type="file"
+                           wire:model="supportingDocument"
+                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.bmp"
+                           class="apis-form-control text-[12px] @error('supportingDocument') apis-error @enderror"
+                           style="color: var(--text)">
+                    <p class="text-[11px] text-apis-text2 mt-1 mb-0">
+                        Optional. You may attach supporting documents or images.
+                        @if ($hasExistingSupportingDocument)
+                            Existing attachment will be retained unless you upload a replacement.
+                        @endif
+                    </p>
+                    @error('supportingDocument') <p class="apis-error-text">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- ── ASSESSMENT MEETING ────────────────────────────── --}}

@@ -15,7 +15,7 @@
         'late_pending' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)'],
         'approved_late', 'accepted' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)'],
         'returned', 'returned_to_requestor', 'rejected', 'rejected_late', 'rejected_reroute', 'rejected_final_reroute', 'cr_rejected' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)'],
-        'withdrawn' => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)'],
+        'withdrawn' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)'],
         default => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)'],
     };
 @endphp

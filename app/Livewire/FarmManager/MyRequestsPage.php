@@ -98,6 +98,7 @@ class MyRequestsPage extends Component
             'isLate' => $request->is_late,
             'isEditable' => $request->isEditableByRequestor(),
             'isWithdrawn' => $request->withdrawn_at !== null,
+            'remarks' => $this->buildRemarks($request),
             'canRequestLateReroute' => $request->is_late
                 && $request->current_status === 'returned_to_requestor'
                 && $request->current_owner_id === $request->requestor_id
@@ -105,6 +106,26 @@ class MyRequestsPage extends Component
                 && ! $request->transitions->contains(fn (RequestTransition $transition) => data_get($transition->context, 'review_stage') === 'division_head_reroute_request'),
             'chain' => $this->buildChain($request),
         ];
+    }
+
+    protected function buildRemarks(ProjectRequest $request): array
+    {
+        return $request->transitions
+            ->sortBy('acted_at')
+            ->filter(function (RequestTransition $transition): bool {
+                return $transition->acted_by_role !== 'farm_manager' && filled($transition->remarks);
+            })
+            ->map(function (RequestTransition $transition): array {
+                return [
+                    'role' => $this->roleLabel($transition->acted_by_role),
+                    'action' => $this->remarkLabel($transition->action),
+                    'remarks' => $transition->remarks,
+                    'date' => optional($transition->acted_at)->format('Y-m-d h:i A') ?? '—',
+                    'tone' => $this->remarkTone($transition->action),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     public function confirmRequestLateReroute(int $requestId): void
@@ -483,6 +504,42 @@ class MyRequestsPage extends Component
             'kind' => 'marker',
             'label' => $label,
         ];
+    }
+
+    protected function roleLabel(string $role): string
+    {
+        return match ($role) {
+            'division_head' => 'Division Head',
+            'vp_gen_services' => 'VP Gen Services',
+            'dh_gen_services' => 'DH Gen Services',
+            'ed_manager' => 'ED Manager',
+            'it_admin' => 'IT Admin',
+            default => str_replace('_', ' ', str($role)->title()),
+        };
+    }
+
+    protected function remarkLabel(string $action): string
+    {
+        return match ($action) {
+            'approve', 'approved' => 'Approved',
+            'recommend', 'recommended' => 'Recommended',
+            'noted' => 'Noted',
+            'accepted' => 'Accepted',
+            'reject', 'rejected' => 'Rejected',
+            'return', 'returned' => 'Returned',
+            'withdrawn' => 'Withdrawn',
+            'requested_reroute' => 'Requested Reroute',
+            default => str_replace('_', ' ', str($action)->title()),
+        };
+    }
+
+    protected function remarkTone(string $action): string
+    {
+        return match ($action) {
+            'approve', 'approved', 'recommend', 'recommended', 'noted', 'accepted' => 'success',
+            'reject', 'rejected', 'return', 'returned' => 'danger',
+            default => 'info',
+        };
     }
 
     public function getRequestsProperty(): Collection
