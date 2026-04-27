@@ -63,13 +63,13 @@ return [
             'match' => 'dh-gen-services.*',
             'items' => [
                 [
-                    'label' => 'Late Filing Review',
+                    'label' => 'Late Requests Review',
                     'route' => 'dh-gen-services.late-filings',
                     'active' => ['dh-gen-services.late-filings'],
                     'badge' => ['text' => '3', 'tone' => 'amber'],
                 ],
                 [
-                    'label' => 'For Noting',
+                    'label' => 'Requests for Noting',
                     'route' => 'dh-gen-services.noting',
                     'active' => ['dh-gen-services.noting'],
                     'badge' => ['text' => '3', 'tone' => 'blue'],

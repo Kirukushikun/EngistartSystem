@@ -425,9 +425,9 @@ class LateFilingsPage extends Component
     {
         return view('livewire.dh-gen-services.late-filings-page')
             ->layout('layouts.app', [
-                'title' => 'Late Filings | EngiStart',
-                'header' => 'Late Filings',
-                'subheader' => 'Validate urgent or late-filed requests before they enter the approval flow.',
+                'title' => 'Late Requests Review | EngiStart',
+                'header' => 'Late Requests Review',
+                'subheader' => 'This section is dedicated to requests filed late and awaiting DH Gen Services late-filing review.',
             ]);
     }
 }
