@@ -20,6 +20,15 @@ return [
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
+    'mode' => env('ENGISTART_AUTH_MODE', 'local'),
+
+    'api' => [
+        'base_uri' => env('AUTH_API_BASE_URI', 'https://bfcgroup.ph'),
+        'api_key' => env('AUTH_API_KEY'),
+        'auth_user_api_key' => env('AUTH_USER_API_KEY'),
+        'verify' => env('AUTH_VERIFY_SSL', true),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Guards
