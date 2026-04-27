@@ -6,6 +6,7 @@ use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestAttachment;
 use App\Models\RequestTransition;
+use App\Support\SettingsChangeValueFormatter;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +50,8 @@ class NewRequestPage extends Component
 
     public ?int $daysAway = null;
 
+    public int $requiredLeadTimeDays = 45;
+
     public bool $isLate = false;
 
     public bool $isPast = false;
@@ -59,6 +62,8 @@ class NewRequestPage extends Component
 
     public function mount(): void
     {
+        $this->requiredLeadTimeDays = $this->resolveRequiredLeadTimeDays();
+
         $editRequestId = request()->integer('edit');
 
         if ($editRequestId > 0) {
@@ -350,7 +355,25 @@ class NewRequestPage extends Component
 
         $this->daysAway = $today->diffInDays($needed, false);
         $this->isPast = $this->daysAway < 0;
-        $this->isLate = $this->daysAway >= 0 && $this->daysAway < 45;
+        $this->isLate = $this->daysAway >= 0 && $this->daysAway < $this->requiredLeadTimeDays;
+    }
+
+    protected function resolveRequiredLeadTimeDays(): int
+    {
+        $latestImplementedRequest = ProjectRequest::query()
+            ->where('request_type', 'Settings Change')
+            ->where('current_status', 'implemented')
+            ->where('meta->setting_change->setting_key', 'lead_time_days')
+            ->orderByDesc('completed_at')
+            ->orderByDesc('last_transitioned_at')
+            ->orderByDesc('id')
+            ->first();
+
+        $configuredValue = data_get($latestImplementedRequest?->meta, 'setting_change.proposed_value');
+        $formattedValue = SettingsChangeValueFormatter::format('lead_time_days', $configuredValue ?: '45');
+        $numericValue = (int) preg_replace('/[^0-9]/', '', $formattedValue);
+
+        return $numericValue > 0 ? $numericValue : 45;
     }
 
     protected function rules(): array

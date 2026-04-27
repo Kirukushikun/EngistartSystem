@@ -24,7 +24,7 @@
 
                     @if ($this->selectedSetting)
                         <div class="rounded-[8px] p-[12px_14px] text-[12px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
-                            <span class="text-apis-text2">Current value:</span>
+                            <span class="text-apis-text2">Current system value:</span>
                             <span class="ml-1 font-medium text-apis-text">{{ $this->selectedSetting['value'] }}</span>
                         </div>
                     @endif

@@ -57,7 +57,7 @@
                 {{-- Info alert --}}
                 @include('partials.apis.alert', [
                     'type' => 'info',
-                    'message' => 'Requests must be submitted at least 45 days before the project start date. Late submissions require a Justification Letter and will be routed directly to DH Gen Services.',
+                    'message' => 'Requests must be submitted at least ' . $requiredLeadTimeDays . ' days before the project start date. Late submissions require a Justification Letter and will be routed to Division Head for late-filing review before DH Gen Services.',
                 ])
 
                 {{-- ── PROJECT OVERVIEW ──────────────────────────────── --}}
@@ -105,7 +105,7 @@
                         @if (!is_null($daysAway))
                             <span class="font-medium text-[11px]"
                                   style="color: {{ $isPast ? 'var(--red)' : ($isLate ? 'var(--red)' : 'var(--green)') }};">
-                                {{ $isPast ? '(Date is in the past)' : ($isLate ? "({$daysAway} days away — below 45-day minimum)" : "({$daysAway} days ahead — within required window)") }}
+                                {{ $isPast ? '(Date is in the past)' : ($isLate ? "({$daysAway} days away — below {$requiredLeadTimeDays}-day minimum)" : "({$daysAway} days ahead — within required window)") }}
                             </span>
                         @endif
                     </label>
@@ -122,7 +122,7 @@
                          style="background: var(--red-bg); border: 0.5px solid var(--red-bd)">
                         <p class="text-[13px] font-medium mb-1.5" style="color: var(--red)">Submission deadline exceeded</p>
                         <p class="text-[12px] leading-[1.65] mb-3" style="color: var(--red)">
-                            Only {{ $daysAway }} day{{ $daysAway === 1 ? '' : 's' }} before start date. A Justification Letter is required and this will route to DH Gen Services.
+                            Only {{ $daysAway }} day{{ $daysAway === 1 ? '' : 's' }} before start date. The required lead time is {{ $requiredLeadTimeDays }} days. A Justification Letter is required and this will route to Division Head first for late-filing handling.
                         </p>
                         <div class="flex items-start gap-2 mb-3">
                             <input type="checkbox" id="ack" wire:model.live="proceed" class="mt-0.5 cursor-pointer" style="width:auto">
