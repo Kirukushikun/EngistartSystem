@@ -209,7 +209,13 @@ class NewRequestPage extends Component
             ]);
 
             if ($this->isLate && $this->justificationLetter) {
-                $storedPath = $this->justificationLetter->store('request-attachments', 'public');
+                try {
+                    $projectRequest->attachments()
+                        ->where('attachment_type', 'justification_letter')
+                        ->where('is_active', true)
+                        ->update(['is_active' => false]);
+
+                    $storedPath = $this->justificationLetter->store('request-attachments', 'public');
 
                     RequestAttachment::create([
                         'project_request_id' => $projectRequest->id,
@@ -230,19 +236,18 @@ class NewRequestPage extends Component
                     Log::debug('[JustificationLetter] RequestAttachment record created successfully', [
                         'request_id' => $projectRequest->id,
                     ]);
-
                 } catch (\Throwable $e) {
                     Log::error('[JustificationLetter] Upload failed', [
-                        'error'      => $e->getMessage(),
-                        'exception'  => get_class($e),
-                        'file'       => $e->getFile(),
-                        'line'       => $e->getLine(),
-                        'trace'      => $e->getTraceAsString(),
+                        'error' => $e->getMessage(),
+                        'exception' => get_class($e),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString(),
                         'request_id' => $projectRequest->id ?? null,
-                        'user_id'    => $user->id ?? null,
+                        'user_id' => $user->id ?? null,
                     ]);
 
-                    throw $e; // Re-throws so DB::transaction rolls back cleanly
+                    throw $e;
                 }
             }
 
