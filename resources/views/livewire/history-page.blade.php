@@ -66,6 +66,12 @@
                                 <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $item['title'] }}</p>
                                 <p class="text-[11px] text-apis-text2 m-0">{{ $item['farm'] }} · {{ $item['type'] }} · Requested by {{ $item['requestedBy'] }}</p>
                                 <p class="text-[11px] text-apis-text2 m-0 mt-1">Requested {{ $item['requested_at'] }} · Acted {{ $item['acted_at'] }} by {{ $item['actor'] }}</p>
+                                @if ($item['setting_change'])
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-[6px_24px] text-[11px] mt-2 mb-2">
+                                        <div><span class="text-apis-text2 mr-1">Current value:</span><span class="font-medium" style="color: var(--red)">{{ $item['setting_change']['current_value'] }}</span></div>
+                                        <div><span class="text-apis-text2 mr-1">Requested value:</span><span class="font-medium" style="color: var(--green)">{{ $item['setting_change']['proposed_value'] }}</span></div>
+                                    </div>
+                                @endif
                                 <p class="text-[11px] text-apis-text m-0 mt-2 leading-[1.6]">{{ $item['remarks'] }}</p>
                             </div>
                             @include('partials.apis.request-status-badge', ['status' => $item['current_status'], 'label' => $item['current_status_label']])

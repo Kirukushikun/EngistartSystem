@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\RequestTransition;
+use App\Support\SettingsChangeValueFormatter;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -90,6 +91,7 @@ class HistoryPage extends Component
             ->get()
             ->map(function (RequestTransition $transition): array {
                 $request = $transition->projectRequest;
+                $settingChangeDetails = $this->settingsChangeDetails($transition);
 
                 return [
                     'id' => $request?->request_number ?? 'Unknown Request',
@@ -107,6 +109,7 @@ class HistoryPage extends Component
                     'current_status' => $request?->current_status ?? ($transition->to_status ?? 'unknown'),
                     'current_status_label' => $this->statusLabel($request?->current_status ?? $transition->to_status),
                     'remarks' => $transition->remarks ?: 'No remarks provided.',
+                    'setting_change' => $settingChangeDetails,
                 ];
             })
             ->values();
@@ -282,6 +285,27 @@ class HistoryPage extends Component
             null => 'Unknown',
             default => str_replace('_', ' ', str($status)->title()),
         };
+    }
+
+    protected function settingsChangeDetails(RequestTransition $transition): ?array
+    {
+        if (data_get($transition->context, 'review_stage') !== 'settings_change_submission') {
+            return null;
+        }
+
+        $settingKey = data_get($transition->context, 'setting_key')
+            ?? data_get($transition->projectRequest?->meta, 'setting_change.setting_key');
+
+        $currentValue = data_get($transition->context, 'current_value')
+            ?? data_get($transition->projectRequest?->meta, 'setting_change.current_value');
+
+        $proposedValue = data_get($transition->context, 'proposed_value')
+            ?? data_get($transition->projectRequest?->meta, 'setting_change.proposed_value');
+
+        return [
+            'current_value' => SettingsChangeValueFormatter::format($settingKey, $currentValue),
+            'proposed_value' => SettingsChangeValueFormatter::format($settingKey, $proposedValue),
+        ];
     }
 
     public function render()
