@@ -55,11 +55,8 @@
             @foreach ($this->paginatedRequests as $request)
                 @php
                     $statusLabel = match ($request['status']) {
-                        'for_dh_reroute_approval', 'for_dh_final_reroute_approval' => 'For Approval of Division Head',
-                        'for_vp_reroute_approval' => 'For Approval of VP Gen Services',
                         'recommended' => 'DH Recommended',
                         'vp_approved' => 'VP Approved',
-                        'late_pending' => 'Late – Pending',
                         'returned_to_requestor' => 'Returned to Requestor',
                         'rejected' => 'Rejected',
                         default => ucfirst(str_replace('_', ' ', $request['status'])),
@@ -99,15 +96,6 @@
                                         class="text-[11px] font-medium px-3 py-1.5 rounded-[8px]"
                                         style="background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd)">
                                     Withdraw
-                                </button>
-                            </div>
-                        @elseif ($request['canRequestLateReroute'])
-                            <div class="flex gap-2 flex-wrap justify-end">
-                                <button type="button"
-                                        wire:click="confirmRequestLateReroute({{ $request['dbId'] }})"
-                                        class="text-[11px] font-medium px-3 py-1.5 rounded-[8px]"
-                                        style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd)">
-                                    Request reroute approval
                                 </button>
                             </div>
                         @endif

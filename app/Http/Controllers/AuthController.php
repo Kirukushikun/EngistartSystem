@@ -242,7 +242,7 @@ class AuthController extends Controller
             'farm_manager' => 'farm-manager.requests.new',
             'division_head' => 'division-head.inbox',
             'vp_gen_services' => 'vp-gen-services.inbox',
-            'dh_gen_services' => 'dh-gen-services.late-filings',
+            'dh_gen_services' => 'dh-gen-services.noting',
             'ed_manager' => 'ed-manager.inbox',
             'it_admin' => 'it-admin.all-requests',
             default => 'guest.finished-requests',

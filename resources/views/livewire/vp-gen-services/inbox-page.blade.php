@@ -54,6 +54,12 @@
                         <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                             <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['id'] }}</span>
                             @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['statusLabel']])
+                            @if ($request['isLate'])
+                                <span class="text-[10px] px-[6px] py-[1px] rounded-[3px] font-medium"
+                                      style="background: var(--amber-bg); color: var(--amber)">
+                                    LATE
+                                </span>
+                            @endif
                         </div>
                         <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $request['title'] }}</p>
                         <p class="text-[11px] text-apis-text2 m-0">{{ $request['farm'] }} · Needed {{ $request['needed'] }} · {{ $request['days'] }}d ahead · By {{ $request['by'] }}</p>

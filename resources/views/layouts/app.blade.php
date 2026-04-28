@@ -80,21 +80,10 @@
         }
 
         if ($authUser?->role === 'dh_gen_services') {
-            $dynamicBadges['dh-gen-services.late-filings'] = [
-                'text' => (string) \App\Models\ProjectRequest::query()
-                    ->where('request_type', '!=', 'Settings Change')
-                    ->where('current_owner_role', 'dh_gen_services')
-                    ->where('current_status', 'late_pending')
-                    ->whereNull('withdrawn_at')
-                    ->count(),
-                'tone' => 'amber',
-            ];
-
             $dynamicBadges['dh-gen-services.noting'] = [
                 'text' => (string) \App\Models\ProjectRequest::query()
                     ->where('request_type', '!=', 'Settings Change')
                     ->where('current_owner_role', 'dh_gen_services')
-                    ->where('current_status', '!=', 'late_pending')
                     ->whereNull('withdrawn_at')
                     ->count(),
                 'tone' => 'blue',

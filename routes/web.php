@@ -30,7 +30,6 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:dh_gen_services')->group(function () {
-        Route::get('/dh-gen-services/late-filings', \App\Livewire\DHGenServices\LateFilingsPage::class)->name('dh-gen-services.late-filings');
         Route::get('/dh-gen-services/noting', \App\Livewire\DHGenServices\NotingPage::class)->name('dh-gen-services.noting');
         Route::get('/dh-gen-services/history', \App\Livewire\HistoryPage::class)->name('dh-gen-services.history');
         Route::get('/dh-gen-services/change-request', \App\Livewire\DHGenServices\SettingsChangeRequestPage::class)->name('dh-gen-services.change-request');

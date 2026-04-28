@@ -256,7 +256,6 @@ class StatusOverridePage extends Component
     {
         return [
             'submitted' => ['step' => 'division_head_review', 'owner_role' => 'division_head', 'owner_id' => null, 'is_terminal' => false, 'lock' => false],
-            'late_pending' => ['step' => 'dh_gen_late_review', 'owner_role' => 'dh_gen_services', 'owner_id' => null, 'is_terminal' => false, 'lock' => false],
             'recommended' => ['step' => 'vp_gen_services_approval', 'owner_role' => 'vp_gen_services', 'owner_id' => null, 'is_terminal' => false, 'lock' => true],
             'vp_approved' => ['step' => 'dh_gen_services_noting', 'owner_role' => 'dh_gen_services', 'owner_id' => null, 'is_terminal' => false, 'lock' => true],
             'noted' => ['step' => 'ed_manager_acceptance', 'owner_role' => 'ed_manager', 'owner_id' => null, 'is_terminal' => false, 'lock' => true],
@@ -274,7 +273,6 @@ class StatusOverridePage extends Component
     {
         return match ($status) {
             'submitted' => 'Submitted',
-            'late_pending' => 'Late Pending',
             'recommended' => 'Recommended',
             'vp_approved' => 'VP Approved',
             'noted' => 'Noted',

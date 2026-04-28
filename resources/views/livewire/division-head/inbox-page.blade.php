@@ -49,9 +49,6 @@
 
         @forelse ($this->paginatedInboxItems as $request)
             <div class="apis-card" x-data="{ open: false }">
-                @php
-                    $isRerouteStage = in_array($request['status'], ['for_dh_reroute_approval', 'for_dh_final_reroute_approval'], true);
-                @endphp
                 <button type="button"
                         @click="open = !open"
                         class="w-full text-left p-[14px_18px] flex justify-between items-start gap-3"
@@ -60,6 +57,12 @@
                         <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                             <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['id'] }}</span>
                             @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['statusLabel']])
+                            @if ($request['isLate'])
+                                <span class="text-[10px] px-[6px] py-[1px] rounded-[3px] font-medium"
+                                      style="background: var(--amber-bg); color: var(--amber)">
+                                    LATE
+                                </span>
+                            @endif
                         </div>
                         <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">
                             {{ $request['title'] }}
@@ -132,7 +135,7 @@
                             'history' => $request['remarkHistory'],
                             'showInput' => $request['isPendingHere'],
                             'textareaModel' => 'remarks.' . $request['id'],
-                            'textareaPlaceholder' => $isRerouteStage ? 'Add reroute approval or rejection remarks here...' : 'Add your recommendation or rejection remarks here...',
+                            'textareaPlaceholder' => 'Add your recommendation or rejection remarks here...',
                         ])
 
                         <div class="flex gap-2 flex-wrap">
@@ -141,7 +144,7 @@
                                         wire:click="confirmRecommend(@js($request['id']))"
                                         class="apis-card-button font-medium"
                                         style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
-                                    {{ $isRerouteStage ? 'Approve reroute' : 'Recommend for Approval' }}
+                                    Recommend for Approval
                                 </button>
                                 <button type="button"
                                         wire:click="confirmReject(@js($request['id']))"
