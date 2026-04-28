@@ -112,6 +112,10 @@
                         </p>
                     @endif
 
+                    @include('partials.apis.attachments-section', [
+                        'attachments' => $request['attachments'],
+                    ])
+
                     @if (! empty($request['remarks']))
                         <div class="mb-[10px] rounded-[10px] p-[10px_12px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
                             <p class="text-[10px] text-apis-text2 mb-[7px] font-medium uppercase tracking-[0.07em]">Remarks</p>

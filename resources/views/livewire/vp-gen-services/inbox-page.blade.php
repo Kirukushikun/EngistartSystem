@@ -89,6 +89,10 @@
                         {{ $request['desc'] }}
                     </p>
 
+                    @include('partials.apis.attachments-section', [
+                        'attachments' => $request['attachments'],
+                    ])
+
                     <div class="mb-[14px]">
                         <p class="text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Approval Chain</p>
                         <div class="flex flex-col gap-[7px]">

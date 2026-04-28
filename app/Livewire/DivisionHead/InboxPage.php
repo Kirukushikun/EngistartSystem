@@ -7,6 +7,7 @@ use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use Livewire\Attributes\On;
@@ -304,7 +305,7 @@ class InboxPage extends Component
     protected function loadInboxItems(): Collection
     {
         return ProjectRequest::query()
-            ->with(['requestor', 'transitions.actedBy'])
+            ->with(['requestor', 'transitions.actedBy', 'attachments'])
             ->where('request_type', '!=', 'Settings Change')
             ->where(function ($query) {
                 $query->where('current_owner_role', 'division_head')
@@ -348,6 +349,7 @@ class InboxPage extends Component
                     'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
                     'mtgTime' => $request->preferred_meeting_time,
                     'remarkHistory' => $this->buildRemarkHistory($request),
+                    'attachments' => $this->buildAttachments($request),
                     'isLate' => $request->is_late,
                     'isPendingHere' => $request->current_owner_role === 'division_head',
                     'isTransparentCopy' => $request->current_owner_role !== 'division_head' && $hasDivisionHeadAction,
@@ -355,6 +357,22 @@ class InboxPage extends Component
                 ];
             })
             ->values();
+    }
+
+    protected function buildAttachments(ProjectRequest $request): array
+    {
+        return $request->attachments
+            ->where('is_active', true)
+            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document'], true))
+            ->map(function ($attachment): array {
+                return [
+                    'label' => $attachment->attachment_type === 'justification_letter' ? 'JL File' : 'Attached File',
+                    'name' => $attachment->original_name,
+                    'url' => Storage::disk($attachment->disk)->url($attachment->path),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     protected function buildRemarkHistory(ProjectRequest $request): array

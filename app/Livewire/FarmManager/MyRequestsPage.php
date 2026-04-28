@@ -7,6 +7,7 @@ use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -66,7 +67,7 @@ class MyRequestsPage extends Component
         }
 
         return ProjectRequest::query()
-            ->with('transitions')
+            ->with(['transitions', 'attachments'])
             ->where('requestor_id', $user->id)
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')
@@ -95,8 +96,25 @@ class MyRequestsPage extends Component
             'isEditable' => $request->isEditableByRequestor(),
             'isWithdrawn' => $request->withdrawn_at !== null,
             'remarks' => $this->buildRemarks($request),
+            'attachments' => $this->buildAttachments($request),
             'chain' => $this->buildChain($request),
         ];
+    }
+
+    protected function buildAttachments(ProjectRequest $request): array
+    {
+        return $request->attachments
+            ->where('is_active', true)
+            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document'], true))
+            ->map(function ($attachment): array {
+                return [
+                    'label' => $attachment->attachment_type === 'justification_letter' ? 'JL File' : 'Attached File',
+                    'name' => $attachment->original_name,
+                    'url' => Storage::disk($attachment->disk)->url($attachment->path),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     protected function buildRemarks(ProjectRequest $request): array

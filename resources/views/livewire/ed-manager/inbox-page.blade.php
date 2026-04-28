@@ -74,6 +74,9 @@
                         @if ($request['mtgDate'])<div><span class="mr-1">Meeting:</span><span class="text-apis-text">{{ $request['mtgDate'] }} at {{ $request['mtgTime'] }}</span></div>@endif
                     </div>
                     <p class="text-[12px] leading-[1.7] text-apis-text mb-[14px] border-l-2 pl-3" style="border-color: var(--border)">{{ $request['desc'] }}</p>
+                    @include('partials.apis.attachments-section', [
+                        'attachments' => $request['attachments'],
+                    ])
                     <div class="mb-[14px]">
                         <p class="text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Approval Chain</p>
                         <div class="flex flex-col gap-[7px]">
