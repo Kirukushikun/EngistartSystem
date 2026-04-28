@@ -137,6 +137,11 @@ return [
                     'route' => 'it-admin.settings',
                     'active' => ['it-admin.settings'],
                 ],
+                [
+                    'label' => 'Danger Zone',
+                    'route' => 'it-admin.danger-zone',
+                    'active' => ['it-admin.danger-zone'],
+                ],
             ],
         ],
         'guest' => [

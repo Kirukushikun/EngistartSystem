@@ -48,6 +48,7 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
         Route::get('/it-admin/override', \App\Livewire\ITAdmin\StatusOverridePage::class)->name('it-admin.override');
         Route::get('/it-admin/pending-changes', \App\Livewire\ITAdmin\PendingChangesPage::class)->name('it-admin.pending-changes');
         Route::get('/it-admin/settings', \App\Livewire\ITAdmin\SettingsPage::class)->name('it-admin.settings');
+        Route::get('/it-admin/danger-zone', \App\Livewire\ITAdmin\DangerZonePage::class)->name('it-admin.danger-zone');
     });
 
     Route::middleware('role:guest')->group(function () {

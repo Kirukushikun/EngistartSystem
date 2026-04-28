@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Management — Danger Zone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #161b27;
+    --surface-2: #1e2536;
+    --border: #262d3f;
+    --border-hover: #334060;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --red: #ef4444;
+    --red-dark: #dc2626;
+    --red-glow: rgba(239,68,68,0.15);
+    --red-subtle: rgba(239,68,68,0.08);
+    --orange: #f97316;
+    --orange-dark: #ea6f0e;
+    --orange-glow: rgba(249,115,22,0.15);
+    --orange-subtle: rgba(249,115,22,0.08);
+    --accent-border-red: rgba(239,68,68,0.5);
+    --accent-border-orange: rgba(249,115,22,0.5);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 32px 16px 80px;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(239,68,68,0.04) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.015) 39px, rgba(255,255,255,0.015) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.015) 39px, rgba(255,255,255,0.015) 40px);
+  }
+
+  .container { max-width: 780px; margin: 0 auto; }
+
+  /* Page header */
+  .page-header {
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .page-header-icon {
+    width: 36px; height: 36px;
+    background: var(--red-subtle);
+    border: 1px solid var(--accent-border-red);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .page-header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .page-header p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Warning banner */
+  .warning-banner {
+    margin-bottom: 20px;
+    border: 1px solid rgba(239,68,68,0.3);
+    background: linear-gradient(135deg, rgba(239,68,68,0.06) 0%, rgba(239,68,68,0.03) 100%);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    position: relative;
+    overflow: hidden;
+  }
+  .warning-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(239,68,68,0.6), transparent);
+  }
+  .warning-icon {
+    width: 38px; height: 38px;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .warning-banner h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fca5a5;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .warning-banner p {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #f87171;
+    opacity: 0.8;
+    line-height: 1.5;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border-hover); }
+
+  .card-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-header-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-red { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+  .dot-orange { background: var(--orange); box-shadow: 0 0 8px rgba(249,115,22,0.5); }
+
+  .card-header h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .card-header p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .card-body { padding: 22px; }
+
+  /* Section label */
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  /* Mode grid */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .mode-option {
+    position: relative;
+    cursor: pointer;
+  }
+  .mode-option input[type="radio"] {
+    position: absolute; opacity: 0; width: 0; height: 0;
+  }
+  .mode-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 13px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .mode-card:hover {
+    border-color: var(--border-hover);
+    background: rgba(255,255,255,0.03);
+  }
+  .mode-radio-dot {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border-hover);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .mode-radio-dot::after {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .mode-card-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .mode-card-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Red active state */
+  .mode-option.active-red .mode-card {
+    border-color: var(--accent-border-red);
+    background: var(--red-subtle);
+  }
+  .mode-option.active-red .mode-radio-dot {
+    border-color: var(--red);
+  }
+  .mode-option.active-red .mode-radio-dot::after {
+    background: var(--red);
+  }
+
+  /* Orange active state */
+  .mode-option.active-orange .mode-card {
+    border-color: var(--accent-border-orange);
+    background: var(--orange-subtle);
+  }
+  .mode-option.active-orange .mode-radio-dot {
+    border-color: var(--orange);
+  }
+  .mode-option.active-orange .mode-radio-dot::after {
+    background: var(--orange);
+  }
+
+  /* Fields */
+  .fields-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+    animation: slideIn 0.15s ease;
+  }
+  .fields-row.single { grid-template-columns: 1fr; max-width: 260px; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .input-wrap { position: relative; }
+  .input-icon {
+    position: absolute;
+    left: 11px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  input[type="date"],
+  input[type="text"],
+  select {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 9px 12px 9px 36px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input[type="date"]:hover,
+  input[type="text"]:hover,
+  select:hover {
+    border-color: var(--border-hover);
+  }
+  input[type="date"]:focus,
+  input[type="text"]:focus,
+  select:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+  }
+  select.orange-focus:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+  }
+
+  .select-chevron {
+    position: absolute;
+    right: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  select:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Action row */
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  /* Preview btn */
+  .btn-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.2px;
+  }
+  .btn-preview:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+  .btn-preview:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Count badge */
+  .count-badge {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .count-badge.visible { display: inline-flex; }
+  .badge-red {
+    color: #fca5a5;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.25);
+  }
+  .badge-orange {
+    color: #fdba74;
+    background: rgba(249,115,22,0.12);
+    border: 1px solid rgba(249,115,22,0.25);
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* Divider */
+  .card-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0 18px;
+  }
+
+  /* Primary buttons */
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #fff;
+    background: var(--red-dark);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-danger::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.15s;
+  }
+  .btn-danger:hover::after { background: rgba(255,255,255,0.08); }
+  .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #fff;
+    background: var(--orange-dark);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-warning::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.15s;
+  }
+  .btn-warning:hover::after { background: rgba(255,255,255,0.08); }
+  .btn-warning:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.15s ease;
+  }
+  .modal-backdrop.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    padding: 28px;
+    animation: slideUp 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+  }
+  .modal-red::before { background: linear-gradient(90deg, transparent, rgba(239,68,68,0.6), transparent); }
+  .modal-orange::before { background: linear-gradient(90deg, transparent, rgba(249,115,22,0.6), transparent); }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .modal-icon-red { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); }
+  .modal-icon-orange { background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.25); }
+
+  .modal h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .modal p {
+    font-size: 13px;
+    text-align: center;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+  .modal p strong.red { color: #f87171; }
+  .modal p strong.orange { color: #fb923c; }
+
+  .modal-field { margin-bottom: 22px; }
+  .modal-field .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .modal-field input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    letter-spacing: 1px;
+  }
+  .modal-field input:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+  }
+  .modal-field input.orange-focus:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .btn-cancel {
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--border-hover); color: var(--text); }
+
+  .modal-confirm-btn {
+    padding: 9px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.2px;
+  }
+  .modal-confirm-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .modal-confirm-red { background: var(--red-dark); }
+  .modal-confirm-red:not(:disabled):hover { background: #b91c1c; }
+  .modal-confirm-orange { background: var(--orange-dark); }
+  .modal-confirm-orange:not(:disabled):hover { background: #c2600c; }
+
+  /* No data text */
+  .no-data-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  @media (max-width: 560px) {
+    .fields-row { grid-template-columns: 1fr; }
+    .mode-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div class="page-header-icon">
+      <svg width="18" height="18" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Data Management</h1>
+      <p>Destructive operations — proceed with caution</p>
+    </div>
+  </div>
+
+  <!-- Warning banner -->
+  <div class="warning-banner">
+    <div class="warning-icon">
+      <svg width="18" height="18" fill="none" stroke="#f87171" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+      </svg>
+    </div>
+    <div>
+      <h3>Destructive Actions Ahead</h3>
+      <p>Actions on this page permanently delete data from the system. This cannot be undone. Please proceed with extreme caution.</p>
+    </div>
+  </div>
+
+  <!-- ─── Card 1: Wipe Form Submissions ─── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-dot dot-red"></div>
+      <div>
+        <h2>Wipe Form Submissions</h2>
+        <p>Delete form submissions and their associated photos from the system.</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">Select Wipe Mode</p>
+      <div class="mode-grid" id="wipe-mode-grid">
+        <label class="mode-option active-red" data-group="wipe" data-value="all">
+          <input type="radio" name="wipeMode" value="all" checked>
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">Wipe All</span>
+              <span class="mode-card-desc">Delete all form submissions</span>
+            </div>
+          </div>
+        </label>
+        <label class="mode-option" data-group="wipe" data-value="date_range">
+          <input type="radio" name="wipeMode" value="date_range">
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">Date Range</span>
+              <span class="mode-card-desc">Delete within a date range</span>
+            </div>
+          </div>
+        </label>
+        <label class="mode-option" data-group="wipe" data-value="year">
+          <input type="radio" name="wipeMode" value="year">
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">By Year</span>
+              <span class="mode-card-desc">Delete all submissions for a year</span>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Date range fields (hidden by default) -->
+      <div class="fields-row" id="wipe-date-range" style="display:none;">
+        <div>
+          <label class="field-label" for="wipeFrom">From Date</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <input type="date" id="wipeFrom">
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="wipeTo">To Date</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <input type="date" id="wipeTo">
+          </div>
+        </div>
+      </div>
+
+      <!-- Year field (hidden by default) -->
+      <div class="fields-row single" id="wipe-year" style="display:none;">
+        <div>
+          <label class="field-label" for="wipeYear">Select Year</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <select id="wipeYear">
+              <option value="">-- Select Year --</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+            <span class="select-chevron"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview + badge -->
+      <div class="action-row">
+        <button class="btn-preview" id="wipe-preview-btn" onclick="previewCount('wipe')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          Preview Count
+        </button>
+        <span class="count-badge badge-red" id="wipe-count-badge">
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          <span id="wipe-count-text"></span> submissions will be deleted
+        </span>
+      </div>
+
+      <hr class="card-divider">
+      <button class="btn-danger" onclick="openModal('wipe')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Wipe Submissions
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Card 2: Purge Attachment Photos ─── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-dot dot-orange"></div>
+      <div>
+        <h2>Purge Attachment Photos</h2>
+        <p>Delete photos from form submissions without removing the form records. Affected forms will be marked as "Photos Expired".</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">Select Purge Mode</p>
+      <div class="mode-grid" id="photo-mode-grid" style="grid-template-columns: 1fr 1fr;">
+        <label class="mode-option active-orange" data-group="photo" data-value="quarter">
+          <input type="radio" name="photoMode" value="quarter" checked>
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">By Quarter</span>
+              <span class="mode-card-desc">Select a year and quarter (Q1–Q4)</span>
+            </div>
+          </div>
+        </label>
+        <label class="mode-option" data-group="photo" data-value="custom">
+          <input type="radio" name="photoMode" value="custom">
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">Custom Range</span>
+              <span class="mode-card-desc">Specify a custom date range</span>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Quarter fields -->
+      <div class="fields-row" id="photo-quarter">
+        <div>
+          <label class="field-label" for="photoYear">Select Year</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <select id="photoYear" class="orange-focus" onchange="updateQuarterState()">
+              <option value="">-- Select Year --</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+            <span class="select-chevron"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></span>
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="photoQuarter">Select Quarter</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span>
+            <select id="photoQuarter" class="orange-focus" disabled>
+              <option value="">-- Select Quarter --</option>
+              <option value="Q1">Q1 — Jan–Mar</option>
+              <option value="Q2">Q2 — Apr–Jun</option>
+              <option value="Q3">Q3 — Jul–Sep</option>
+              <option value="Q4">Q4 — Oct–Dec</option>
+            </select>
+            <span class="select-chevron"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom date range -->
+      <div class="fields-row" id="photo-custom" style="display:none;">
+        <div>
+          <label class="field-label" for="photoFrom">From Date</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <input type="date" id="photoFrom" class="orange-focus">
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="photoTo">To Date</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <input type="date" id="photoTo" class="orange-focus">
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview + badge -->
+      <div class="action-row">
+        <button class="btn-preview" id="photo-preview-btn" onclick="previewCount('photo')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          Preview Count
+        </button>
+        <span class="count-badge badge-orange" id="photo-count-badge">
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          <span id="photo-count-text"></span> forms will have photos purged
+        </span>
+      </div>
+
+      <hr class="card-divider">
+      <button class="btn-warning" onclick="openModal('photo')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Purge Photos
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Card 3: Purge Activity Logs ─── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-dot dot-red"></div>
+      <div>
+        <h2>Purge Activity Logs</h2>
+        <p>Delete activity log entries from the system.</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">Select Purge Mode</p>
+      <div class="mode-grid" id="log-mode-grid">
+        <label class="mode-option active-red" data-group="log" data-value="all">
+          <input type="radio" name="logMode" value="all" checked>
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">Purge All</span>
+              <span class="mode-card-desc">Delete all activity logs</span>
+            </div>
+          </div>
+        </label>
+        <label class="mode-option" data-group="log" data-value="date_range">
+          <input type="radio" name="logMode" value="date_range">
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">Date Range</span>
+              <span class="mode-card-desc">Delete within a date range</span>
+            </div>
+          </div>
+        </label>
+        <label class="mode-option" data-group="log" data-value="year">
+          <input type="radio" name="logMode" value="year">
+          <div class="mode-card">
+            <div class="mode-radio-dot"></div>
+            <div>
+              <span class="mode-card-label">By Year</span>
+              <span class="mode-card-desc">Delete all logs for a year</span>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Date range fields -->
+      <div class="fields-row" id="log-date-range" style="display:none;">
+        <div>
+          <label class="field-label" for="logFrom">From Date</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <input type="date" id="logFrom">
+          </div>
+        </div>
+        <div>
+          <label class="field-label" for="logTo">To Date</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <input type="date" id="logTo">
+          </div>
+        </div>
+      </div>
+
+      <!-- Year field -->
+      <div class="fields-row single" id="log-year" style="display:none;">
+        <div>
+          <label class="field-label" for="logYear">Select Year</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+            <select id="logYear">
+              <option value="">-- Select Year --</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+            <span class="select-chevron"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview + badge -->
+      <div class="action-row">
+        <button class="btn-preview" id="log-preview-btn" onclick="previewCount('log')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          Preview Count
+        </button>
+        <span class="count-badge badge-red" id="log-count-badge">
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          <span id="log-count-text"></span> log entries will be deleted
+        </span>
+      </div>
+
+      <hr class="card-divider">
+      <button class="btn-danger" onclick="openModal('log')">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Purge Activity Logs
+      </button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ─── Modal: Wipe Form Submissions ─── -->
+<div class="modal-backdrop" id="modal-wipe" onclick="closeModalOnBackdrop(event,'modal-wipe')">
+  <div class="modal modal-red">
+    <div class="modal-icon modal-icon-red">
+      <svg width="26" height="26" fill="none" stroke="#f87171" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    </div>
+    <h3>Confirm Permanent Deletion</h3>
+    <p>This will permanently delete <strong class="red" id="wipe-modal-count">—</strong> form submissions and their associated photos. This action <strong>cannot be undone</strong>.</p>
+    <div class="modal-field">
+      <label class="field-label">Type <strong class="red" id="wipe-confirm-hint">—</strong> to confirm</label>
+      <input type="text" id="wipe-confirm-input" placeholder="Enter the number to confirm" autocomplete="off" oninput="checkConfirm('wipe')">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-wipe')">Cancel</button>
+      <button class="modal-confirm-btn modal-confirm-red" id="wipe-confirm-btn" disabled onclick="submitAction('wipe')">
+        Queue Deletion
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Photo Purge ─── -->
+<div class="modal-backdrop" id="modal-photo" onclick="closeModalOnBackdrop(event,'modal-photo')">
+  <div class="modal modal-orange">
+    <div class="modal-icon modal-icon-orange">
+      <svg width="26" height="26" fill="none" stroke="#fb923c" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    </div>
+    <h3>Confirm Photo Purge</h3>
+    <p>This will permanently delete all attachment photos from <strong class="orange" id="photo-modal-count">—</strong> form submissions. The form records will be kept but marked as <strong>"Photos Expired"</strong>. This action <strong>cannot be undone</strong>.</p>
+    <div class="modal-field">
+      <label class="field-label">Type <strong class="orange" id="photo-confirm-hint">—</strong> to confirm</label>
+      <input type="text" id="photo-confirm-input" class="orange-focus" placeholder="Enter the number to confirm" autocomplete="off" oninput="checkConfirm('photo')">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-photo')">Cancel</button>
+      <button class="modal-confirm-btn modal-confirm-orange" id="photo-confirm-btn" disabled onclick="submitAction('photo')">
+        Queue Photo Purge
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal: Activity Logs ─── -->
+<div class="modal-backdrop" id="modal-log" onclick="closeModalOnBackdrop(event,'modal-log')">
+  <div class="modal modal-red">
+    <div class="modal-icon modal-icon-red">
+      <svg width="26" height="26" fill="none" stroke="#f87171" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    </div>
+    <h3>Confirm Activity Log Purge</h3>
+    <p>This will permanently delete <strong class="red" id="log-modal-count">—</strong> activity log entries. This action <strong>cannot be undone</strong>.</p>
+    <div class="modal-field">
+      <label class="field-label">Type <strong class="red" id="log-confirm-hint">—</strong> to confirm</label>
+      <input type="text" id="log-confirm-input" placeholder="Enter the number to confirm" autocomplete="off" oninput="checkConfirm('log')">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-log')">Cancel</button>
+      <button class="modal-confirm-btn modal-confirm-red" id="log-confirm-btn" disabled onclick="submitAction('log')">
+        Queue Log Purge
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  const state = {
+    wipe: { mode: 'all', count: null },
+    photo: { mode: 'quarter', count: null },
+    log: { mode: 'all', count: null },
+  };
+
+  // ── Radio mode switching ──
+  document.querySelectorAll('.mode-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const group = opt.dataset.group;
+      const value = opt.dataset.value;
+      const activeClass = group === 'photo' ? 'active-orange' : 'active-red';
+
+      document.querySelectorAll(`[data-group="${group}"]`).forEach(o => o.classList.remove(activeClass));
+      opt.classList.add(activeClass);
+      opt.querySelector('input').checked = true;
+
+      state[group].mode = value;
+      state[group].count = null;
+      document.getElementById(`${group}-count-badge`)?.classList.remove('visible');
+
+      updateFields(group, value);
+    });
+  });
+
+  function updateFields(group, mode) {
+    if (group === 'wipe') {
+      document.getElementById('wipe-date-range').style.display = mode === 'date_range' ? '' : 'none';
+      document.getElementById('wipe-year').style.display = mode === 'year' ? '' : 'none';
+    } else if (group === 'photo') {
+      document.getElementById('photo-quarter').style.display = mode === 'quarter' ? '' : 'none';
+      document.getElementById('photo-custom').style.display = mode === 'custom' ? '' : 'none';
+    } else if (group === 'log') {
+      document.getElementById('log-date-range').style.display = mode === 'date_range' ? '' : 'none';
+      document.getElementById('log-year').style.display = mode === 'year' ? '' : 'none';
+    }
+  }
+
+  function updateQuarterState() {
+    const yr = document.getElementById('photoYear').value;
+    document.getElementById('photoQuarter').disabled = !yr;
+  }
+
+  // ── Preview count (simulated) ──
+  function previewCount(group) {
+    const btn = document.getElementById(`${group}-preview-btn`);
+    const badge = document.getElementById(`${group}-count-badge`);
+    const countSpan = document.getElementById(`${group}-count-text`);
+
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+
+    setTimeout(() => {
+      const fakeCount = Math.floor(Math.random() * 9000) + 100;
+      state[group].count = fakeCount;
+
+      countSpan.textContent = fakeCount.toLocaleString();
+      badge.classList.add('visible');
+
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Preview Count`;
+    }, 700);
+  }
+
+  // ── Modal logic ──
+  function openModal(group) {
+    const count = state[group].count ?? 0;
+    const formattedCount = count.toLocaleString();
+    const modalId = `modal-${group}`;
+
+    document.getElementById(`${group}-modal-count`).textContent = formattedCount;
+    document.getElementById(`${group}-confirm-hint`).textContent = formattedCount;
+    document.getElementById(`${group}-confirm-input`).value = '';
+    document.getElementById(`${group}-confirm-btn`).disabled = true;
+
+    document.getElementById(modalId).classList.add('open');
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('open');
+  }
+
+  function closeModalOnBackdrop(event, modalId) {
+    if (event.target === document.getElementById(modalId)) closeModal(modalId);
+  }
+
+  function checkConfirm(group) {
+    const input = document.getElementById(`${group}-confirm-input`).value.trim();
+    const count = (state[group].count ?? 0).toLocaleString();
+    document.getElementById(`${group}-confirm-btn`).disabled = (input !== count && input !== String(state[group].count ?? 0));
+  }
+
+  function submitAction(group) {
+    const btn = document.getElementById(`${group}-confirm-btn`);
+    btn.disabled = true;
+    btn.textContent = 'Queuing...';
+    setTimeout(() => {
+      closeModal(`modal-${group}`);
+      btn.textContent = group === 'photo' ? 'Queue Photo Purge' : 'Queue Deletion';
+    }, 1200);
+  }
+
+  // ── ESC to close modals ──
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+</script>
+</body>
+</html>
