@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\RequestTransition;
 use App\Support\SettingsChangeValueFormatter;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 
 class HistoryPage extends Component
@@ -82,7 +83,18 @@ class HistoryPage extends Component
     {
         return RequestTransition::query()
             ->with(['projectRequest.requestor', 'actedBy'])
-            ->where('acted_by_role', $this->role)
+            ->where(function (Builder $query) {
+                $query->where('acted_by_role', $this->role);
+
+                if ($this->sharesSettingsChangeHistory()) {
+                    $query->orWhere(function (Builder $sharedQuery) {
+                        $sharedQuery
+                            ->whereIn('acted_by_role', $this->sharedSettingsHistoryRoles())
+                            ->where('action', 'submitted')
+                            ->where('context->review_stage', 'settings_change_submission');
+                    });
+                }
+            })
             ->whereHas('projectRequest', function ($query) {
                 $query->whereNull('withdrawn_at');
             })
@@ -113,6 +125,16 @@ class HistoryPage extends Component
                 ];
             })
             ->values();
+    }
+
+    protected function sharesSettingsChangeHistory(): bool
+    {
+        return in_array($this->role, $this->sharedSettingsHistoryRoles(), true);
+    }
+
+    protected function sharedSettingsHistoryRoles(): array
+    {
+        return ['dh_gen_services', 'ed_manager'];
     }
 
     public function getFilteredHistoryItemsProperty(): Collection
