@@ -7,9 +7,9 @@
         <p class="text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Attachments</p>
         <div class="flex flex-col gap-[7px]">
             @foreach ($attachments as $attachment)
-                <div class="flex items-start gap-[9px]">
-                    <span class="apis-step-dot" style="background: var(--blue-bg); color: var(--blue);">🔗</span>
-                    <div class="flex-1 min-w-0 pt-[1px]">
+                <div class="flex items-center gap-[9px]">
+                    <span class="apis-step-dot mt-[1px]" style="background: var(--blue-bg); color: var(--blue);">🔗</span>
+                    <div class="flex-1 min-w-0">
                         <a href="{{ $attachment['url'] }}"
                            target="_blank"
                            rel="noopener noreferrer"
