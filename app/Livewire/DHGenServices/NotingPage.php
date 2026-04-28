@@ -337,8 +337,8 @@ class NotingPage extends Component
     {
         return view('livewire.dh-gen-services.noting-page')
             ->layout('layouts.app', [
-                'title' => 'Requests for Noting | EngiStart',
-                'header' => 'Requests for Noting',
+                'title' => 'For Noting/Remarks | EngiStart',
+                'header' => 'For Noting/Remarks',
                 'subheader' => 'This section includes approved requests, including late filings, that now require DH Gen Services noting before forwarding to ED Manager.',
             ]);
     }

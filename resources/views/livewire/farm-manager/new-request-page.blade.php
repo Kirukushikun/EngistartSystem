@@ -101,7 +101,8 @@
                 {{-- ── DATE NEEDED ───────────────────────────────────── --}}
                 <div class="mt-4">
                     <label class="apis-form-label">
-                        Date Needed *
+                        <!-- Date needed -->
+                        Project Start Date *
                         @if (!is_null($daysAway))
                             <span class="font-medium text-[11px]"
                                   style="color: {{ $isPast ? 'var(--red)' : ($isLate ? 'var(--red)' : 'var(--green)') }};">

@@ -63,7 +63,7 @@ return [
             'match' => 'dh-gen-services.*',
             'items' => [
                 [
-                    'label' => 'Requests for Noting',
+                    'label' => 'For Noting/Remarks',
                     'route' => 'dh-gen-services.noting',
                     'active' => ['dh-gen-services.noting'],
                     'badge' => ['text' => '3', 'tone' => 'blue'],
