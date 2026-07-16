@@ -1,59 +1,246 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# EngiStart
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> Automated Project Initialization System (PIF/APIS) for BFC Group — routes farm project requests through a role-based approval chain, from submission to engineer assignment.
 
-## About Laravel
+![Laravel](https://img.shields.io/badge/Laravel-12.x-red?logo=laravel)
+![PHP](https://img.shields.io/badge/PHP-8.2+-blue?logo=php)
+![Livewire](https://img.shields.io/badge/Livewire-3.x-4E56A6?logo=livewire)
+![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Table of Contents
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- [About](#about)
+- [Tech Stack](#tech-stack)
+- [Roles & Workflow](#roles--workflow)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Environment Variables](#environment-variables)
+- [Running Locally](#running-locally)
+- [Testing](#testing)
+- [Notifications (Reverb)](#notifications-reverb)
+- [Folder Structure](#folder-structure)
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## About
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+EngiStart is a Project Initialization Form (PIF) system: Farm Managers submit project requests (with budget-driven auto-calculated timelines), which are routed through an approval chain — Division Head → VP General Services → ED Manager → DH General Services → Engineer — before landing back with the requestor as an initialized project. Requests with an unacceptable timeline go through a Justification Letter (JL) sub-flow instead, which reorders the same approval chain around a dual DH/VP review.
 
-## Laravel Sponsors
+There are no REST/API controllers beyond authentication — the UI is built entirely from full-page Livewire components rendered inside a shared Blade layout, with Alpine.js for client-side interactivity (dropdowns, dark mode, toasts).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**Key features:**
 
-### Premium Partners
+- Budget-category-driven timeline auto-calculation on new requests
+- Multi-role approval chain with owner-based request routing (`current_owner_role` / `current_owner_id`)
+- Justification Letter (JL) exception flow for requests with unacceptable timelines
+- Project Request Summary view and full audit/history trail per request
+- Settings-Change sub-flow (separate from the main approval chain) for VP Gen Services, DH Gen Services, and ED Manager
+- IT Admin console: user management, audit trail, status override, danger zone, pending settings-changes
+- DH Gen Services & IT Admin can both manage Engineer accounts (Administration Facility / Assigned Engineers)
+- Guest viewer role with read-only visibility into finished requests
+- Dark mode with a flash-free (FOUC-safe) load
+- Live in-app notification bell (Laravel Reverb WebSocket + database notifications)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## Tech Stack
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Layer         | Technology                          |
+|---------------|--------------------------------------|
+| Framework     | Laravel 12.x                        |
+| Language      | PHP 8.2+                            |
+| UI            | Livewire 3, Blade, Alpine.js         |
+| Realtime      | Laravel Reverb + Laravel Echo/Pusher-js |
+| Database      | MySQL 8.0                            |
+| Sessions/Cache/Queue | Database driver (no Redis required) |
+| CSS           | Tailwind CSS 4                       |
+| Build         | Vite 7                               |
+| Testing       | PHPUnit (Livewire feature tests)     |
+| Backups       | spatie/laravel-backup                |
+| Storage       | Local disk / Google Drive (Flysystem adapter) |
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Roles & Workflow
 
-## Security Vulnerabilities
+| Role | Landing area |
+|------|--------------|
+| `farm_manager` | Submit new requests, assessment meeting scheduling, my requests |
+| `division_head` | Inbox (recommend/reject), history, request summary |
+| `vp_gen_services` | Inbox (approve/reject), settings change-requests, history, request summary |
+| `dh_gen_services` | Noting (assign engineer), settings change-request, history, request summary, administration facility (engineer accounts) |
+| `ed_manager` | Inbox (accept/return), settings change-request, history, request summary |
+| `it_admin` | All requests, users, audit trail, status override, pending changes, settings, danger zone, assigned engineers |
+| `engineer` | Inbox (mark initialized) |
+| `guest` | Finished requests (read-only) |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Roles and route/middleware protection are defined in [routes/web.php](routes/web.php); the `role:` middleware is `App\Http\Middleware\EnsureUserHasRole`.
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Prerequisites
+
+- **PHP** >= 8.2 with extensions: `mbstring`, `xml`, `pdo_mysql`, `curl`, `zip`
+- **Composer** >= 2.x
+- **Node.js** >= 20.x and **npm** >= 10.x
+- **MySQL** >= 8.0
+- A local dev stack such as Laragon/Herd (no Docker/Sail requirement, though `laravel/sail` is available as a dev dependency)
+
+---
+
+## Installation
+
+```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd EngistartSystem
+
+# 2. Install PHP dependencies
+composer install
+
+# 3. Copy environment file
+cp .env.example .env
+php artisan key:generate
+
+# 4. Configure your database in .env, then run migrations
+php artisan migrate
+
+# 5. Install Node dependencies and build assets
+npm install
+npm run build
+
+# 6. Install & configure Reverb (WebSocket server for notifications)
+php artisan reverb:install
+```
+
+---
+
+## Environment Variables
+
+Key variables beyond Laravel defaults:
+
+```env
+# Auth mode: local DB auth, or delegate to BFC Group's external auth API
+ENGISTART_AUTH_MODE=local
+# local/api
+
+AUTH_API_BASE_URI=https://bfcgroup.ph
+AUTH_API_KEY=
+AUTH_USER_API_KEY=
+AUTH_VERIFY_SSL=true
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=engistart_db
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Sessions / cache / queue — database-backed, no Redis required
+SESSION_DRIVER=database
+CACHE_STORE=database
+QUEUE_CONNECTION=database
+
+# Broadcasting (notification bell)
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=
+REVERB_APP_KEY=
+REVERB_APP_SECRET=
+REVERB_HOST=localhost
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="${REVERB_HOST}"
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
+```
+
+> **Note:** Never commit your `.env` file.
+
+---
+
+## Running Locally
+
+`composer run dev` starts everything concurrently (server, queue listener, log tailing via Pail, Vite):
+
+```bash
+composer run dev
+```
+
+Or start each piece manually in separate terminals:
+
+```bash
+php artisan serve
+php artisan queue:listen
+php artisan reverb:start   # required for live notification bell updates
+npm run dev
+```
+
+---
+
+## Testing
+
+Feature tests drive the workflow through Livewire component calls (`tests/Feature/WorkflowSmokeTest.php`) rather than HTTP requests, since the app has no API layer to hit.
+
+```bash
+php artisan test
+php artisan test --filter=WorkflowSmokeTest
+```
+
+If `pdo_sqlite` isn't available in your PHP install (this project's `phpunit.xml` defaults to sqlite `:memory:`), point tests at an isolated MySQL database instead without touching `phpunit.xml`:
+
+```bash
+DB_CONNECTION=mysql DB_DATABASE=engistart_test php artisan test
+```
+
+---
+
+## Notifications (Reverb)
+
+Every ownership-changing transition in the approval chain (submit, recommend, approve, accept, note-forward, mark-initialized, return-to-requestor) fires a `WorkflowNotification` via `App\Support\WorkflowNotifier`, delivered over both the `database` and `broadcast` channels. The bell (`App\Livewire\Shared\NotificationBell`) subscribes to the recipient's private Echo channel (`App.Models.User.{id}`, registered in [routes/channels.php](routes/channels.php)) and updates live with no page refresh.
+
+`php artisan reverb:start` must be running for live delivery; without it, notifications still land in the `notifications` table and appear on next load.
+
+---
+
+## Folder Structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/AuthController.php   # only controller in the app — login/logout, role→route map
+│   └── Middleware/
+├── Livewire/
+│   ├── FarmManager/       # new request, assessment meeting, my requests
+│   ├── DivisionHead/      # inbox
+│   ├── VPGenServices/     # inbox, change-requests
+│   ├── DHGenServices/     # noting, settings change-request
+│   ├── EDManager/         # inbox, settings change-request
+│   ├── ITAdmin/           # all-requests, users, audit, override, settings, danger zone
+│   ├── Engineer/          # inbox
+│   ├── Guest/             # finished requests
+│   └── Shared/            # request summary, assigned engineers, notification bell, confirmation modal
+├── Models/                # ProjectRequest, User, etc.
+├── Notifications/         # WorkflowNotification
+└── Support/               # WorkflowNotifier and other helpers
+
+routes/
+├── web.php
+└── channels.php           # broadcast channel authorization
+
+resources/
+├── views/
+│   ├── layouts/app.blade.php
+│   └── livewire/
+└── js/
+    ├── app.js
+    └── echo.js            # Laravel Echo/Reverb client init
+
+tests/
+└── Feature/
+    └── WorkflowSmokeTest.php
+```
