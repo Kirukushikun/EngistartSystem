@@ -6,6 +6,7 @@ use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
 use App\Models\User;
+use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -81,7 +82,7 @@ class NotingPage extends Component
             return;
         }
 
-        DB::transaction(function () use ($requestId, $remarks, $user, $engineerId) {
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user, $engineerId) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('request_type', '!=', 'Settings Change')
@@ -128,7 +129,16 @@ class NotingPage extends Component
                 ],
                 'acted_at' => now(),
             ]);
+
+            return $projectRequest;
         });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            'noted',
+            'Project Assigned for Initialization',
+            $projectRequest->request_number . ' — ' . $projectRequest->title . ' has been noted and assigned to you.'
+        );
 
         unset($this->remarks[$requestId], $this->selectedEngineer[$requestId]);
 

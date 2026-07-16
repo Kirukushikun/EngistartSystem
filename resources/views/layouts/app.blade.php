@@ -12,6 +12,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         document.documentElement.classList.toggle('dark', localStorage.getItem('darkMode') === 'true');
     </script>
@@ -178,6 +179,8 @@
                 
                 <div class="flex items-center gap-3">
                     @auth
+                        <livewire:shared.notification-bell />
+
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button

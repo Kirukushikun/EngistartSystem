@@ -6,6 +6,7 @@ use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
 use App\Support\ProjectTimelineCalculator;
+use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -225,6 +226,15 @@ class NewRequestPage extends Component
 
             return $projectRequest;
         });
+
+        if ($isJl) {
+            WorkflowNotifier::notifyOwner(
+                $submittedRequest,
+                'jl_submitted',
+                'New Justification Letter Submitted',
+                $submittedRequest->request_number . ' — ' . $submittedRequest->title . ' needs your review.'
+            );
+        }
 
         $wasEditing = $this->isEditing;
 

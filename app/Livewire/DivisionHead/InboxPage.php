@@ -5,6 +5,7 @@ namespace App\Livewire\DivisionHead;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Support\WorkflowNotifier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -82,7 +83,7 @@ class InboxPage extends Component
 
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($requestId, $remarks, $user) {
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'division_head')
@@ -133,7 +134,16 @@ class InboxPage extends Component
                 ],
                 'acted_at' => now(),
             ]);
+
+            return $projectRequest;
         });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            $projectRequest->current_step === 'vp_gen_services_jl_review' ? 'jl_recommended' : 'recommended',
+            $projectRequest->current_step === 'vp_gen_services_jl_review' ? 'JL Ready for VP Review' : 'Ready for VP Approval',
+            $projectRequest->request_number . ' — ' . $projectRequest->title . ' needs your review.'
+        );
 
         unset($this->remarks[$requestId]);
 
@@ -150,7 +160,7 @@ class InboxPage extends Component
 
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($requestId, $remarks, $user) {
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'division_head')
@@ -194,7 +204,16 @@ class InboxPage extends Component
                 ],
                 'acted_at' => now(),
             ]);
+
+            return $projectRequest;
         });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            'returned_to_requestor',
+            'Request Returned for Revision',
+            $projectRequest->request_number . ' was returned by Division Head.'
+        );
 
         unset($this->remarks[$requestId]);
 

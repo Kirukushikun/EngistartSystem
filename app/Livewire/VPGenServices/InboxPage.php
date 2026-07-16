@@ -5,6 +5,7 @@ namespace App\Livewire\VPGenServices;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -74,7 +75,7 @@ class InboxPage extends Component
 
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($requestId, $remarks, $user) {
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'vp_gen_services')
@@ -127,7 +128,17 @@ class InboxPage extends Component
                 ],
                 'acted_at' => now(),
             ]);
+
+            return $projectRequest;
         });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            $projectRequest->current_step === 'assessment_meeting_pending' ? 'assessment_meeting_needed' : 'accepted',
+            $projectRequest->current_step === 'assessment_meeting_pending' ? 'JL Approved — Schedule Assessment Meeting' : 'Ready for ED Manager Acceptance',
+            $projectRequest->request_number . ' — ' . $projectRequest->title
+                . ($projectRequest->current_step === 'assessment_meeting_pending' ? ' JL was approved. Please schedule the assessment meeting.' : ' needs your acceptance.')
+        );
 
         unset($this->remarks[$requestId]);
 
@@ -143,7 +154,7 @@ class InboxPage extends Component
 
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($requestId, $remarks, $user) {
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'vp_gen_services')
@@ -187,7 +198,16 @@ class InboxPage extends Component
                 ],
                 'acted_at' => now(),
             ]);
+
+            return $projectRequest;
         });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            'returned_to_requestor',
+            'Request Returned for Revision',
+            $projectRequest->request_number . ' was returned by VP Gen Services.'
+        );
 
         unset($this->remarks[$requestId]);
 

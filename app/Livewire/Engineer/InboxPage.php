@@ -5,6 +5,7 @@ namespace App\Livewire\Engineer;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -53,8 +54,9 @@ class InboxPage extends Component
 
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($requestId, $remarks, $user) {
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
             $projectRequest = ProjectRequest::query()
+                ->with('requestor')
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'engineer')
                 ->where('current_owner_id', $user->id)
@@ -97,7 +99,19 @@ class InboxPage extends Component
                 ],
                 'acted_at' => now(),
             ]);
+
+            return $projectRequest;
         });
+
+        if ($projectRequest->requestor) {
+            WorkflowNotifier::notifyUser(
+                $projectRequest->requestor,
+                $projectRequest,
+                'initialized',
+                'Project Initialized — Workflow Complete',
+                $projectRequest->request_number . ' — ' . $projectRequest->title . ' has been initialized. The workflow is now complete.'
+            );
+        }
 
         unset($this->remarks[$requestId]);
 

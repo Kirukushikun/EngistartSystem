@@ -4,6 +4,7 @@ namespace App\Livewire\FarmManager;
 
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Support\WorkflowNotifier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -56,7 +57,7 @@ class AssessmentMeetingRequestPage extends Component
 
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($user) {
+        $projectRequest = DB::transaction(function () use ($user) {
             $projectRequest = ProjectRequest::query()
                 ->whereKey($this->projectRequestId)
                 ->where('requestor_id', $user->id)
@@ -106,7 +107,16 @@ class AssessmentMeetingRequestPage extends Component
                 ],
                 'acted_at' => now(),
             ]);
+
+            return $projectRequest;
         });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            'submitted',
+            'New Request Submitted',
+            $projectRequest->request_number . ' — ' . $projectRequest->title . ' needs your review.'
+        );
 
         $this->submitted = true;
 
