@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        document.documentElement.classList.toggle('dark', localStorage.getItem('darkMode') === 'true');
+    </script>
     <link rel="icon" href="{{ asset('engistart.ico') }}" type="image/x-icon">
     <title>Login | EngiStart</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="h-full overflow-hidden bg-apis-bg3 text-apis-text" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', value => { localStorage.setItem('darkMode', value); document.documentElement.classList.toggle('dark', value); }); document.documentElement.classList.toggle('dark', darkMode);">
+<body class="h-full overflow-hidden bg-apis-bg3 text-apis-text" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', value => { localStorage.setItem('darkMode', value); document.documentElement.classList.toggle('dark', value); });">
     <div class="min-h-screen flex items-center justify-center px-6 py-10 bg-apis-bg3">
         <div class="w-full max-w-[380px] rounded-[16px] p-10 bg-apis-bg" style="border: 0.5px solid var(--border2)">
             <div class="text-center mb-8">

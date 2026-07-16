@@ -87,13 +87,12 @@ class InboxPage extends Component
 
             $projectRequest->fill([
                 'current_status' => 'accepted',
-                'current_step' => 'completed',
-                'current_owner_role' => null,
+                'current_step' => 'dh_gen_services_noting',
+                'current_owner_role' => 'dh_gen_services',
                 'current_owner_id' => null,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
-                'completed_at' => now(),
                 'latest_remarks' => $remarks !== '' ? $remarks : 'Accepted by ED Manager.',
             ]);
             $projectRequest->save();
@@ -106,13 +105,13 @@ class InboxPage extends Component
                 'from_status' => $previousStatus,
                 'to_status' => 'accepted',
                 'from_step' => $previousStep,
-                'to_step' => 'completed',
+                'to_step' => 'dh_gen_services_noting',
                 'from_owner_role' => $previousOwnerRole,
-                'to_owner_role' => null,
+                'to_owner_role' => 'dh_gen_services',
                 'to_owner_id' => null,
                 'is_rework' => false,
                 'is_exception_path' => $projectRequest->is_late,
-                'is_terminal' => true,
+                'is_terminal' => false,
                 'remarks' => $remarks !== '' ? $remarks : 'Accepted by ED Manager.',
                 'context' => [
                     'review_stage' => 'ed_manager',
@@ -310,8 +309,9 @@ class InboxPage extends Component
                     'days' => $request->date_needed ? max(0, Carbon::today()->diffInDays($request->date_needed, false)) : 0,
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
-                        'noted' => 'Awaiting Acceptance',
+                        'vp_approved' => 'Awaiting Acceptance',
                         'accepted' => 'Accepted',
+                        'noted' => 'Noted',
                         'returned_to_requestor' => 'Returned to Requestor',
                         'rejected' => 'Rejected',
                         default => str_replace('_', ' ', str($request->current_status)->title()),
@@ -397,18 +397,25 @@ class InboxPage extends Component
                 'st' => $transitions->has('vp_gen_services') ? 'done' : 'waiting',
             ],
             [
-                'role' => 'DH Gen Services',
-                'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
-                'action' => 'Noted',
-                'date' => optional($transitions->get('dh_gen_services')?->acted_at)->format('Y-m-d'),
-                'st' => $transitions->has('dh_gen_services') ? 'done' : 'waiting',
-            ],
-            [
                 'role' => 'ED Manager',
                 'user' => $transitions->get('ed_manager')?->actedBy?->name,
                 'action' => 'Acceptance',
                 'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
+                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? ($request->current_status === 'returned_to_requestor' && ! $transitions->has('dh_gen_services') ? 'rejected' : 'done') : 'waiting'),
+            ],
+            [
+                'role' => 'DH Gen Services',
+                'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
+                'action' => 'Noted',
+                'date' => optional($transitions->get('dh_gen_services')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'dh_gen_services' ? 'pending' : ($transitions->has('dh_gen_services') ? 'done' : 'waiting'),
+            ],
+            [
+                'role' => 'Engineer',
+                'user' => $transitions->get('engineer')?->actedBy?->name,
+                'action' => 'Initialization',
+                'date' => optional($transitions->get('engineer')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'engineer' ? 'pending' : ($transitions->has('engineer') ? 'done' : 'waiting'),
             ],
         ];
     }
@@ -420,6 +427,7 @@ class InboxPage extends Component
             'vp_gen_services' => 'VP Gen Services',
             'dh_gen_services' => 'DH Gen Services',
             'ed_manager' => 'ED Manager',
+            'engineer' => 'Engineer',
             default => str_replace('_', ' ', str($role)->title()),
         };
     }

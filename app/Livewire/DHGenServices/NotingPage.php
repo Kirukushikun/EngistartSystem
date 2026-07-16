@@ -5,6 +5,7 @@ namespace App\Livewire\DHGenServices;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,8 @@ class NotingPage extends Component
 {
     public array $remarks = [];
 
+    public array $selectedEngineer = [];
+
     public string $search = '';
 
     public string $typeFilter = 'all';
@@ -27,6 +30,16 @@ class NotingPage extends Component
 
     public int $page = 1;
 
+    public function getEngineerOptionsProperty(): array
+    {
+        return User::query()
+            ->where('role', 'engineer')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
     public function confirmNoteForward(string $requestId): void
     {
         $request = $this->loadNotingItems()->firstWhere('id', $requestId);
@@ -35,9 +48,15 @@ class NotingPage extends Component
             return;
         }
 
+        if (empty($this->selectedEngineer[$requestId])) {
+            $this->dispatch('notify', type: 'warn', message: 'Select an engineer to route this request to before noting.');
+
+            return;
+        }
+
         $this->dispatch('openConfirmationModal', config: [
             'title' => 'Note request and forward?',
-            'message' => 'Mark ' . $request['id'] . ' as noted using the current remarks entered on this request?',
+            'message' => 'Mark ' . $request['id'] . ' as noted and route it to the selected engineer for initialization?',
             'tone' => 'success',
             'confirmText' => 'Note & Forward',
             'confirmEvent' => 'dhGenServicesNotingConfirmed',
@@ -52,10 +71,17 @@ class NotingPage extends Component
         $requestId = (string) ($payload['requestId'] ?? '');
         $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
+        $engineerId = (int) ($this->selectedEngineer[$requestId] ?? 0);
 
         abort_unless($user, 403);
 
-        DB::transaction(function () use ($requestId, $remarks, $user) {
+        if (! $engineerId || ! array_key_exists($engineerId, $this->engineerOptions)) {
+            $this->dispatch('notify', type: 'danger', message: 'Select a valid engineer before noting this request.');
+
+            return;
+        }
+
+        DB::transaction(function () use ($requestId, $remarks, $user, $engineerId) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('request_type', '!=', 'Settings Change')
@@ -69,9 +95,10 @@ class NotingPage extends Component
 
             $projectRequest->fill([
                 'current_status' => 'noted',
-                'current_step' => 'ed_manager_acceptance',
-                'current_owner_role' => 'ed_manager',
-                'current_owner_id' => null,
+                'current_step' => 'engineer_initialization',
+                'current_owner_role' => 'engineer',
+                'current_owner_id' => $engineerId,
+                'assigned_engineer_id' => $engineerId,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
@@ -87,24 +114,25 @@ class NotingPage extends Component
                 'from_status' => $previousStatus,
                 'to_status' => 'noted',
                 'from_step' => $previousStep,
-                'to_step' => 'ed_manager_acceptance',
+                'to_step' => 'engineer_initialization',
                 'from_owner_role' => $previousOwnerRole,
-                'to_owner_role' => 'ed_manager',
-                'to_owner_id' => null,
+                'to_owner_role' => 'engineer',
+                'to_owner_id' => $engineerId,
                 'is_rework' => false,
                 'is_exception_path' => $projectRequest->is_late,
                 'is_terminal' => false,
                 'remarks' => $remarks !== '' ? $remarks : 'Noted by DH Gen Services.',
                 'context' => [
                     'review_stage' => 'dh_gen_services',
+                    'assigned_engineer_id' => $engineerId,
                 ],
                 'acted_at' => now(),
             ]);
         });
 
-        unset($this->remarks[$requestId]);
+        unset($this->remarks[$requestId], $this->selectedEngineer[$requestId]);
 
-        $this->dispatch('notify', type: 'info', message: $requestId . ' was noted and forwarded to ED Manager.');
+        $this->dispatch('notify', type: 'info', message: $requestId . ' was noted and routed to the assigned engineer for initialization.');
     }
 
     public function updatedSearch(): void { $this->page = 1; }
@@ -217,8 +245,8 @@ class NotingPage extends Component
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
                         'vp_approved' => 'VP Approved',
+                        'accepted' => 'Awaiting Noting',
                         'noted' => 'Noted',
-                        'accepted' => 'Accepted',
                         'returned_to_requestor' => 'Returned to Requestor',
                         default => str_replace('_', ' ', str($request->current_status)->title()),
                     },
@@ -303,6 +331,13 @@ class NotingPage extends Component
                 'st' => $transitions->has('vp_gen_services') ? 'done' : 'waiting',
             ],
             [
+                'role' => 'ED Manager',
+                'user' => $transitions->get('ed_manager')?->actedBy?->name,
+                'action' => 'Acceptance',
+                'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? ($request->current_status === 'returned_to_requestor' && ! $transitions->has('dh_gen_services') ? 'rejected' : 'done') : 'waiting'),
+            ],
+            [
                 'role' => 'DH Gen Services',
                 'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
                 'action' => 'Noted',
@@ -310,11 +345,11 @@ class NotingPage extends Component
                 'st' => $request->current_owner_role === 'dh_gen_services' ? 'pending' : ($transitions->has('dh_gen_services') ? 'done' : 'waiting'),
             ],
             [
-                'role' => 'ED Manager',
-                'user' => $transitions->get('ed_manager')?->actedBy?->name,
-                'action' => 'Acceptance',
-                'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
+                'role' => 'Engineer',
+                'user' => $transitions->get('engineer')?->actedBy?->name,
+                'action' => 'Initialization',
+                'date' => optional($transitions->get('engineer')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'engineer' ? 'pending' : ($transitions->has('engineer') ? 'done' : 'waiting'),
             ],
         ];
     }
@@ -326,6 +361,7 @@ class NotingPage extends Component
             'vp_gen_services' => 'VP Gen Services',
             'dh_gen_services' => 'DH Gen Services',
             'ed_manager' => 'ED Manager',
+            'engineer' => 'Engineer',
             default => str_replace('_', ' ', str($role)->title()),
         };
     }

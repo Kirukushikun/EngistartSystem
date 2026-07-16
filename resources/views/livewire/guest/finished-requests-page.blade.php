@@ -1,5 +1,5 @@
 <div class="p-6 overflow-y-auto h-full">
-    @include('partials.apis.alert', ['type' => 'info', 'message' => 'This guest view only displays accepted requests. Rejected, submitted, recommended, approved, noted, and other in-progress records are hidden.'])
+    @include('partials.apis.alert', ['type' => 'info', 'message' => 'This guest view displays all project requests, regardless of status.'])
 
     @include('partials.apis.filter-toolbar', [
         'background' => 'var(--bg)',
@@ -21,7 +21,7 @@
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
                         <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['id'] }}</span>
-                        @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => 'Accepted'])
+                        @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['statusLabel']])
                     </div>
                     <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $request['title'] }}</p>
                     <p class="text-[11px] text-apis-text2 m-0">{{ $request['farm'] }} · Needed {{ $request['needed'] }} · Requested by {{ $request['by'] }} · Finished {{ $request['completedAt'] }}</p>

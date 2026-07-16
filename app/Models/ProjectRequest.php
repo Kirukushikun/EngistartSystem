@@ -19,14 +19,18 @@ class ProjectRequest extends Model
         'current_step',
         'current_owner_role',
         'current_owner_id',
+        'assigned_engineer_id',
         'is_late',
         'is_exception_flow',
         'exception_status',
         'title',
         'request_type',
+        'budget_category',
         'farm_name',
         'purpose',
         'date_needed',
+        'project_start_date',
+        'project_completion_date',
         'chick_in_date',
         'capacity',
         'description',
@@ -49,6 +53,8 @@ class ProjectRequest extends Model
             'is_late' => 'boolean',
             'is_exception_flow' => 'boolean',
             'date_needed' => 'date',
+            'project_start_date' => 'date',
+            'project_completion_date' => 'date',
             'chick_in_date' => 'date',
             'preferred_meeting_date' => 'date',
             'preferred_meeting_time' => 'string',
@@ -76,6 +82,11 @@ class ProjectRequest extends Model
     public function currentOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'current_owner_id');
+    }
+
+    public function assignedEngineer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_engineer_id');
     }
 
     public function transitions(): HasMany

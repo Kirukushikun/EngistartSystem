@@ -9,7 +9,7 @@
                 <p class="text-[16px] font-medium text-apis-text">Request submitted</p>
 
                 <p class="text-[12px] text-apis-text2 leading-[1.6]">
-                    {{ $isLate ? 'Routed to DH Gen Services for late-filing review.' : 'Now in the standard approval workflow.' }}
+                    {{ $timelineAcceptable === 'no' ? 'Justification Letter routed to Division Head and VP Gen Services for review.' : 'Please complete the Assessment Meeting Request from My Requests to continue.' }}
                 </p>
 
                 <div class="w-full rounded-[8px] p-[12px_20px] text-[12px] text-left" style="background: var(--bg2)">
@@ -20,8 +20,8 @@
                     <div class="flex justify-between">
                         <span class="text-apis-text2">Routing</span>
                         <span class="font-medium text-[11px] px-2 py-0.5 rounded"
-                              style="background: {{ $isLate ? 'var(--amber-bg)' : 'var(--blue-bg)' }}; color: {{ $isLate ? 'var(--amber)' : 'var(--blue)' }};">
-                            {{ $isLate ? 'Late Filing – DH Gen Services' : 'Standard Workflow' }}
+                              style="background: {{ $timelineAcceptable === 'no' ? 'var(--amber-bg)' : 'var(--blue-bg)' }}; color: {{ $timelineAcceptable === 'no' ? 'var(--amber)' : 'var(--blue)' }};">
+                            {{ $timelineAcceptable === 'no' ? 'Justification Letter Review' : 'Assessment Meeting Request' }}
                         </span>
                     </div>
                 </div>
@@ -49,7 +49,7 @@
                 <div class="grid grid-cols-2 gap-x-5 gap-y-1 text-[12px] rounded-[8px] p-[11px_16px] mb-4"
                      style="background: var(--bg2); border: 0.5px solid var(--border)">
                     <div><span class="text-apis-text2">TO: </span><span class="font-medium">Div. Head Santos</span></div>
-                    <div><span class="text-apis-text2">DATE: </span><span class="font-medium">{{ now()->format('F j, Y') }}</span></div>
+                    <div><span class="text-apis-text2">DATE OF REQUEST: </span><span class="font-medium">{{ now()->format('F j, Y') }}</span></div>
                     <div><span class="text-apis-text2">FROM: </span><span class="font-medium">Jose Santos</span></div>
                     <div><span class="text-apis-text2">FARM: </span><span class="font-medium">Farm A – Bamban, Tarlac</span></div>
                 </div>
@@ -57,16 +57,16 @@
                 {{-- Info alert --}}
                 @include('partials.apis.alert', [
                     'type' => 'info',
-                    'message' => 'Requests must be submitted at least ' . $requiredLeadTimeDays . ' days before the project start date. Late submissions require a Justification Letter and will be routed to Division Head for late-filing review before DH Gen Services.',
+                    'message' => 'Please allow at least 30 days for small, 45 days for big projects when planning your submission.',
                 ])
 
                 {{-- ── PROJECT OVERVIEW ──────────────────────────────── --}}
                 @include('partials.apis.section-divider', ['label' => 'Project Overview'])
 
                 <div class="grid grid-cols-2 gap-3 mt-3">
-                    {{-- Project Title --}}
-                    <div>
-                        <label class="apis-form-label">Project Title *</label>
+                    {{-- Project Description based on CAPEX --}}
+                    <div class="col-span-2">
+                        <label class="apis-form-label">Project Description based on CAPEX *</label>
                         <input type="text"
                                wire:model.live="form.title"
                                placeholder="e.g. Poultry House Renovation"
@@ -79,14 +79,35 @@
                         <label class="apis-form-label">Type *</label>
                         <select wire:model.live="form.type" class="apis-form-control @error('form.type') apis-error @enderror">
                             <option value="">Select type...</option>
-                            <option>Building</option>
-                            <option>Infrastructure</option>
-                            <option>Equipment</option>
-                            <option>Utility</option>
-                            <option>Others</option>
+                            @foreach ($this->typeOptions as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
                         </select>
                         @error('form.type') <p class="apis-error-text">{{ $message }}</p> @enderror
                     </div>
+
+                    {{-- Allotted Budget --}}
+                    <div>
+                        <label class="apis-form-label">Allotted Budget *</label>
+                        <select wire:model.live="form.budgetCategory" class="apis-form-control @error('form.budgetCategory') apis-error @enderror">
+                            <option value="">Select budget range...</option>
+                            @foreach ($this->budgetCategoryOptions as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('form.budgetCategory') <p class="apis-error-text">{{ $message }}</p> @enderror
+                    </div>
+
+                    @if ($form['type'] === 'others')
+                        <div class="col-span-2">
+                            <label class="apis-form-label">Please specify Type *</label>
+                            <input type="text"
+                                   wire:model.live="form.typeOther"
+                                   placeholder="Specify the project type..."
+                                   class="apis-form-control @error('form.typeOther') apis-error @enderror">
+                            @error('form.typeOther') <p class="apis-error-text">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
 
                     {{-- Purpose --}}
                     <div class="col-span-2">
@@ -98,18 +119,9 @@
                     </div>
                 </div>
 
-                {{-- ── DATE NEEDED ───────────────────────────────────── --}}
+                {{-- ── AUTO-CALCULATED TIMELINE ──────────────────────── --}}
                 <div class="mt-4">
-                    <label class="apis-form-label">
-                        <!-- Date needed -->
-                        Project Start Date *
-                        @if (!is_null($daysAway))
-                            <span class="font-medium text-[11px]"
-                                  style="color: {{ $isPast ? 'var(--red)' : ($isLate ? 'var(--red)' : 'var(--green)') }};">
-                                {{ $isPast ? '(Date is in the past)' : ($isLate ? "({$daysAway} days away — below {$requiredLeadTimeDays}-day minimum)" : "({$daysAway} days ahead — within required window)") }}
-                            </span>
-                        @endif
-                    </label>
+                    <label class="apis-form-label">Date Needed *</label>
                     <input type="date"
                            wire:model.live="form.needed"
                            min="{{ now()->addDay()->format('Y-m-d') }}"
@@ -117,117 +129,61 @@
                     @error('form.needed') <p class="apis-error-text">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- ── LATE FILING BLOCK ─────────────────────────────── --}}
-                @if ($isLate && !$isPast)
-                    <div class="mt-4 rounded-[8px] p-[16px_18px]"
-                         style="background: var(--red-bg); border: 0.5px solid var(--red-bd)">
-                        <p class="text-[13px] font-medium mb-1.5" style="color: var(--red)">Submission deadline exceeded</p>
-                        <p class="text-[12px] leading-[1.65] mb-3" style="color: var(--red)">
-                            Only {{ $daysAway }} day{{ $daysAway === 1 ? '' : 's' }} before start date. The required lead time is {{ $requiredLeadTimeDays }} days. A Justification Letter is required and this will route to Division Head first for late-filing handling.
-                        </p>
-                        <div class="flex items-start gap-2 mb-3">
-                            <input type="checkbox" id="ack" wire:model.live="proceed" class="mt-0.5 cursor-pointer" style="width:auto">
-                            <label for="ack" class="text-[12px] cursor-pointer m-0" style="color: var(--red)">
-                                I acknowledge this is a late filing and will provide a Justification Letter
-                            </label>
-                        </div>
-                        @error('proceed') <p class="apis-error-text" style="color: var(--red);">{{ $message }}</p> @enderror
-
-                        @if ($proceed)
-                            <div class="mt-3">
-                                <label class="text-[12px] block mb-1" style="color: var(--red)">Attach Justification Letter (JL) *</label>
-                                <input type="file"
-                                       wire:model="justificationLetter"
-                                       accept=".pdf,.doc,.docx"
-                                       class="apis-form-control text-[12px] @error('justificationLetter') apis-error @enderror"
-                                       style="color: var(--text)">
-                                @error('justificationLetter') <p class="apis-error-text">{{ $message }}</p> @enderror
-                            </div>
-                        @endif
-                    </div>
-                @endif
-
-                {{-- ── PROJECT REQUIREMENT ───────────────────────────── --}}
-                @include('partials.apis.section-divider', ['label' => 'Project Requirement'])
-
-                <div class="mt-3">
-                    <label class="apis-form-label">Detailed Description *</label>
-                    <textarea rows="4"
-                              wire:model.live="form.desc"
-                              placeholder="Describe the project scope and requirements..."
-                              class="apis-form-control @error('form.desc') apis-error @enderror"></textarea>
-                    @error('form.desc') <p class="apis-error-text">{{ $message }}</p> @enderror
-                </div>
-
-                <div class="mt-3 rounded-[8px] p-[12px_14px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
-                    <div class="flex items-start gap-2">
-                        <input type="checkbox"
-                               id="is-poultry-related"
-                               wire:model.live="isPoultryRelated"
-                               class="mt-0.5 cursor-pointer"
-                               style="width:auto">
-                        <label for="is-poultry-related" class="text-[12px] cursor-pointer m-0 text-apis-text">
-                            This request is poultry-related
-                        </label>
-                    </div>
-                    <p class="text-[11px] text-apis-text2 mt-2 mb-0">
-                        Enable this to show Chick-in Date and Capacity. Leave unchecked for swine or non-poultry requests.
-                    </p>
-                </div>
-
-                @if ($isPoultryRelated)
+                @if ($this->computedTimeline)
                     <div class="grid grid-cols-2 gap-3 mt-3">
                         <div>
-                            <label class="apis-form-label">Chick-in Date</label>
-                            <input type="date"
-                                   wire:model.live="form.chickin"
-                                   class="apis-form-control">
+                            <label class="apis-form-label">Project Start Date</label>
+                            <input type="text" readonly value="{{ $this->computedTimeline['start_date']->format('F j, Y') }}" class="apis-form-control" style="opacity: 0.75; cursor: not-allowed;">
                         </div>
                         <div>
-                            <label class="apis-form-label">Capacity</label>
-                            <input type="text"
-                                   wire:model.live="form.cap"
-                                   placeholder="e.g. 25,000 heads"
-                                   class="apis-form-control">
+                            <label class="apis-form-label">Project Completion Date</label>
+                            <input type="text" readonly value="{{ $this->computedTimeline['completion_date']->format('F j, Y') }}" class="apis-form-control" style="opacity: 0.75; cursor: not-allowed;">
                         </div>
                     </div>
                 @endif
 
-                <div class="mt-3">
-                    <label class="apis-form-label">Supporting Document</label>
-                    <input type="file"
-                           wire:model="supportingDocument"
-                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,.bmp"
-                           class="apis-form-control text-[12px] @error('supportingDocument') apis-error @enderror"
-                           style="color: var(--text)">
-                    <p class="text-[11px] text-apis-text2 mt-1 mb-0">
-                        Optional. You may attach supporting documents or images.
-                        @if ($hasExistingSupportingDocument)
-                            Existing attachment will be retained unless you upload a replacement.
-                        @endif
-                    </p>
-                    @error('supportingDocument') <p class="apis-error-text">{{ $message }}</p> @enderror
-                </div>
-
-                {{-- ── ASSESSMENT MEETING ────────────────────────────── --}}
-                @include('partials.apis.section-divider', ['label' => 'Assessment Meeting Request'])
-
-                <p class="text-[12px] text-apis-text2 mb-3 leading-[1.6]">
-                    We kindly request your availability for a meeting to discuss the assessment process and schedule.
-                </p>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="apis-form-label">Preferred Date</label>
-                        <input type="date"
-                               wire:model.live="form.mtgDate"
-                               class="apis-form-control">
+                {{-- ── TIMELINE ACCEPTABILITY ────────────────────────── --}}
+                <div class="mt-4 rounded-[8px] p-[14px_16px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
+                    <label class="apis-form-label">Is the estimated timeline acceptable? *</label>
+                    <div class="flex gap-4 mt-1">
+                        <label class="flex items-center gap-1.5 text-[12px] cursor-pointer text-apis-text">
+                            <input type="radio" wire:model.live="timelineAcceptable" value="yes" style="width:auto"> Yes
+                        </label>
+                        <label class="flex items-center gap-1.5 text-[12px] cursor-pointer text-apis-text">
+                            <input type="radio" wire:model.live="timelineAcceptable" value="no" style="width:auto"> No
+                        </label>
                     </div>
-                    <div>
-                        <label class="apis-form-label">Preferred Time</label>
-                        <input type="time"
-                               wire:model.live="form.mtgTime"
-                               class="apis-form-control">
-                    </div>
+                    @error('timelineAcceptable') <p class="apis-error-text">{{ $message }}</p> @enderror
+
+                    @if ($timelineAcceptable === 'no')
+                        <div class="mt-4 pt-4 space-y-3" style="border-top: 0.5px solid var(--border)">
+                            <p class="text-[12px] font-medium m-0" style="color: var(--red)">Justification Letter (JL)</p>
+
+                            <div>
+                                <label class="apis-form-label">Reason for PIF delay *</label>
+                                <textarea rows="2" wire:model.live="jl.delayReason" class="apis-form-control @error('jl.delayReason') apis-error @enderror"></textarea>
+                                @error('jl.delayReason') <p class="apis-error-text">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label class="apis-form-label">Estimated turnover date *</label>
+                                <input type="date" wire:model.live="jl.estimatedTurnoverDate" class="apis-form-control @error('jl.estimatedTurnoverDate') apis-error @enderror">
+                                @error('jl.estimatedTurnoverDate') <p class="apis-error-text">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label class="apis-form-label">Implication if not completed *</label>
+                                <textarea rows="2" wire:model.live="jl.implicationIfNotCompleted" class="apis-form-control @error('jl.implicationIfNotCompleted') apis-error @enderror"></textarea>
+                                @error('jl.implicationIfNotCompleted') <p class="apis-error-text">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label class="apis-form-label">Estimated financial opportunity loss *</label>
+                                <input type="text" wire:model.live="jl.estimatedFinancialOpportunityLoss" placeholder="e.g. ₱150,000" class="apis-form-control @error('jl.estimatedFinancialOpportunityLoss') apis-error @enderror">
+                                @error('jl.estimatedFinancialOpportunityLoss') <p class="apis-error-text">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 @if ($errors->any())
@@ -241,8 +197,8 @@
                 <div class="flex gap-2.5 mt-6 pb-10">
                     <button type="submit"
                             class="text-[13px] font-medium px-6 py-[9px] rounded-[8px] transition-colors"
-                            style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd)">
-                        {{ $isEditing ? 'Review and Save Changes' : 'Review Before Submit' }}
+                            style="background: {{ $timelineAcceptable === 'no' ? 'var(--red-bg)' : 'var(--blue-bg)' }}; color: {{ $timelineAcceptable === 'no' ? 'var(--red)' : 'var(--blue)' }}; border: 0.5px solid {{ $timelineAcceptable === 'no' ? 'var(--red-bd)' : 'var(--blue-bd)' }}">
+                        {{ $timelineAcceptable === 'no' ? 'Submit JL' : ($isEditing ? 'Review and Save Changes' : 'Review Before Submit') }}
                     </button>
                     <button type="button"
                             wire:click="resetForm"
@@ -253,3 +209,5 @@
                 </div>
             </form>
         @endif
+    </div>
+</div>

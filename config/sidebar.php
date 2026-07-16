@@ -33,6 +33,11 @@ return [
                     'route' => 'division-head.history',
                     'active' => ['division-head.history'],
                 ],
+                [
+                    'label' => 'Project Request Summary',
+                    'route' => 'division-head.request-summary',
+                    'active' => ['division-head.request-summary'],
+                ],
             ],
         ],
         'vp-gen-services' => [
@@ -56,6 +61,11 @@ return [
                     'route' => 'vp-gen-services.history',
                     'active' => ['vp-gen-services.history'],
                 ],
+                [
+                    'label' => 'Project Request Summary',
+                    'route' => 'vp-gen-services.request-summary',
+                    'active' => ['vp-gen-services.request-summary'],
+                ],
             ],
         ],
         'dh-gen-services' => [
@@ -69,6 +79,11 @@ return [
                     'badge' => ['text' => '3', 'tone' => 'blue'],
                 ],
                 [
+                    'label' => 'Project Request Summary',
+                    'route' => 'dh-gen-services.request-summary',
+                    'active' => ['dh-gen-services.request-summary'],
+                ],
+                [
                     'label' => 'History',
                     'route' => 'dh-gen-services.history',
                     'active' => ['dh-gen-services.history'],
@@ -77,6 +92,11 @@ return [
                     'label' => 'Settings Change Request',
                     'route' => 'dh-gen-services.change-request',
                     'active' => ['dh-gen-services.change-request'],
+                ],
+                [
+                    'label' => 'Administration Facility',
+                    'route' => 'dh-gen-services.administration-facility',
+                    'active' => ['dh-gen-services.administration-facility'],
                 ],
             ],
         ],
@@ -89,6 +109,11 @@ return [
                     'route' => 'ed-manager.inbox',
                     'active' => ['ed-manager.inbox'],
                     'badge' => ['text' => '3', 'tone' => 'green'],
+                ],
+                [
+                    'label' => 'Project Request Summary',
+                    'route' => 'ed-manager.request-summary',
+                    'active' => ['ed-manager.request-summary'],
                 ],
                 [
                     'label' => 'History',
@@ -142,6 +167,22 @@ return [
                     'route' => 'it-admin.danger-zone',
                     'active' => ['it-admin.danger-zone'],
                 ],
+                [
+                    'label' => 'Assigned Engineers',
+                    'route' => 'it-admin.assigned-engineers',
+                    'active' => ['it-admin.assigned-engineers'],
+                ],
+            ],
+        ],
+        'engineer' => [
+            'role' => 'engineer',
+            'match' => 'engineer.*',
+            'items' => [
+                [
+                    'label' => 'For Initialization',
+                    'route' => 'engineer.inbox',
+                    'active' => ['engineer.inbox'],
+                ],
             ],
         ],
         'guest' => [
@@ -149,7 +190,7 @@ return [
             'match' => 'guest.*',
             'items' => [
                 [
-                    'label' => 'Finished Requests',
+                    'label' => 'All Requests',
                     'route' => 'guest.finished-requests',
                     'active' => ['guest.finished-requests'],
                 ],

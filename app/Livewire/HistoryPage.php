@@ -237,6 +237,11 @@ class HistoryPage extends Component
                 'page_title' => 'History',
                 'page_description' => 'Review the requests you already accepted or returned for revision.',
             ],
+            'engineer' => [
+                'label' => 'Engineer',
+                'page_title' => 'History',
+                'page_description' => 'Review the requests you already initialized.',
+            ],
         ];
     }
 
@@ -285,6 +290,7 @@ class HistoryPage extends Component
             'vp_gen_services' => 'VP Gen Services',
             'dh_gen_services' => 'DH Gen Services',
             'ed_manager' => 'ED Manager',
+            'engineer' => 'Engineer',
             'farm_manager' => 'Farm Manager',
             default => str_replace('_', ' ', str((string) $role)->title()),
         };
@@ -303,7 +309,10 @@ class HistoryPage extends Component
             'accepted' => 'Accepted',
             'rejected' => 'Rejected',
             'noted' => 'Noted',
+            'initialized' => 'Initialized',
             'submitted' => 'Submitted',
+            'jl_pending' => 'JL Under Review',
+            'jl_approved' => 'JL Approved',
             null => 'Unknown',
             default => str_replace('_', ' ', str($status)->title()),
         };

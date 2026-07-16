@@ -78,8 +78,8 @@ class AllRequestsPage extends Component
                     'status_label' => $this->statusLabel($request->current_status),
                     'submitted_sort' => ($request->submitted_at ?? $request->created_at)?->timestamp ?? 0,
                     'needed_sort' => $neededDate?->timestamp ?? PHP_INT_MAX,
-                    'is_in_progress' => ! in_array($request->current_status, ['accepted', 'implemented', 'rejected', 'withdrawn'], true),
-                    'is_completed' => in_array($request->current_status, ['accepted', 'implemented'], true),
+                    'is_in_progress' => ! in_array($request->current_status, ['initialized', 'implemented', 'rejected', 'withdrawn'], true),
+                    'is_completed' => in_array($request->current_status, ['initialized', 'implemented'], true),
                     'is_late' => $request->is_late,
                 ];
             })
@@ -201,8 +201,11 @@ class AllRequestsPage extends Component
             'accepted' => 'Accepted',
             'rejected' => 'Rejected',
             'noted' => 'Noted',
+            'initialized' => 'Initialized',
             'submitted' => 'Submitted',
             'withdrawn' => 'Withdrawn',
+            'jl_pending' => 'JL Under Review',
+            'jl_approved' => 'JL Approved',
             null => 'Unknown',
             default => str_replace('_', ' ', str($status)->title()),
         };

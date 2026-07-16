@@ -14,8 +14,6 @@ class FinishedRequestsPage extends Component
     {
         $items = ProjectRequest::query()
             ->with('requestor')
-            ->where('current_status', 'accepted')
-            ->whereNull('withdrawn_at')
             ->orderByDesc('completed_at')
             ->orderByDesc('last_transitioned_at')
             ->orderByDesc('created_at')
@@ -28,7 +26,8 @@ class FinishedRequestsPage extends Component
                     'by' => $request->requestor?->name ?? 'Unknown requester',
                     'needed' => optional($request->date_needed)->format('Y-m-d') ?? '—',
                     'completedAt' => optional($request->completed_at ?? $request->last_transitioned_at)->format('Y-m-d h:i A') ?? '—',
-                    'status' => 'accepted',
+                    'status' => $request->current_status,
+                    'statusLabel' => $this->statusLabel($request->current_status),
                     'type' => $request->request_type,
                     'purpose' => $request->purpose ?: '—',
                     'desc' => $request->description ?: 'No description provided.',
@@ -54,13 +53,32 @@ class FinishedRequestsPage extends Component
         return $items->sortByDesc('completedAt')->values();
     }
 
+    protected function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'submitted' => 'Submitted',
+            'recommended' => 'DH Recommended',
+            'vp_approved' => 'VP Approved',
+            'accepted' => 'Accepted',
+            'noted' => 'Noted',
+            'initialized' => 'Initialized',
+            'returned_to_requestor' => 'Returned to Requestor',
+            'rejected' => 'Rejected',
+            'withdrawn' => 'Withdrawn',
+            'jl_pending' => 'JL Under Review',
+            'jl_approved' => 'JL Approved',
+            null => 'Unknown',
+            default => str_replace('_', ' ', str($status)->title()),
+        };
+    }
+
     public function render()
     {
         return view('livewire.guest.finished-requests-page')
             ->layout('layouts.app', [
-                'title' => 'Finished Requests | EngiStart',
-                'header' => 'Finished Requests',
-                'subheader' => 'View accepted request outcomes only. Rejected and in-progress requests are not visible here.',
+                'title' => 'All Requests | EngiStart',
+                'header' => 'All Requests',
+                'subheader' => 'View all project requests and their current status.',
             ]);
     }
 }

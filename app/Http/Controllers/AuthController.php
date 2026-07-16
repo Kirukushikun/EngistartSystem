@@ -245,6 +245,7 @@ class AuthController extends Controller
             'dh_gen_services' => 'dh-gen-services.noting',
             'ed_manager' => 'ed-manager.inbox',
             'it_admin' => 'it-admin.all-requests',
+            'engineer' => 'engineer.inbox',
             default => 'guest.finished-requests',
         };
     }

@@ -197,6 +197,7 @@ class AuditTrailPage extends Component
             'vp_gen_services' => 'VP Gen Services',
             'dh_gen_services' => 'DH Gen Services',
             'ed_manager' => 'ED Manager',
+            'engineer' => 'Engineer',
             'farm_manager' => 'Farm Manager',
             'it_admin' => 'IT Admin',
             default => str_replace('_', ' ', str((string) $role)->title()),

@@ -6,13 +6,15 @@
             localStorage.setItem('darkMode', value);
             document.documentElement.classList.toggle('dark', value);
         });
-        document.documentElement.classList.toggle('dark', darkMode);
     "
     class="h-full"
 >
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        document.documentElement.classList.toggle('dark', localStorage.getItem('darkMode') === 'true');
+    </script>
     <title>{{ $title ?? trim($__env->yieldContent('title')) ?: 'EngiStart' }}</title>
     <link rel="icon" href="{{ asset('engistart.ico') }}" type="image/x-icon">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

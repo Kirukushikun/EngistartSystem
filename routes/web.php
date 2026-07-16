@@ -16,27 +16,33 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
     Route::middleware('role:farm_manager')->group(function () {
         Route::get('/farm-manager/requests/new', \App\Livewire\FarmManager\NewRequestPage::class)->name('farm-manager.requests.new');
         Route::get('/farm-manager/requests', \App\Livewire\FarmManager\MyRequestsPage::class)->name('farm-manager.requests.index');
+        Route::get('/farm-manager/requests/{projectRequest}/assessment-meeting', \App\Livewire\FarmManager\AssessmentMeetingRequestPage::class)->name('farm-manager.requests.assessment-meeting');
     });
 
     Route::middleware('role:division_head')->group(function () {
         Route::get('/division-head/inbox', \App\Livewire\DivisionHead\InboxPage::class)->name('division-head.inbox');
         Route::get('/division-head/history', \App\Livewire\HistoryPage::class)->name('division-head.history');
+        Route::get('/division-head/request-summary', \App\Livewire\Shared\RequestSummaryPage::class)->name('division-head.request-summary');
     });
 
     Route::middleware('role:vp_gen_services')->group(function () {
         Route::get('/vp-gen-services/inbox', \App\Livewire\VPGenServices\InboxPage::class)->name('vp-gen-services.inbox');
         Route::get('/vp-gen-services/change-requests', \App\Livewire\VPGenServices\ChangeRequestsPage::class)->name('vp-gen-services.change-requests');
         Route::get('/vp-gen-services/history', \App\Livewire\HistoryPage::class)->name('vp-gen-services.history');
+        Route::get('/vp-gen-services/request-summary', \App\Livewire\Shared\RequestSummaryPage::class)->name('vp-gen-services.request-summary');
     });
 
     Route::middleware('role:dh_gen_services')->group(function () {
         Route::get('/dh-gen-services/noting', \App\Livewire\DHGenServices\NotingPage::class)->name('dh-gen-services.noting');
+        Route::get('/dh-gen-services/request-summary', \App\Livewire\Shared\RequestSummaryPage::class)->name('dh-gen-services.request-summary');
         Route::get('/dh-gen-services/history', \App\Livewire\HistoryPage::class)->name('dh-gen-services.history');
         Route::get('/dh-gen-services/change-request', \App\Livewire\DHGenServices\SettingsChangeRequestPage::class)->name('dh-gen-services.change-request');
+        Route::get('/dh-gen-services/administration-facility', \App\Livewire\Shared\AssignedEngineersPage::class)->name('dh-gen-services.administration-facility');
     });
 
     Route::middleware('role:ed_manager')->group(function () {
         Route::get('/ed-manager/inbox', \App\Livewire\EDManager\InboxPage::class)->name('ed-manager.inbox');
+        Route::get('/ed-manager/request-summary', \App\Livewire\Shared\RequestSummaryPage::class)->name('ed-manager.request-summary');
         Route::get('/ed-manager/history', \App\Livewire\HistoryPage::class)->name('ed-manager.history');
         Route::get('/ed-manager/change-request', \App\Livewire\EDManager\SettingsChangeRequestPage::class)->name('ed-manager.change-request');
     });
@@ -49,6 +55,11 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
         Route::get('/it-admin/pending-changes', \App\Livewire\ITAdmin\PendingChangesPage::class)->name('it-admin.pending-changes');
         Route::get('/it-admin/settings', \App\Livewire\ITAdmin\SettingsPage::class)->name('it-admin.settings');
         Route::get('/it-admin/danger-zone', \App\Livewire\ITAdmin\DangerZonePage::class)->name('it-admin.danger-zone');
+        Route::get('/it-admin/assigned-engineers', \App\Livewire\Shared\AssignedEngineersPage::class)->name('it-admin.assigned-engineers');
+    });
+
+    Route::middleware('role:engineer')->group(function () {
+        Route::get('/engineer/inbox', \App\Livewire\Engineer\InboxPage::class)->name('engineer.inbox');
     });
 
     Route::middleware('role:guest')->group(function () {

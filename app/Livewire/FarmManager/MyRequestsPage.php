@@ -81,6 +81,7 @@ class MyRequestsPage extends Component
         $statusLabel = match ($request->current_status) {
             'returned_to_requestor' => 'Returned to Requestor',
             'rejected' => 'Rejected',
+            'jl_pending' => 'JL Under Review',
             default => str_replace('_', ' ', str($request->current_status)->title()),
         };
 
@@ -95,6 +96,7 @@ class MyRequestsPage extends Component
             'isLate' => $request->is_late,
             'isEditable' => $request->isEditableByRequestor(),
             'isWithdrawn' => $request->withdrawn_at !== null,
+            'awaitingMeetingRequest' => $request->current_step === 'assessment_meeting_pending' && $request->current_owner_id === Auth::id(),
             'remarks' => $this->buildRemarks($request),
             'attachments' => $this->buildAttachments($request),
             'chain' => $this->buildChain($request),
@@ -247,21 +249,29 @@ class MyRequestsPage extends Component
                 'VP Gen Services',
                 $request->current_owner_role === 'vp_gen_services'
                     ? 'pending'
-                    : ($transitions->has('vp_gen_services') || in_array($request->current_owner_role, ['dh_gen_services', 'ed_manager'], true)
+                    : ($transitions->has('vp_gen_services') || in_array($request->current_owner_role, ['ed_manager', 'dh_gen_services', 'engineer'], true)
                         ? 'done'
                         : (in_array($request->current_status, ['returned_to_requestor'], true) && $transitions->has('division_head') ? 'rejected' : 'waiting'))
+            ),
+            $this->chainStep(
+                'ED Manager',
+                $request->current_owner_role === 'ed_manager'
+                    ? 'pending'
+                    : ($transitions->has('ed_manager') || in_array($request->current_owner_role, ['dh_gen_services', 'engineer'], true)
+                        ? 'done'
+                        : 'waiting')
             ),
             $this->chainStep(
                 'DH Gen Services',
                 $request->current_owner_role === 'dh_gen_services'
                     ? 'pending'
-                    : ($transitions->has('dh_gen_services') || $request->current_owner_role === 'ed_manager'
+                    : ($transitions->has('dh_gen_services') || $request->current_owner_role === 'engineer'
                         ? 'done'
                         : 'waiting')
             ),
             $this->chainStep(
-                'ED Manager',
-                $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? 'done' : 'waiting')
+                'Engineer',
+                $request->current_owner_role === 'engineer' ? 'pending' : ($transitions->has('engineer') ? 'done' : 'waiting')
             ),
         ];
     }
@@ -290,6 +300,7 @@ class MyRequestsPage extends Component
             'vp_gen_services' => 'VP Gen Services',
             'dh_gen_services' => 'DH Gen Services',
             'ed_manager' => 'ED Manager',
+            'engineer' => 'Engineer',
             'it_admin' => 'IT Admin',
             default => str_replace('_', ' ', str($role)->title()),
         };

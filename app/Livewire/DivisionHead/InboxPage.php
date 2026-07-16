@@ -89,19 +89,26 @@ class InboxPage extends Component
                 ->whereNull('withdrawn_at')
                 ->firstOrFail();
 
+            $isJlReview = $projectRequest->current_step === 'division_head_jl_review';
+
             $previousStatus = $projectRequest->current_status;
             $previousStep = $projectRequest->current_step;
             $previousOwnerRole = $projectRequest->current_owner_role;
 
+            $nextStatus = $isJlReview ? 'jl_pending' : 'recommended';
+            $nextStep = $isJlReview ? 'vp_gen_services_jl_review' : 'vp_gen_services_approval';
+            $defaultRemarks = $isJlReview ? 'JL recommended for review by Division Head.' : 'Recommended for approval by Division Head.';
+
             $projectRequest->fill([
-                'current_status' => 'recommended',
-                'current_step' => 'vp_gen_services_approval',
+                'current_status' => $nextStatus,
+                'current_step' => $nextStep,
                 'current_owner_role' => 'vp_gen_services',
                 'current_owner_id' => null,
+                'exception_status' => $isJlReview ? 'pending_vp_gen_services' : $projectRequest->exception_status,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
-                'latest_remarks' => $remarks !== '' ? $remarks : 'Recommended for approval by Division Head.',
+                'latest_remarks' => $remarks !== '' ? $remarks : $defaultRemarks,
             ]);
             $projectRequest->save();
 
@@ -109,18 +116,18 @@ class InboxPage extends Component
                 'project_request_id' => $projectRequest->id,
                 'acted_by_id' => $user->id,
                 'acted_by_role' => $user->role,
-                'action' => 'recommended',
+                'action' => $isJlReview ? 'jl_recommended' : 'recommended',
                 'from_status' => $previousStatus,
-                'to_status' => 'recommended',
+                'to_status' => $nextStatus,
                 'from_step' => $previousStep,
-                'to_step' => 'vp_gen_services_approval',
+                'to_step' => $nextStep,
                 'from_owner_role' => $previousOwnerRole,
                 'to_owner_role' => 'vp_gen_services',
                 'to_owner_id' => null,
                 'is_rework' => false,
-                'is_exception_path' => $projectRequest->is_late,
+                'is_exception_path' => $isJlReview,
                 'is_terminal' => false,
-                'remarks' => $remarks !== '' ? $remarks : 'Recommended for approval by Division Head.',
+                'remarks' => $remarks !== '' ? $remarks : $defaultRemarks,
                 'context' => [
                     'review_stage' => 'division_head',
                 ],
@@ -404,6 +411,7 @@ class InboxPage extends Component
             'vp_gen_services' => 'VP Gen Services',
             'dh_gen_services' => 'DH Gen Services',
             'ed_manager' => 'ED Manager',
+            'engineer' => 'Engineer',
             'farm_manager' => 'Farm Manager',
             default => str_replace('_', ' ', str($role)->title()),
         };
@@ -458,6 +466,13 @@ class InboxPage extends Component
                 'st' => $request->current_owner_role === 'vp_gen_services' ? 'pending' : ($transitions->has('vp_gen_services') ? 'done' : 'waiting'),
             ],
             [
+                'role' => 'ED Manager',
+                'user' => $transitions->get('ed_manager')?->actedBy?->name,
+                'action' => 'Acceptance',
+                'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? 'done' : 'waiting'),
+            ],
+            [
                 'role' => 'DH Gen Services',
                 'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
                 'action' => 'Noted',
@@ -465,11 +480,11 @@ class InboxPage extends Component
                 'st' => $request->current_owner_role === 'dh_gen_services' ? 'pending' : ($transitions->has('dh_gen_services') ? 'done' : 'waiting'),
             ],
             [
-                'role' => 'ED Manager',
-                'user' => $transitions->get('ed_manager')?->actedBy?->name,
-                'action' => 'Acceptance',
-                'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? 'done' : 'waiting'),
+                'role' => 'Engineer',
+                'user' => $transitions->get('engineer')?->actedBy?->name,
+                'action' => 'Initialization',
+                'date' => optional($transitions->get('engineer')?->acted_at)->format('Y-m-d'),
+                'st' => $request->current_owner_role === 'engineer' ? 'pending' : ($transitions->has('engineer') ? 'done' : 'waiting'),
             ],
         ];
     }

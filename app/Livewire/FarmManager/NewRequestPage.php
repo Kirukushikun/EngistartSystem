@@ -4,35 +4,34 @@ namespace App\Livewire\FarmManager;
 
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
-use App\Models\RequestAttachment;
 use App\Models\RequestTransition;
-use App\Support\SettingsChangeValueFormatter;
+use App\Support\ProjectTimelineCalculator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use Livewire\WithFileUploads;
 
 class NewRequestPage extends Component
 {
-    use WithFileUploads;
-
     public array $form = [
         'title' => '',
         'type' => '',
+        'typeOther' => '',
         'purpose' => '',
         'needed' => '',
-        'desc' => '',
-        'chickin' => '',
-        'cap' => '',
-        'mtgDate' => '',
-        'mtgTime' => '',
+        'budgetCategory' => '',
     ];
 
-    public bool $proceed = false;
+    public string $timelineAcceptable = '';
+
+    public array $jl = [
+        'delayReason' => '',
+        'estimatedTurnoverDate' => '',
+        'implicationIfNotCompleted' => '',
+        'estimatedFinancialOpportunityLoss' => '',
+    ];
 
     public bool $submitted = false;
 
@@ -42,81 +41,81 @@ class NewRequestPage extends Component
 
     public bool $isEditing = false;
 
-    public bool $hasExistingJustificationLetter = false;
-
-    public bool $hasExistingSupportingDocument = false;
-
-    public bool $isPoultryRelated = false;
-
-    public ?int $daysAway = null;
-
-    public int $requiredLeadTimeDays = 45;
-
-    public bool $isLate = false;
-
-    public bool $isPast = false;
-
-    public $justificationLetter;
-
-    public $supportingDocument;
-
     public function mount(): void
     {
-        $this->requiredLeadTimeDays = $this->resolveRequiredLeadTimeDays();
-
         $editRequestId = request()->integer('edit');
 
         if ($editRequestId > 0) {
             $this->loadEditableRequest($editRequestId);
         }
-
-        $this->recalculateNeededDateState();
     }
 
-    public function updatedFormNeeded(): void
+    public function updatedTimelineAcceptable(): void
     {
-        $this->recalculateNeededDateState();
-    }
-
-    public function updatedProceed(): void
-    {
-        if ($this->proceed) {
-            $this->resetValidation('proceed');
+        if ($this->timelineAcceptable === 'yes') {
+            $this->jl = [
+                'delayReason' => '',
+                'estimatedTurnoverDate' => '',
+                'implicationIfNotCompleted' => '',
+                'estimatedFinancialOpportunityLoss' => '',
+            ];
+            $this->resetValidation([
+                'jl.delayReason',
+                'jl.estimatedTurnoverDate',
+                'jl.implicationIfNotCompleted',
+                'jl.estimatedFinancialOpportunityLoss',
+            ]);
         }
     }
 
-    public function updatedIsPoultryRelated(): void
+    public function getTypeOptionsProperty(): array
     {
-        if (! $this->isPoultryRelated) {
-            $this->form['chickin'] = '';
-            $this->form['cap'] = '';
+        return [
+            'production_building' => 'Production Building',
+            'support_infrastructure' => 'Support Infrastructure',
+            'personnel_facilities' => 'Personnel Facilities',
+            'others' => 'Others',
+        ];
+    }
+
+    public function getBudgetCategoryOptionsProperty(): array
+    {
+        return ProjectTimelineCalculator::categories();
+    }
+
+    public function getComputedTimelineProperty(): ?array
+    {
+        if ($this->form['budgetCategory'] === '') {
+            return null;
         }
+
+        return ProjectTimelineCalculator::forCategory($this->form['budgetCategory']);
     }
 
     public function openSubmissionReview(): void
     {
-        $validated = $this->validate($this->rules(), $this->messages());
+        $this->validate($this->rules(), $this->messages());
 
-        if (($validated['form']['needed'] ?? null) !== $this->form['needed']) {
-            $this->recalculateNeededDateState();
-        }
+        $isJl = $this->timelineAcceptable === 'no';
+        $timeline = $this->computedTimeline;
 
         $this->dispatch('openConfirmationModal', config: [
             'title' => $this->isEditing ? 'Review updated request before resubmitting' : 'Review request before submitting',
             'message' => 'Please confirm the summary below. After submission, editing is only allowed until the first reviewer action.',
-            'tone' => $this->isLate ? 'warn' : 'info',
-            'confirmText' => $this->isEditing ? 'Save and resubmit' : 'Confirm and submit',
+            'tone' => $isJl ? 'warn' : 'info',
+            'confirmText' => $isJl ? 'Submit JL' : ($this->isEditing ? 'Save and resubmit' : 'Confirm and submit'),
             'confirmEvent' => 'requestSubmissionConfirmed',
             'confirmTarget' => self::class,
             'summary' => [
-                ['label' => 'Project Title', 'value' => $this->form['title']],
-                ['label' => 'Type', 'value' => $this->form['type']],
-                ['label' => 'Category', 'value' => $this->isPoultryRelated ? 'Poultry related' : 'Swine / non-poultry'],
-                ['label' => 'Date Needed', 'value' => Carbon::parse($this->form['needed'])->format('F j, Y')],
-                ['label' => 'Routing', 'value' => 'Division Head → VP Gen Services → DH Gen Services → ED Manager'],
-                ['label' => 'Late Filing', 'value' => $this->isLate ? 'Yes' : 'No'],
-                ['label' => 'Justification Letter', 'value' => $this->isLate ? ($this->justificationLetter ? 'Attached for this submission' : ($this->hasExistingJustificationLetter ? 'Existing attachment retained' : 'Required')) : 'Not required'],
-                ['label' => 'Supporting Document', 'value' => $this->supportingDocument ? 'Attached for this submission' : ($this->hasExistingSupportingDocument ? 'Existing attachment retained' : 'Optional')],
+                ['label' => 'Project Description based on CAPEX', 'value' => $this->form['title']],
+                ['label' => 'Type', 'value' => $this->form['type'] === 'others' ? $this->form['typeOther'] : ($this->typeOptions[$this->form['type']] ?? '')],
+                ['label' => 'Allotted Budget', 'value' => $this->budgetCategoryOptions[$this->form['budgetCategory']] ?? ''],
+                ['label' => 'Project Start Date', 'value' => $timeline ? $timeline['start_date']->format('F j, Y') : '—'],
+                ['label' => 'Project Completion Date', 'value' => $timeline ? $timeline['completion_date']->format('F j, Y') : '—'],
+                ['label' => 'Is the estimated timeline acceptable?', 'value' => $this->timelineAcceptable === 'yes' ? 'Yes' : 'No'],
+                ['label' => 'Routing', 'value' => $isJl
+                    ? 'Division Head → VP Gen Services (JL review) → Assessment Meeting → ED Manager → DH Gen Services → Engineer'
+                    : 'Assessment Meeting → Division Head → VP Gen Services → ED Manager → DH Gen Services → Engineer'],
             ],
         ])->to(ConfirmationModal::class);
     }
@@ -124,20 +123,27 @@ class NewRequestPage extends Component
     #[On('requestSubmissionConfirmed')]
     public function submit(): void
     {
-        $validated = $this->validate($this->rules(), $this->messages());
-
-        if (($validated['form']['needed'] ?? null) !== $this->form['needed']) {
-            $this->recalculateNeededDateState();
-        }
+        $this->validate($this->rules(), $this->messages());
 
         $user = Auth::user();
 
         abort_unless($user, 403);
 
-        $submittedRequest = DB::transaction(function () use ($user) {
-            $initialStatus = 'submitted';
-            $initialStep = 'division_head_review';
-            $initialOwnerRole = 'division_head';
+        $isJl = $this->timelineAcceptable === 'no';
+        $timeline = $this->computedTimeline;
+
+        $submittedRequest = DB::transaction(function () use ($user, $isJl, $timeline) {
+            if ($isJl) {
+                $initialStatus = 'jl_pending';
+                $initialStep = 'division_head_jl_review';
+                $initialOwnerRole = 'division_head';
+                $initialOwnerId = null;
+            } else {
+                $initialStatus = 'submitted';
+                $initialStep = 'assessment_meeting_pending';
+                $initialOwnerRole = $user->role;
+                $initialOwnerId = $user->id;
+            }
 
             $projectRequest = $this->editingRequestId
                 ? ProjectRequest::query()
@@ -157,34 +163,39 @@ class NewRequestPage extends Component
                 $projectRequest->submitted_at = now();
             }
 
+            $requestType = $this->form['type'] === 'others'
+                ? trim($this->form['typeOther'])
+                : ($this->typeOptions[$this->form['type']] ?? $this->form['type']);
+
+            $description = $this->form['purpose'] !== '' ? $this->form['purpose'] : $this->form['title'];
+
             $projectRequest->fill([
                 'current_status' => $initialStatus,
                 'current_step' => $initialStep,
                 'current_owner_role' => $initialOwnerRole,
-                'current_owner_id' => null,
-                'is_late' => $this->isLate,
-                'is_exception_flow' => false,
-                'exception_status' => null,
+                'current_owner_id' => $initialOwnerId,
+                'is_late' => false,
+                'is_exception_flow' => $isJl,
+                'exception_status' => $isJl ? 'pending_division_head' : null,
                 'title' => $this->form['title'],
-                'request_type' => $this->form['type'],
-                'farm_name' => null,
+                'request_type' => $requestType,
+                'budget_category' => $this->form['budgetCategory'],
+                'farm_name' => $projectRequest->farm_name ?? $user->farm,
                 'purpose' => $this->form['purpose'] ?: null,
                 'date_needed' => $this->form['needed'],
-                'chick_in_date' => $this->isPoultryRelated ? ($this->form['chickin'] ?: null) : null,
-                'capacity' => $this->isPoultryRelated ? ($this->form['cap'] ?: null) : null,
-                'description' => $this->form['desc'],
-                'preferred_meeting_date' => $this->form['mtgDate'] ?: null,
-                'preferred_meeting_time' => $this->form['mtgTime'] ?: null,
+                'project_start_date' => $timeline['start_date'] ?? null,
+                'project_completion_date' => $timeline['completion_date'] ?? null,
+                'description' => $description,
                 'locked_at' => null,
                 'cancelled_at' => null,
                 'withdrawn_at' => null,
                 'last_transitioned_at' => now(),
                 'latest_remarks' => null,
                 'meta' => array_merge($projectRequest->meta ?? [], [
-                    'days_away' => $this->daysAway,
                     'submission_channel' => 'farm_manager_livewire',
                     'last_saved_mode' => $this->isEditing ? 'edit_before_review' : 'new_submission',
-                    'is_poultry_related' => $this->isPoultryRelated,
+                    'timeline_acceptable' => $this->timelineAcceptable,
+                    'jl' => $isJl ? $this->jl : null,
                 ]),
             ]);
             $projectRequest->save();
@@ -200,87 +211,17 @@ class NewRequestPage extends Component
                 'to_step' => $initialStep,
                 'from_owner_role' => $this->isEditing ? $projectRequest->getOriginal('current_owner_role') : null,
                 'to_owner_role' => $initialOwnerRole,
-                'to_owner_id' => null,
+                'to_owner_id' => $initialOwnerId,
                 'is_rework' => false,
-                'is_exception_path' => $this->isLate,
+                'is_exception_path' => $isJl,
                 'is_terminal' => false,
                 'remarks' => null,
                 'context' => [
-                    'is_late' => $this->isLate,
-                    'days_away' => $this->daysAway,
                     'edited_before_review' => $this->isEditing,
+                    'timeline_acceptable' => $this->timelineAcceptable,
                 ],
                 'acted_at' => now(),
             ]);
-
-            if ($this->isLate && $this->justificationLetter) {
-                try {
-                    $projectRequest->attachments()
-                        ->where('attachment_type', 'justification_letter')
-                        ->where('is_active', true)
-                        ->update(['is_active' => false]);
-
-                    $storedPath = $this->justificationLetter->store('request-attachments', 'public');
-
-                    RequestAttachment::create([
-                        'project_request_id' => $projectRequest->id,
-                        'uploaded_by_id' => $user->id,
-                        'attachment_type' => 'justification_letter',
-                        'original_name' => $this->justificationLetter->getClientOriginalName(),
-                        'disk' => 'public',
-                        'path' => $storedPath,
-                        'mime_type' => $this->justificationLetter->getClientMimeType(),
-                        'size_bytes' => $this->justificationLetter->getSize(),
-                        'is_active' => true,
-                        'meta' => [
-                            'required_for_late_filing' => true,
-                        ],
-                        'uploaded_at' => now(),
-                    ]);
-
-                    Log::debug('[JustificationLetter] RequestAttachment record created successfully', [
-                        'request_id' => $projectRequest->id,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::error('[JustificationLetter] Upload failed', [
-                        'error' => $e->getMessage(),
-                        'exception' => get_class($e),
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine(),
-                        'trace' => $e->getTraceAsString(),
-                        'request_id' => $projectRequest->id ?? null,
-                        'user_id' => $user->id ?? null,
-                    ]);
-
-                    throw $e;
-                }
-            }
-
-            if ($this->supportingDocument) {
-                $projectRequest->attachments()
-                    ->where('attachment_type', 'supporting_document')
-                    ->where('is_active', true)
-                    ->update(['is_active' => false]);
-
-                $storedPath = $this->supportingDocument->store('request-attachments', 'public');
-
-                RequestAttachment::create([
-                    'project_request_id' => $projectRequest->id,
-                    'uploaded_by_id' => $user->id,
-                    'attachment_type' => 'supporting_document',
-                    'original_name' => $this->supportingDocument->getClientOriginalName(),
-                    'disk' => 'public',
-                    'path' => $storedPath,
-                    'mime_type' => $this->supportingDocument->getClientMimeType(),
-                    'size_bytes' => $this->supportingDocument->getSize(),
-                    'is_active' => true,
-                    'meta' => [
-                        'category' => Str::startsWith((string) $this->supportingDocument->getClientMimeType(), 'image/') ? 'image' : 'document',
-                        'optional_attachment' => true,
-                    ],
-                    'uploaded_at' => now(),
-                ]);
-            }
 
             return $projectRequest;
         });
@@ -291,16 +232,14 @@ class NewRequestPage extends Component
         $this->submitted = true;
         $this->editingRequestId = $submittedRequest->id;
         $this->isEditing = false;
-        $this->hasExistingJustificationLetter = $submittedRequest->attachments()->where('attachment_type', 'justification_letter')->where('is_active', true)->exists();
-        $this->hasExistingSupportingDocument = $submittedRequest->attachments()->where('attachment_type', 'supporting_document')->where('is_active', true)->exists();
 
         $this->dispatch('notify',
-            type: $this->isLate ? 'warn' : 'info',
+            type: $isJl ? 'warn' : 'info',
             message: $wasEditing
                 ? 'Request updated successfully before reviewer pickup.'
-                : ($this->isLate
-                    ? 'Late filing submitted and routed through the standard approval chain starting with Division Head.'
-                    : 'Request submitted successfully and routed to Division Head.')
+                : ($isJl
+                    ? 'Justification Letter submitted and routed to Division Head and VP Gen Services for review.'
+                    : 'Request submitted successfully. Please complete the Assessment Meeting Request next.')
         );
     }
 
@@ -308,72 +247,25 @@ class NewRequestPage extends Component
     {
         $this->reset([
             'form',
-            'proceed',
+            'timelineAcceptable',
+            'jl',
             'submitted',
             'submittedId',
             'editingRequestId',
             'isEditing',
-            'hasExistingJustificationLetter',
-            'hasExistingSupportingDocument',
-            'isPoultryRelated',
-            'daysAway',
-            'isLate',
-            'isPast',
-            'justificationLetter',
-            'supportingDocument',
         ]);
 
         $this->form = [
             'title' => '',
             'type' => '',
+            'typeOther' => '',
             'purpose' => '',
             'needed' => '',
-            'desc' => '',
-            'chickin' => '',
-            'cap' => '',
-            'mtgDate' => '',
-            'mtgTime' => '',
+            'budgetCategory' => '',
         ];
 
         $this->resetValidation();
         $this->resetErrorBag();
-        $this->recalculateNeededDateState();
-    }
-
-    protected function recalculateNeededDateState(): void
-    {
-        if (blank($this->form['needed'])) {
-            $this->daysAway = null;
-            $this->isLate = false;
-            $this->isPast = false;
-
-            return;
-        }
-
-        $today = Carbon::today();
-        $needed = Carbon::parse($this->form['needed']);
-
-        $this->daysAway = $today->diffInDays($needed, false);
-        $this->isPast = $this->daysAway < 0;
-        $this->isLate = $this->daysAway >= 0 && $this->daysAway < $this->requiredLeadTimeDays;
-    }
-
-    protected function resolveRequiredLeadTimeDays(): int
-    {
-        $latestImplementedRequest = ProjectRequest::query()
-            ->where('request_type', 'Settings Change')
-            ->where('current_status', 'implemented')
-            ->where('meta->setting_change->setting_key', 'lead_time_days')
-            ->orderByDesc('completed_at')
-            ->orderByDesc('last_transitioned_at')
-            ->orderByDesc('id')
-            ->first();
-
-        $configuredValue = data_get($latestImplementedRequest?->meta, 'setting_change.proposed_value');
-        $formattedValue = SettingsChangeValueFormatter::format('lead_time_days', $configuredValue ?: '45');
-        $numericValue = (int) preg_replace('/[^0-9]/', '', $formattedValue);
-
-        return $numericValue > 0 ? $numericValue : 45;
     }
 
     protected function rules(): array
@@ -381,24 +273,19 @@ class NewRequestPage extends Component
         $rules = [
             'form.title' => ['required', 'string'],
             'form.type' => ['required', 'string'],
+            'form.typeOther' => [Rule::requiredIf($this->form['type'] === 'others'), 'nullable', 'string', 'max:255'],
             'form.purpose' => ['nullable', 'string'],
             'form.needed' => ['required', 'date', 'after:today'],
-            'form.desc' => ['required', 'string'],
-            'form.chickin' => ['nullable', 'date'],
-            'form.cap' => ['nullable', 'string'],
-            'form.mtgDate' => ['nullable', 'date'],
-            'form.mtgTime' => ['nullable'],
+            'form.budgetCategory' => ['required', 'string', 'in:small,medium,large'],
+            'timelineAcceptable' => ['required', 'in:yes,no'],
         ];
 
-        if ($this->isLate) {
-            $rules['proceed'] = ['accepted'];
-
-            if (! $this->hasExistingJustificationLetter || $this->justificationLetter) {
-                $rules['justificationLetter'] = ['required', 'file', 'mimes:pdf,doc,docx'];
-            }
+        if ($this->timelineAcceptable === 'no') {
+            $rules['jl.delayReason'] = ['required', 'string'];
+            $rules['jl.estimatedTurnoverDate'] = ['required', 'date'];
+            $rules['jl.implicationIfNotCompleted'] = ['required', 'string'];
+            $rules['jl.estimatedFinancialOpportunityLoss'] = ['required', 'string'];
         }
-
-        $rules['supportingDocument'] = ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,gif,webp,bmp'];
 
         return $rules;
     }
@@ -406,15 +293,17 @@ class NewRequestPage extends Component
     protected function messages(): array
     {
         return [
-            'form.title.required' => 'Project Title is required.',
+            'form.title.required' => 'Project Description based on CAPEX is required.',
             'form.type.required' => 'Type is required.',
+            'form.typeOther.required' => 'Please specify the type.',
             'form.needed.required' => 'Date Needed is required.',
             'form.needed.after' => 'Date Needed must be a future date.',
-            'form.desc.required' => 'Detailed Description is required.',
-            'proceed.accepted' => 'Please acknowledge the late filing requirement.',
-            'justificationLetter.required' => 'The Justification Letter is required for late filings.',
-            'justificationLetter.mimes' => 'The Justification Letter must be a PDF, DOC, or DOCX file.',
-            'supportingDocument.mimes' => 'The Supporting Document must be a PDF, DOC, DOCX, JPG, JPEG, PNG, GIF, WEBP, or BMP file.',
+            'form.budgetCategory.required' => 'Allotted Budget is required.',
+            'timelineAcceptable.required' => 'Please indicate whether the estimated timeline is acceptable.',
+            'jl.delayReason.required' => 'Reason for PIF delay is required.',
+            'jl.estimatedTurnoverDate.required' => 'Estimated turnover date is required.',
+            'jl.implicationIfNotCompleted.required' => 'Implication if not completed is required.',
+            'jl.estimatedFinancialOpportunityLoss.required' => 'Estimated financial opportunity loss is required.',
         ];
     }
 
@@ -441,28 +330,25 @@ class NewRequestPage extends Component
         $this->editingRequestId = $projectRequest->id;
         $this->isEditing = true;
         $this->submittedId = $projectRequest->request_number;
-        $this->hasExistingJustificationLetter = $projectRequest->attachments()
-            ->where('attachment_type', 'justification_letter')
-            ->where('is_active', true)
-            ->exists();
-        $this->hasExistingSupportingDocument = $projectRequest->attachments()
-            ->where('attachment_type', 'supporting_document')
-            ->where('is_active', true)
-            ->exists();
-        $this->isPoultryRelated = (bool) data_get($projectRequest->meta, 'is_poultry_related', filled($projectRequest->chick_in_date) || filled($projectRequest->capacity));
+
+        $typeKey = array_search($projectRequest->request_type, $this->typeOptions, true);
+
         $this->form = [
             'title' => $projectRequest->title,
-            'type' => $projectRequest->request_type,
+            'type' => $typeKey !== false ? $typeKey : 'others',
+            'typeOther' => $typeKey !== false ? '' : (string) $projectRequest->request_type,
             'purpose' => $projectRequest->purpose ?? '',
             'needed' => optional($projectRequest->date_needed)->toDateString() ?? '',
-            'desc' => $projectRequest->description,
-            'chickin' => optional($projectRequest->chick_in_date)->toDateString() ?? '',
-            'cap' => $projectRequest->capacity ?? '',
-            'mtgDate' => optional($projectRequest->preferred_meeting_date)->toDateString() ?? '',
-            'mtgTime' => $projectRequest->preferred_meeting_time ?? '',
+            'budgetCategory' => (string) $projectRequest->budget_category,
         ];
-        $this->proceed = $projectRequest->is_late;
-        $this->isLate = $projectRequest->is_late;
+
+        $this->timelineAcceptable = (string) data_get($projectRequest->meta, 'timeline_acceptable', '');
+        $this->jl = data_get($projectRequest->meta, 'jl') ?: [
+            'delayReason' => '',
+            'estimatedTurnoverDate' => '',
+            'implicationIfNotCompleted' => '',
+            'estimatedFinancialOpportunityLoss' => '',
+        ];
     }
 
     public function render()

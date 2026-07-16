@@ -59,6 +59,7 @@
                         'vp_approved' => 'VP Approved',
                         'returned_to_requestor' => 'Returned to Requestor',
                         'rejected' => 'Rejected',
+                        'jl_pending' => 'JL Under Review',
                         default => ucfirst(str_replace('_', ' ', $request['status'])),
                     };
 
@@ -84,7 +85,15 @@
                             @endif
                         </div>
 
-                        @if ($request['isEditable'])
+                        @if ($request['awaitingMeetingRequest'])
+                            <div class="flex gap-2 flex-wrap justify-end">
+                                <a href="{{ route('farm-manager.requests.assessment-meeting', ['projectRequest' => $request['dbId']]) }}"
+                                   class="text-[11px] font-medium px-3 py-1.5 rounded-[8px] no-underline"
+                                   style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
+                                    Complete Meeting Request
+                                </a>
+                            </div>
+                        @elseif ($request['isEditable'])
                             <div class="flex gap-2 flex-wrap justify-end">
                                 <a href="{{ route('farm-manager.requests.new', ['edit' => $request['dbId']]) }}"
                                    class="text-[11px] font-medium px-3 py-1.5 rounded-[8px] no-underline"
