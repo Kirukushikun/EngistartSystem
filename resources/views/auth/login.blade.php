@@ -29,11 +29,11 @@
                 @csrf
                 <div>
                     <label class="block text-[12px] text-apis-text mb-1.5">Email address</label>
-                    <input type="email" name="email" value="{{ old('email') }}" class="w-full h-[38px] rounded-[8px] px-3 text-[12px]" style="border: 0.5px solid var(--border2); background: var(--bg); color: var(--text)" placeholder="yourname@brooksidegroup.org" required autofocus>
+                    <input type="email" name="email" id="login-email" value="{{ old('email') }}" class="w-full h-[38px] rounded-[8px] px-3 text-[12px]" style="border: 0.5px solid var(--border2); background: var(--bg); color: var(--text)" placeholder="yourname@brooksidegroup.org" required autofocus>
                 </div>
                 <div>
                     <label class="block text-[12px] text-apis-text mb-1.5">Password</label>
-                    <input type="password" name="password" class="w-full h-[38px] rounded-[8px] px-3 text-[12px]" style="border: 0.5px solid var(--border2); background: var(--bg); color: var(--text)" placeholder="Enter password" required>
+                    <input type="password" name="password" id="login-password" class="w-full h-[38px] rounded-[8px] px-3 text-[12px]" style="border: 0.5px solid var(--border2); background: var(--bg); color: var(--text)" placeholder="Enter password" required>
                 </div>
                 <label class="flex items-center gap-2 text-[12px] text-apis-text2">
                     <input type="checkbox" name="remember" value="1">
@@ -43,80 +43,81 @@
             </form>
 
             <div class="mt-5 rounded-[10px] px-4 py-3 text-[11px] leading-[1.6]" style="background: var(--bg2); border: 0.5px solid var(--border)">
-                <p class="m-0 font-medium text-apis-text">Demo password: <code class="demo-password">1234</code></p>
+                <p class="m-0 mb-2 font-medium text-apis-text">Dev accounts</p>
+                <p class="m-0 mb-2 text-apis-text2">Click a role to fill its credentials, then Sign In.</p>
 
-                <div class="mt-2 text-apis-text2">
-                    <p class="m-0 mb-1 font-medium text-apis-text">Example logins</p>
+                <div class="dev-account-grid">
+                    <?php
+                    $logins = [
+                        'Farm Manager'      => ['name' => 'Jose Santos',       'email' => 'j.santos@brooksidegroup.org'],
+                        'Division Head'     => ['name' => 'Div. Head Santos',  'email' => 'dh.santos@brooksidegroup.org'],
+                        'VP Gen Services'   => ['name' => 'Atty. T. Dizon',    'email' => 't.dizon@brooksidegroup.org'],
+                        'DH Gen Services'   => ['name' => 'Ancel Roque',       'email' => 'a.roque@brooksidegroup.org'],
+                        'ED Manager'        => ['name' => 'Engr. D. Baniaga',  'email' => 'd.baniaga@brooksidegroup.org'],
+                        'IT Admin'          => ['name' => 'Jeff Montiano',     'email' => 'j.montiano@brooksidegroup.org'],
+                        'Guest'             => ['name' => 'Guest Viewer',      'email' => 'guest@brooksidegroup.org'],
+                    ];
 
-                    <div class="demo-logins">
-                        <?php
-                        $logins = [
-                            'Farm Manager'      => 'j.santos@brooksidegroup.org',
-                            'Division Head'     => 'dh.santos@brooksidegroup.org',
-                            'VP Gen Services'   => 't.dizon@brooksidegroup.org',
-                            'DH Gen Services'   => 'a.roque@brooksidegroup.org',
-                            'ED Manager'        => 'd.baniaga@brooksidegroup.org',
-                            'IT Admin'          => 'j.montiano@brooksidegroup.org',
-                            'Guest'             => 'guest@brooksidegroup.org',
-                        ];
-
-                        foreach ($logins as $role => $email): ?>
-                            <div class="demo-login-row">
-                                <span class="demo-role"><?= htmlspecialchars($role) ?></span>
-                                <span class="copy-email" data-email="<?= htmlspecialchars($email) ?>"><?= htmlspecialchars($email) ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+                    foreach ($logins as $role => $account): ?>
+                        <button type="button" class="dev-account-card" data-email="<?= htmlspecialchars($account['email']) ?>" data-password="1234">
+                            <span class="dev-account-role"><?= htmlspecialchars($role) ?></span>
+                            <span class="dev-account-name"><?= htmlspecialchars($account['name']) ?></span>
+                            <span class="dev-account-email"><?= htmlspecialchars($account['email']) ?></span>
+                        </button>
+                    <?php endforeach; ?>
                 </div>
 
                 <style>
-                    .demo-password {
-                        font-family: monospace;
-                        background: var(--border);
-                        padding: 0px 5px;
-                        border-radius: 4px;
-                    }
-                    .demo-logins {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 2px;
-                    }
-                    .demo-login-row {
+                    .dev-account-grid {
                         display: grid;
-                        grid-template-columns: 110px 1fr;
-                        align-items: center;
+                        grid-template-columns: 1fr 1fr;
                         gap: 8px;
                     }
-                    .demo-role {
-                        color: var(--apis-text2);
-                        opacity: 0.6;
-                        white-space: nowrap;
-                    }
-                    .copy-email {
-                        color: var(--blue-400, #60a5fa);
+                    .dev-account-card {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 2px;
+                        padding: 8px 10px;
+                        border-radius: 8px;
+                        border: 0.5px solid var(--border2);
+                        background: var(--bg);
                         cursor: pointer;
-                        transition: opacity 0.15s;
+                        text-align: left;
+                        transition: border-color 0.15s, background 0.15s;
                     }
-                    .copy-email:hover {
-                        opacity: 0.75;
+                    .dev-account-card:hover {
+                        border-color: var(--blue-bd, #3b82f6);
+                        background: var(--bg2);
                     }
-                    .copy-email.copied {
-                        color: var(--green-400, #4ade80);
+                    .dev-account-card.filled {
+                        border-color: var(--green-bd, #22c55e);
+                    }
+                    .dev-account-role {
+                        font-size: 10px;
+                        font-weight: 600;
+                        letter-spacing: 0.04em;
+                        text-transform: uppercase;
+                        color: var(--blue-400, #60a5fa);
+                    }
+                    .dev-account-name {
+                        font-size: 12px;
+                        color: var(--text);
+                    }
+                    .dev-account-email {
+                        font-size: 10px;
+                        color: var(--apis-text2);
+                        opacity: 0.7;
                     }
                 </style>
 
                 <script>
-                    document.querySelectorAll('.copy-email').forEach(el => {
-                        const original = el.textContent;
-                        el.addEventListener('click', () => {
-                            navigator.clipboard.writeText(el.dataset.email).then(() => {
-                                el.textContent = 'Copied!';
-                                el.classList.add('copied');
-                                setTimeout(() => {
-                                    el.textContent = original;
-                                    el.classList.remove('copied');
-                                }, 1500);
-                            });
+                    document.querySelectorAll('.dev-account-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            document.getElementById('login-email').value = card.dataset.email;
+                            document.getElementById('login-password').value = card.dataset.password;
+                            document.querySelectorAll('.dev-account-card').forEach(c => c.classList.remove('filled'));
+                            card.classList.add('filled');
                         });
                     });
                 </script>
