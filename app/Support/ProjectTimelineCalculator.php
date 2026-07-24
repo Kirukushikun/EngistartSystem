@@ -22,10 +22,11 @@ final class ProjectTimelineCalculator
         }
 
         $from = ($from ?? Carbon::today())->copy();
+        $startDate = $from->copy()->addDays($config['start_offset_days']);
 
         return [
-            'start_date' => $from->copy()->addDays($config['start_offset_days']),
-            'completion_date' => $from->copy()->addDays($config['completion_offset_days']),
+            'start_date' => $startDate,
+            'completion_date' => $startDate->copy()->addDays($config['completion_offset_days']),
         ];
     }
 }
