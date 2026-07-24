@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ITAdmin;
 
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
@@ -13,6 +14,8 @@ use Livewire\Attributes\On;
 
 class StatusOverridePage extends Component
 {
+    use HasSimplePagination;
+
     public string $search = '';
 
     public string $statusFilter = 'all';
@@ -36,20 +39,6 @@ class StatusOverridePage extends Component
     public function updatedPerPage(): void
     {
         $this->page = 1;
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
     }
 
     public function confirmOverride(string $requestId): void
@@ -212,27 +201,9 @@ class StatusOverridePage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredRequests->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        if ($this->filteredRequests->isEmpty()) {
-            return 0;
-        }
-
-        return (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredRequests->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredRequests->count());
+        return $this->filteredRequests->count();
     }
 
     public function getStatusOptionsProperty(): array

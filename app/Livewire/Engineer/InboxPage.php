@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Engineer;
 
+use App\Livewire\Concerns\BuildsRequestCardData;
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
@@ -11,12 +13,14 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class InboxPage extends Component
 {
+    use BuildsRequestCardData;
+    use HasSimplePagination;
+
     public array $remarks = [];
 
     public string $search = '';
@@ -123,20 +127,6 @@ class InboxPage extends Component
     public function updatedSortBy(): void { $this->page = 1; }
     public function updatedPerPage(): void { $this->page = 1; }
 
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
-    }
-
     public function getItemsProperty(): Collection
     {
         return $this->loadItems();
@@ -171,19 +161,9 @@ class InboxPage extends Component
         return $this->filteredItems->slice(($this->page - 1) * $this->perPage, $this->perPage)->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredItems->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        return $this->filteredItems->isEmpty() ? 0 : (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        return $this->filteredItems->isEmpty() ? 0 : min($this->page * $this->perPage, $this->filteredItems->count());
+        return $this->filteredItems->count();
     }
 
     protected function loadItems(): Collection
@@ -221,7 +201,6 @@ class InboxPage extends Component
                     'needed' => optional($request->date_needed)->format('Y-m-d'),
                     'startDate' => optional($request->project_start_date)->format('Y-m-d'),
                     'completionDate' => optional($request->project_completion_date)->format('Y-m-d'),
-                    'requestorRole' => $request->requestor_role ? $this->roleLabel($request->requestor_role) : null,
                     'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
                     'jl' => data_get($request->meta, 'jl'),
                     'submitted' => optional($submittedAt)->format('Y-m-d'),
@@ -240,78 +219,6 @@ class InboxPage extends Component
                 ];
             })
             ->values();
-    }
-
-    protected function buildAttachments(ProjectRequest $request): array
-    {
-        return $request->attachments
-            ->where('is_active', true)
-            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document'], true))
-            ->map(function ($attachment): array {
-                return [
-                    'label' => $attachment->attachment_type === 'justification_letter' ? 'JL File' : 'Attached File',
-                    'name' => $attachment->original_name,
-                    'url' => Storage::disk($attachment->disk)->url($attachment->path),
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
-    protected function budgetCategoryLabel(?string $category): ?string
-    {
-        return $category ? config('project_timelines.' . $category . '.label') : null;
-    }
-
-    protected function buildRemarkHistory(ProjectRequest $request): array
-    {
-        $entries = [];
-
-        foreach ($request->transitions->sortBy('acted_at') as $transition) {
-            if ($transition->acted_by_role === 'farm_manager' || blank($transition->remarks)) {
-                continue;
-            }
-
-            $entries[] = [
-                'role' => $this->roleLabel($transition->acted_by_role),
-                'actor' => $transition->actedBy?->name ?? 'Unknown approver',
-                'label' => $this->remarkLabel($transition->action),
-                'remarks' => $transition->remarks,
-                'date' => optional($transition->acted_at)->format('Y-m-d h:i A'),
-                'tone' => $this->remarkTone($transition->action),
-            ];
-        }
-
-        return $entries;
-    }
-
-    protected function roleLabel(string $role): string
-    {
-        return match ($role) {
-            'division_head' => 'Division Head',
-            'vp_gen_services' => 'VP Gen Services',
-            'dh_gen_services' => 'DH Gen Services',
-            'ed_manager' => 'ED Manager',
-            'engineer' => 'Engineer',
-            default => str_replace('_', ' ', str($role)->title()),
-        };
-    }
-
-    protected function remarkLabel(string $action): string
-    {
-        return match ($action) {
-            'noted' => 'Noted',
-            'initialized' => 'Initialized',
-            default => str_replace('_', ' ', str($action)->title()),
-        };
-    }
-
-    protected function remarkTone(string $action): string
-    {
-        return match ($action) {
-            'noted', 'initialized' => 'success',
-            default => 'info',
-        };
     }
 
     public function render()

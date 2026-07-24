@@ -38,57 +38,38 @@
         ])
 
         @forelse ($this->paginatedItems as $request)
-            <div class="apis-card" x-data="{ open: false }">
-                <button type="button" @click="open = !open" class="w-full text-left p-[14px_18px] flex justify-between items-start gap-3" style="cursor: pointer;">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-[7px] mb-[5px] flex-wrap">
-                            <span class="font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['id'] }}</span>
-                            @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['statusLabel']])
-                        </div>
-                        <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $request['title'] }}</p>
-                        <p class="text-[11px] text-apis-text2 m-0">{{ $request['farm'] }} · Start {{ $request['startDate'] }} · Completion {{ $request['completionDate'] }} · By {{ $request['by'] }}</p>
-                    </div>
-                    <span class="text-[10px] text-apis-text3 flex-shrink-0 mt-[3px]"><span x-show="!open">▼</span><span x-show="open">▲</span></span>
-                </button>
-                <div x-cloak x-show="open" class="border-t p-[16px_18px]" style="border-color: var(--border)">
-                    <div class="mb-[14px] space-y-[8px] text-[12px] text-apis-text2">
-                        <div><span class="mr-1">Type:</span><span class="text-apis-text">{{ $request['type'] }}</span></div>
-                        <div><span class="mr-1">Purpose:</span><span class="text-apis-text">{{ $request['purpose'] }}</span></div>
-                        @if ($request['chickin'])<div><span class="mr-1">Chick-in:</span><span class="text-apis-text">{{ $request['chickin'] }}</span></div>@endif
-                        @if ($request['cap'])<div><span class="mr-1">Capacity:</span><span class="text-apis-text">{{ $request['cap'] }}</span></div>@endif
-                        @if ($request['mtgDate'])<div><span class="mr-1">Meeting:</span><span class="text-apis-text">{{ $request['mtgDate'] }} at {{ $request['mtgTime'] }}</span></div>@endif
-                    </div>
-                    <p class="text-[12px] leading-[1.7] text-apis-text mb-[14px] border-l-2 pl-3" style="border-color: var(--border)">{{ $request['desc'] }}</p>
-                    @include('partials.apis.request-detail-fields', [
-                        'requestorRole' => $request['requestorRole'],
-                        'budgetCategory' => $request['budgetCategory'],
-                        'startDate' => $request['startDate'],
-                        'completionDate' => $request['completionDate'],
-                        'jl' => $request['jl'],
-                    ])
-                    @include('partials.apis.attachments-section', [
-                        'attachments' => $request['attachments'],
-                    ])
-                    @include('partials.apis.approval-chain', [
-                        'chain' => $request['chain'],
-                        'submittedBy' => $request['by'],
-                        'submittedDate' => $request['submitted'],
-                    ])
-                    @include('partials.apis.remarks-section', [
-                        'history' => $request['remarkHistory'],
-                        'showInput' => $request['isPendingHere'],
-                        'textareaModel' => 'remarks.' . $request['id'],
-                        'textareaPlaceholder' => 'Add initialization notes here...',
-                    ])
-                    <div class="flex gap-2 flex-wrap">
-                        @if ($request['isPendingHere'])
-                            <button type="button" wire:click="confirmInitialize(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">Mark Initialized</button>
-                        @else
-                            <p class="text-[11px] text-apis-text2 m-0">View only. No further action is available on this request.</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
+            <x-apis.request-card
+                :id="$request['id']"
+                :status="$request['status']"
+                :status-label="$request['statusLabel']"
+                :is-late="$request['isLate']"
+                :title="$request['title']"
+                subtitle="{{ $request['farm'] }} · Start {{ $request['startDate'] }} · Completion {{ $request['completionDate'] }} · By {{ $request['by'] }}"
+                :type="$request['type']"
+                :purpose="$request['purpose']"
+                :chickin="$request['chickin']"
+                :cap="$request['cap']"
+                :mtg-date="$request['mtgDate']"
+                :mtg-time="$request['mtgTime']"
+                :desc="$request['desc']"
+                :budget-category="$request['budgetCategory']"
+                :start-date="$request['startDate']"
+                :completion-date="$request['completionDate']"
+                :jl="$request['jl']"
+                :attachments="$request['attachments']"
+                :chain="$request['chain']"
+                :submitted-by="$request['by']"
+                :submitted-date="$request['submitted']"
+                :remark-history="$request['remarkHistory']"
+                :is-pending-here="$request['isPendingHere']"
+                :textarea-model="'remarks.' . $request['id']"
+                textarea-placeholder="Add initialization notes here...">
+                @if ($request['isPendingHere'])
+                    <button type="button" wire:click="confirmInitialize(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">Mark Initialized</button>
+                @else
+                    <p class="text-[11px] text-apis-text2 m-0">View only. No further action is available on this request.</p>
+                @endif
+            </x-apis.request-card>
         @empty
             <div class="text-center py-[80px] text-[13px] text-apis-text2">No requests assigned to you yet.</div>
         @endforelse

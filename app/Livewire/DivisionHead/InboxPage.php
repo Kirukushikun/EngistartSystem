@@ -2,6 +2,8 @@
 
 namespace App\Livewire\DivisionHead;
 
+use App\Livewire\Concerns\BuildsRequestCardData;
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
@@ -9,7 +11,6 @@ use App\Support\ApprovalChainBuilder;
 use App\Support\WorkflowNotifier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use Livewire\Attributes\On;
@@ -17,6 +18,9 @@ use Livewire\Component;
 
 class InboxPage extends Component
 {
+    use BuildsRequestCardData;
+    use HasSimplePagination;
+
     public ?string $openRequestId = null;
 
     public array $remarks = [];
@@ -241,20 +245,6 @@ class InboxPage extends Component
         $this->page = 1;
     }
 
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
-    }
-
     public function getInboxItemsProperty(): Collection
     {
         return $this->loadInboxItems();
@@ -297,27 +287,9 @@ class InboxPage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredInboxItems->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        if ($this->filteredInboxItems->isEmpty()) {
-            return 0;
-        }
-
-        return (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredInboxItems->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredInboxItems->count());
+        return $this->filteredInboxItems->count();
     }
 
     public function getTypeOptionsProperty(): array
@@ -375,7 +347,6 @@ class InboxPage extends Component
                     'cap' => $request->capacity,
                     'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
                     'mtgTime' => $request->preferred_meeting_time,
-                    'requestorRole' => $request->requestor_role ? $this->roleLabel($request->requestor_role) : null,
                     'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
                     'startDate' => optional($request->project_start_date)->format('Y-m-d'),
                     'completionDate' => optional($request->project_completion_date)->format('Y-m-d'),
@@ -389,84 +360,6 @@ class InboxPage extends Component
                 ];
             })
             ->values();
-    }
-
-    protected function buildAttachments(ProjectRequest $request): array
-    {
-        return $request->attachments
-            ->where('is_active', true)
-            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document'], true))
-            ->map(function ($attachment): array {
-                return [
-                    'label' => $attachment->attachment_type === 'justification_letter' ? 'JL File' : 'Attached File',
-                    'name' => $attachment->original_name,
-                    'url' => Storage::disk($attachment->disk)->url($attachment->path),
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
-    protected function buildRemarkHistory(ProjectRequest $request): array
-    {
-        $entries = [];
-
-        foreach ($request->transitions->sortBy('acted_at') as $transition) {
-            if ($transition->acted_by_role === 'farm_manager' || blank($transition->remarks)) {
-                continue;
-            }
-
-            $entries[] = [
-                'role' => $this->roleLabel($transition->acted_by_role),
-                'actor' => $transition->actedBy?->name ?? 'Unknown approver',
-                'label' => $this->remarkLabel($transition->action),
-                'remarks' => $transition->remarks,
-                'date' => optional($transition->acted_at)->format('Y-m-d h:i A'),
-                'tone' => $this->remarkTone($transition->action),
-            ];
-        }
-
-        return $entries;
-    }
-
-    protected function roleLabel(string $role): string
-    {
-        return match ($role) {
-            'division_head' => 'Division Head',
-            'vp_gen_services' => 'VP Gen Services',
-            'dh_gen_services' => 'DH Gen Services',
-            'ed_manager' => 'ED Manager',
-            'engineer' => 'Engineer',
-            'farm_manager' => 'Farm Manager',
-            default => str_replace('_', ' ', str($role)->title()),
-        };
-    }
-
-    protected function remarkTone(string $action): string
-    {
-        return match ($action) {
-            'recommend', 'approve', 'accepted', 'noted' => 'success',
-            'reject', 'rejected', 'return', 'returned' => 'danger',
-            default => 'info',
-        };
-    }
-
-    protected function remarkLabel(string $action): string
-    {
-        return match ($action) {
-            'recommend' => 'Recommended',
-            'approve' => 'Approved',
-            'noted' => 'Noted',
-            'accepted' => 'Accepted',
-            'reject', 'rejected' => 'Rejected',
-            'return', 'returned' => 'Returned',
-            default => str_replace('_', ' ', str($action)->title()),
-        };
-    }
-
-    protected function budgetCategoryLabel(?string $category): ?string
-    {
-        return $category ? config('project_timelines.' . $category . '.label') : null;
     }
 
     public function render()

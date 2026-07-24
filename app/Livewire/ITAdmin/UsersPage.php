@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ITAdmin;
 
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -14,6 +15,8 @@ use Livewire\Component;
 
 class UsersPage extends Component
 {
+    use HasSimplePagination;
+
     public $dbUsers = [];
 
     public string $search = '';
@@ -170,37 +173,9 @@ class UsersPage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredUsers->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        return $this->filteredUsers->isEmpty() ? 0 : (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredUsers->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredUsers->count());
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
+        return $this->filteredUsers->count();
     }
 
     public function grantAccess(int $userId): void

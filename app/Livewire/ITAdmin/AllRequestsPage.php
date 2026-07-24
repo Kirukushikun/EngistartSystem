@@ -2,12 +2,15 @@
 
 namespace App\Livewire\ITAdmin;
 
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\ProjectRequest;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
 class AllRequestsPage extends Component
 {
+    use HasSimplePagination;
+
     public string $search = '';
 
     public string $statusFilter = 'all';
@@ -36,20 +39,6 @@ class AllRequestsPage extends Component
     public function updatedPerPage(): void
     {
         $this->page = 1;
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
     }
 
     public function getRequestsProperty(): Collection
@@ -127,27 +116,9 @@ class AllRequestsPage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredRequests->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        if ($this->filteredRequests->isEmpty()) {
-            return 0;
-        }
-
-        return (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredRequests->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredRequests->count());
+        return $this->filteredRequests->count();
     }
 
     public function getStatusOptionsProperty(): array

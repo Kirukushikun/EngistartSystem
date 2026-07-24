@@ -2,12 +2,15 @@
 
 namespace App\Livewire\ITAdmin;
 
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\RequestTransition;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
 class AuditTrailPage extends Component
 {
+    use HasSimplePagination;
+
     public string $search = '';
 
     public string $actionFilter = 'all';
@@ -43,20 +46,6 @@ class AuditTrailPage extends Component
     public function updatedPerPage(): void
     {
         $this->page = 1;
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
     }
 
     public function getLogsProperty(): Collection
@@ -128,27 +117,9 @@ class AuditTrailPage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredLogs->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        if ($this->filteredLogs->isEmpty()) {
-            return 0;
-        }
-
-        return (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredLogs->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredLogs->count());
+        return $this->filteredLogs->count();
     }
 
     public function getActionOptionsProperty(): array

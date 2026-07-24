@@ -2,19 +2,23 @@
 
 namespace App\Livewire\FarmManager;
 
+use App\Livewire\Concerns\BuildsRequestCardData;
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
 use App\Support\ApprovalChainBuilder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class MyRequestsPage extends Component
 {
+    use BuildsRequestCardData;
+    use HasSimplePagination;
+
     public string $search = '';
 
     public string $statusFilter = 'all';
@@ -43,20 +47,6 @@ class MyRequestsPage extends Component
     public function updatedPerPage(): void
     {
         $this->page = 1;
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
     }
 
     protected function loadRequests(): Collection
@@ -102,22 +92,6 @@ class MyRequestsPage extends Component
             'attachments' => $this->buildAttachments($request),
             'chain' => $this->buildChain($request),
         ];
-    }
-
-    protected function buildAttachments(ProjectRequest $request): array
-    {
-        return $request->attachments
-            ->where('is_active', true)
-            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document'], true))
-            ->map(function ($attachment): array {
-                return [
-                    'label' => $attachment->attachment_type === 'justification_letter' ? 'JL File' : 'Attached File',
-                    'name' => $attachment->original_name,
-                    'url' => Storage::disk($attachment->disk)->url($attachment->path),
-                ];
-            })
-            ->values()
-            ->all();
     }
 
     protected function buildRemarks(ProjectRequest $request): array
@@ -237,42 +211,6 @@ class MyRequestsPage extends Component
         return ApprovalChainBuilder::steps($request);
     }
 
-    protected function roleLabel(string $role): string
-    {
-        return match ($role) {
-            'division_head' => 'Division Head',
-            'vp_gen_services' => 'VP Gen Services',
-            'dh_gen_services' => 'DH Gen Services',
-            'ed_manager' => 'ED Manager',
-            'engineer' => 'Engineer',
-            'it_admin' => 'IT Admin',
-            default => str_replace('_', ' ', str($role)->title()),
-        };
-    }
-
-    protected function remarkLabel(string $action): string
-    {
-        return match ($action) {
-            'approve', 'approved' => 'Approved',
-            'recommend', 'recommended' => 'Recommended',
-            'noted' => 'Noted',
-            'accepted' => 'Accepted',
-            'reject', 'rejected' => 'Rejected',
-            'return', 'returned' => 'Returned',
-            'withdrawn' => 'Withdrawn',
-            default => str_replace('_', ' ', str($action)->title()),
-        };
-    }
-
-    protected function remarkTone(string $action): string
-    {
-        return match ($action) {
-            'approve', 'approved', 'recommend', 'recommended', 'noted', 'accepted' => 'success',
-            'reject', 'rejected', 'return', 'returned' => 'danger',
-            default => 'info',
-        };
-    }
-
     public function getRequestsProperty(): Collection
     {
         return $this->loadRequests();
@@ -314,27 +252,9 @@ class MyRequestsPage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredRequests->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        if ($this->filteredRequests->isEmpty()) {
-            return 0;
-        }
-
-        return (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredRequests->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredRequests->count());
+        return $this->filteredRequests->count();
     }
 
     public function getStatusOptionsProperty(): array

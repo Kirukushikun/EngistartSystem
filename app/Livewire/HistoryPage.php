@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\RequestTransition;
 use App\Support\SettingsChangeValueFormatter;
 use Illuminate\Support\Collection;
@@ -10,6 +11,8 @@ use Livewire\Component;
 
 class HistoryPage extends Component
 {
+    use HasSimplePagination;
+
     public string $search = '';
 
     public string $actionFilter = 'all';
@@ -38,20 +41,6 @@ class HistoryPage extends Component
     public function updatedPerPage(): void
     {
         $this->page = 1;
-    }
-
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
     }
 
     public function getRoleProperty(): string
@@ -177,27 +166,9 @@ class HistoryPage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredHistoryItems->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        if ($this->filteredHistoryItems->isEmpty()) {
-            return 0;
-        }
-
-        return (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredHistoryItems->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredHistoryItems->count());
+        return $this->filteredHistoryItems->count();
     }
 
     public function getActionOptionsProperty(): array

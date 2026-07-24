@@ -98,4 +98,23 @@ class ProjectRequest extends Model
     {
         return $this->hasMany(RequestAttachment::class);
     }
+
+    public static function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'submitted' => 'Submitted',
+            'recommended' => 'DH Recommended',
+            'vp_approved' => 'VP Approved',
+            'accepted' => 'Accepted',
+            'noted' => 'Noted',
+            'initialized' => 'Initialized',
+            'returned_to_requestor' => 'Returned to Requestor',
+            'rejected' => 'Rejected',
+            'withdrawn' => 'Withdrawn',
+            'jl_pending' => 'JL Under Review',
+            'jl_approved' => 'JL Approved',
+            null => 'Unknown',
+            default => str_replace('_', ' ', str($status)->title()),
+        };
+    }
 }

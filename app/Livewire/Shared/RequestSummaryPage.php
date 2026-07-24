@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Shared;
 
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\ProjectRequest;
 use App\Support\ProjectTimelineCalculator;
 use Illuminate\Support\Collection;
@@ -9,6 +10,8 @@ use Livewire\Component;
 
 class RequestSummaryPage extends Component
 {
+    use HasSimplePagination;
+
     public string $farmFilter = 'all';
 
     public string $dateFrom = '';
@@ -46,20 +49,6 @@ class RequestSummaryPage extends Component
         $this->page = 1;
     }
 
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
-    }
-
     public function getFarmOptionsProperty(): array
     {
         return ProjectRequest::query()
@@ -88,7 +77,7 @@ class RequestSummaryPage extends Component
                 return [
                     'id' => $request->request_number,
                     'status' => $request->current_status,
-                    'statusLabel' => $this->statusLabel($request->current_status),
+                    'statusLabel' => ProjectRequest::statusLabel($request->current_status),
                     'farm' => $request->farm_name ?? 'Farm not yet specified',
                     'title' => $request->title,
                     'dateOfRequest' => optional($request->submitted_at ?? $request->created_at)->format('Y-m-d'),
@@ -110,38 +99,9 @@ class RequestSummaryPage extends Component
         return $this->rows->slice(($this->page - 1) * $this->perPage, $this->perPage)->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->rows->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        return $this->rows->isEmpty() ? 0 : (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        return $this->rows->isEmpty() ? 0 : min($this->page * $this->perPage, $this->rows->count());
-    }
-
-    protected function statusLabel(?string $status): string
-    {
-        return match ($status) {
-            'submitted' => 'Submitted',
-            'recommended' => 'DH Recommended',
-            'vp_approved' => 'VP Approved',
-            'accepted' => 'Accepted',
-            'noted' => 'Noted',
-            'initialized' => 'Initialized',
-            'returned_to_requestor' => 'Returned to Requestor',
-            'rejected' => 'Rejected',
-            'withdrawn' => 'Withdrawn',
-            'jl_pending' => 'JL Under Review',
-            'jl_approved' => 'JL Approved',
-            null => 'Unknown',
-            default => str_replace('_', ' ', str($status)->title()),
-        };
+        return $this->rows->count();
     }
 
     public function render()

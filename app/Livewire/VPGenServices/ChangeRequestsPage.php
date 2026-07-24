@@ -2,6 +2,7 @@
 
 namespace App\Livewire\VPGenServices;
 
+use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
 use App\Support\SettingsChangeValueFormatter;
@@ -12,6 +13,8 @@ use Livewire\Component;
 
 class ChangeRequestsPage extends Component
 {
+    use HasSimplePagination;
+
     public array $remarks = [];
 
     public ?string $actionMessage = null;
@@ -171,20 +174,6 @@ class ChangeRequestsPage extends Component
         $this->page = 1;
     }
 
-    public function previousPage(): void
-    {
-        if ($this->page > 1) {
-            $this->page--;
-        }
-    }
-
-    public function nextPage(): void
-    {
-        if ($this->page < $this->totalPages) {
-            $this->page++;
-        }
-    }
-
     public function getChangeRequestsProperty(): Collection
     {
         return $this->loadChangeRequests();
@@ -227,27 +216,9 @@ class ChangeRequestsPage extends Component
             ->values();
     }
 
-    public function getTotalPagesProperty(): int
+    protected function paginationSourceCount(): int
     {
-        return max(1, (int) ceil($this->filteredChangeRequests->count() / $this->perPage));
-    }
-
-    public function getShowingFromProperty(): int
-    {
-        if ($this->filteredChangeRequests->isEmpty()) {
-            return 0;
-        }
-
-        return (($this->page - 1) * $this->perPage) + 1;
-    }
-
-    public function getShowingToProperty(): int
-    {
-        if ($this->filteredChangeRequests->isEmpty()) {
-            return 0;
-        }
-
-        return min($this->page * $this->perPage, $this->filteredChangeRequests->count());
+        return $this->filteredChangeRequests->count();
     }
 
     protected function loadChangeRequests(): Collection

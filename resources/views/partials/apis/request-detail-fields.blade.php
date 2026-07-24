@@ -1,13 +1,6 @@
 <div class="mb-[14px]">
     <p class="text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Request Details</p>
     <div class="flex flex-col gap-[7px]">
-        @if ($requestorRole ?? null)
-            <div class="flex items-center gap-[9px]">
-                <span class="apis-step-dot mt-[1px]" style="background: var(--indigo-bg); color: var(--indigo);">👤</span>
-                <span class="text-[12px] text-apis-text">Requestor role: <span class="text-apis-text2">{{ $requestorRole }}</span></span>
-            </div>
-        @endif
-
         @if ($budgetCategory ?? null)
             <div class="flex items-center gap-[9px]">
                 <span class="apis-step-dot mt-[1px]" style="background: var(--teal-bg); color: var(--teal);">₱</span>
