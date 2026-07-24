@@ -61,6 +61,7 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
 
     Route::middleware('role:engineer')->group(function () {
         Route::get('/engineer/inbox', \App\Livewire\Engineer\InboxPage::class)->name('engineer.inbox');
+        Route::get('/engineer/request-summary', \App\Livewire\Shared\RequestSummaryPage::class)->name('engineer.request-summary');
     });
 
     Route::middleware('role:guest')->group(function () {

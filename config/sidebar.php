@@ -29,14 +29,14 @@ return [
                     'badge' => ['text' => '1', 'tone' => 'blue'],
                 ],
                 [
-                    'label' => 'History',
-                    'route' => 'division-head.history',
-                    'active' => ['division-head.history'],
-                ],
-                [
                     'label' => 'Project Request Summary',
                     'route' => 'division-head.request-summary',
                     'active' => ['division-head.request-summary'],
+                ],
+                [
+                    'label' => 'History',
+                    'route' => 'division-head.history',
+                    'active' => ['division-head.history'],
                 ],
             ],
         ],
@@ -57,14 +57,14 @@ return [
                     'badge' => ['text' => '3', 'tone' => 'amber'],
                 ],
                 [
-                    'label' => 'History',
-                    'route' => 'vp-gen-services.history',
-                    'active' => ['vp-gen-services.history'],
-                ],
-                [
                     'label' => 'Project Request Summary',
                     'route' => 'vp-gen-services.request-summary',
                     'active' => ['vp-gen-services.request-summary'],
+                ],
+                [
+                    'label' => 'History',
+                    'route' => 'vp-gen-services.history',
+                    'active' => ['vp-gen-services.history'],
                 ],
             ],
         ],
@@ -94,7 +94,7 @@ return [
                     'active' => ['dh-gen-services.change-request'],
                 ],
                 [
-                    'label' => 'Administration Facility',
+                    'label' => 'Assigned Engineers',
                     'route' => 'dh-gen-services.administration-facility',
                     'active' => ['dh-gen-services.administration-facility'],
                 ],
@@ -111,11 +111,6 @@ return [
                     'badge' => ['text' => '3', 'tone' => 'green'],
                 ],
                 [
-                    'label' => 'Assigned Engineers',
-                    'route' => 'ed-manager.assigned-engineers',
-                    'active' => ['ed-manager.assigned-engineers'],
-                ],
-                [
                     'label' => 'Project Request Summary',
                     'route' => 'ed-manager.request-summary',
                     'active' => ['ed-manager.request-summary'],
@@ -129,6 +124,11 @@ return [
                     'label' => 'Settings Change Request',
                     'route' => 'ed-manager.change-request',
                     'active' => ['ed-manager.change-request'],
+                ],
+                [
+                    'label' => 'Assigned Engineers',
+                    'route' => 'ed-manager.assigned-engineers',
+                    'active' => ['ed-manager.assigned-engineers'],
                 ],
             ],
         ],
@@ -145,6 +145,11 @@ return [
                     'label' => 'User Management',
                     'route' => 'it-admin.users',
                     'active' => ['it-admin.users'],
+                ],
+                [
+                    'label' => 'Assigned Engineers',
+                    'route' => 'it-admin.assigned-engineers',
+                    'active' => ['it-admin.assigned-engineers'],
                 ],
                 [
                     'label' => 'Audit Trail',
@@ -172,11 +177,6 @@ return [
                     'route' => 'it-admin.danger-zone',
                     'active' => ['it-admin.danger-zone'],
                 ],
-                [
-                    'label' => 'Assigned Engineers',
-                    'route' => 'it-admin.assigned-engineers',
-                    'active' => ['it-admin.assigned-engineers'],
-                ],
             ],
         ],
         'engineer' => [
@@ -187,6 +187,11 @@ return [
                     'label' => 'For Initialization',
                     'route' => 'engineer.inbox',
                     'active' => ['engineer.inbox'],
+                ],
+                [
+                    'label' => 'Project Request Summary',
+                    'route' => 'engineer.request-summary',
+                    'active' => ['engineer.request-summary'],
                 ],
             ],
         ],

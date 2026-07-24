@@ -160,4 +160,30 @@ class EngineerAssignmentAndAccessTest extends TestCase
 
         $this->get(route('ed-manager.assigned-engineers'))->assertForbidden();
     }
+
+    public function test_ed_manager_can_create_a_new_engineer_account(): void
+    {
+        $ed = $this->makeUser('ed_manager');
+        $this->actingAs($ed);
+
+        Livewire::test(AssignedEngineersPage::class)
+            ->call('createEngineer')
+            ->assertSet('formMode', 'create')
+            ->set('form.name', 'Engineer Four')
+            ->set('form.email', 'engineer.four@brooksidegroup.org')
+            ->set('form.password', 'password123')
+            ->set('form.password_confirmation', 'password123')
+            ->call('save')
+            ->assertSet('formMode', null);
+
+        $engineer = User::query()->where('email', 'engineer.four@brooksidegroup.org')->firstOrFail();
+        $this->assertSame('engineer', $engineer->role);
+        $this->assertTrue($engineer->is_active);
+
+        // Newly created account is immediately visible in the ED Manager's own listing.
+        Livewire::test(AssignedEngineersPage::class)
+            ->assertOk()
+            ->assertSee('Engineer Four')
+            ->assertSee('engineer.four@brooksidegroup.org');
+    }
 }
