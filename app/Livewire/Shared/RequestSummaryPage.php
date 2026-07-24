@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Shared;
 
+use App\Livewire\Concerns\BuildsRequestCardData;
 use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\ProjectRequest;
 use App\Support\ProjectTimelineCalculator;
@@ -10,6 +11,7 @@ use Livewire\Component;
 
 class RequestSummaryPage extends Component
 {
+    use BuildsRequestCardData;
     use HasSimplePagination;
 
     public string $farmFilter = 'all';
@@ -62,7 +64,7 @@ class RequestSummaryPage extends Component
     public function getRowsProperty(): Collection
     {
         return ProjectRequest::query()
-            ->with('requestor')
+            ->with(['requestor', 'attachments'])
             ->when($this->farmFilter !== 'all', fn ($query) => $query->where('farm_name', $this->farmFilter))
             ->when($this->dateFrom !== '', fn ($query) => $query->whereDate('submitted_at', '>=', $this->dateFrom))
             ->when($this->dateTo !== '', fn ($query) => $query->whereDate('submitted_at', '<=', $this->dateTo))
@@ -80,11 +82,18 @@ class RequestSummaryPage extends Component
                     'statusLabel' => ProjectRequest::statusLabel($request->current_status),
                     'farm' => $request->farm_name ?? 'Farm not yet specified',
                     'title' => $request->title,
+                    'by' => $request->requestor?->name ?? 'Unknown requester',
+                    'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
                     'dateOfRequest' => optional($request->submitted_at ?? $request->created_at)->format('Y-m-d'),
                     'acceptanceDate' => $acceptanceDate ? \Illuminate\Support\Carbon::parse($acceptanceDate)->format('Y-m-d') : '—',
                     'projectStartDate' => optional($request->project_start_date)->format('Y-m-d') ?: '—',
                     'projectCompletionDate' => optional($request->project_completion_date)->format('Y-m-d') ?: '—',
                     'requestedCompletionDate' => $requestedTimeline ? $requestedTimeline['completion_date']->format('Y-m-d') : '—',
+                    'type' => $request->request_type,
+                    'purpose' => $request->purpose,
+                    'desc' => $request->description,
+                    'jl' => data_get($request->meta, 'jl'),
+                    'attachments' => $this->buildAttachments($request),
                 ];
             })
             ->values();
