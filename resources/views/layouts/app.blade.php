@@ -33,7 +33,9 @@
         }) ?? [
             'items' => [],
         ];
-        $sidebarItems = $currentSidebar['items'] ?? [];
+        $sidebarItems = collect($currentSidebar['items'] ?? [])
+            ->filter(fn (array $item) => \Illuminate\Support\Facades\Route::has($item['route'] ?? ''))
+            ->all();
 
         $footerLabel = $authUser?->role === 'guest' ? 'Access level' : 'Signed in as';
         $footerName = $authUser?->name ?? 'Guest';
