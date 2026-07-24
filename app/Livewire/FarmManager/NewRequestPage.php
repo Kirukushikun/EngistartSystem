@@ -23,6 +23,8 @@ class NewRequestPage extends Component
         'purpose' => '',
         'needed' => '',
         'budgetCategory' => '',
+        'mtgDate' => '',
+        'mtgTime' => '',
     ];
 
     public string $timelineAcceptable = '';
@@ -114,9 +116,10 @@ class NewRequestPage extends Component
                 ['label' => 'Project Start Date', 'value' => $timeline ? $timeline['start_date']->format('F j, Y') : '—'],
                 ['label' => 'Project Completion Date', 'value' => $timeline ? $timeline['completion_date']->format('F j, Y') : '—'],
                 ['label' => 'Is the estimated timeline acceptable?', 'value' => $this->timelineAcceptable === 'yes' ? 'Yes' : 'No'],
+                ['label' => 'Preferred Meeting Date/Time', 'value' => $this->form['mtgDate'] !== '' ? $this->form['mtgDate'] . ' at ' . $this->form['mtgTime'] : '—'],
                 ['label' => 'Routing', 'value' => $isJl
-                    ? 'Division Head → VP Gen Services (JL review) → Assessment Meeting → ED Manager → DH Gen Services → Engineer'
-                    : 'Assessment Meeting → Division Head → VP Gen Services → ED Manager → DH Gen Services → Engineer'],
+                    ? 'Division Head (JL review) → VP Gen Services (JL review) → ED Manager → DH Gen Services → Engineer'
+                    : 'Division Head → VP Gen Services → ED Manager → DH Gen Services → Engineer'],
             ],
         ])->to(ConfirmationModal::class);
     }
@@ -137,14 +140,13 @@ class NewRequestPage extends Component
             if ($isJl) {
                 $initialStatus = 'jl_pending';
                 $initialStep = 'division_head_jl_review';
-                $initialOwnerRole = 'division_head';
-                $initialOwnerId = null;
             } else {
                 $initialStatus = 'submitted';
-                $initialStep = 'assessment_meeting_pending';
-                $initialOwnerRole = $user->role;
-                $initialOwnerId = $user->id;
+                $initialStep = 'division_head_review';
             }
+
+            $initialOwnerRole = 'division_head';
+            $initialOwnerId = null;
 
             $projectRequest = $this->editingRequestId
                 ? ProjectRequest::query()
@@ -186,6 +188,8 @@ class NewRequestPage extends Component
                 'date_needed' => $this->form['needed'],
                 'project_start_date' => $timeline['start_date'] ?? null,
                 'project_completion_date' => $timeline['completion_date'] ?? null,
+                'preferred_meeting_date' => $this->form['mtgDate'],
+                'preferred_meeting_time' => $this->form['mtgTime'],
                 'description' => $description,
                 'locked_at' => null,
                 'cancelled_at' => null,
@@ -249,7 +253,7 @@ class NewRequestPage extends Component
                 ? 'Request updated successfully before reviewer pickup.'
                 : ($isJl
                     ? 'Justification Letter submitted and routed to Division Head and VP Gen Services for review.'
-                    : 'Request submitted successfully. Please complete the Assessment Meeting Request next.')
+                    : 'Request submitted successfully and routed to Division Head for review.')
         );
     }
 
@@ -272,6 +276,8 @@ class NewRequestPage extends Component
             'purpose' => '',
             'needed' => '',
             'budgetCategory' => '',
+            'mtgDate' => '',
+            'mtgTime' => '',
         ];
 
         $this->resetValidation();
@@ -287,6 +293,8 @@ class NewRequestPage extends Component
             'form.purpose' => ['nullable', 'string'],
             'form.needed' => ['required', 'date', 'after:today'],
             'form.budgetCategory' => ['required', 'string', 'in:small,medium,large'],
+            'form.mtgDate' => ['required', 'date', 'after:today'],
+            'form.mtgTime' => ['required'],
             'timelineAcceptable' => ['required', 'in:yes,no'],
         ];
 
@@ -309,6 +317,9 @@ class NewRequestPage extends Component
             'form.needed.required' => 'Date Needed is required.',
             'form.needed.after' => 'Date Needed must be a future date.',
             'form.budgetCategory.required' => 'Allotted Budget is required.',
+            'form.mtgDate.required' => 'Preferred meeting date is required.',
+            'form.mtgDate.after' => 'Preferred meeting date must be a future date.',
+            'form.mtgTime.required' => 'Preferred meeting time is required.',
             'timelineAcceptable.required' => 'Please indicate whether the estimated timeline is acceptable.',
             'jl.delayReason.required' => 'Reason for PIF delay is required.',
             'jl.estimatedTurnoverDate.required' => 'Estimated turnover date is required.',
@@ -350,6 +361,8 @@ class NewRequestPage extends Component
             'purpose' => $projectRequest->purpose ?? '',
             'needed' => optional($projectRequest->date_needed)->toDateString() ?? '',
             'budgetCategory' => (string) $projectRequest->budget_category,
+            'mtgDate' => optional($projectRequest->preferred_meeting_date)->toDateString() ?? '',
+            'mtgTime' => (string) ($projectRequest->preferred_meeting_time ?? ''),
         ];
 
         $this->timelineAcceptable = (string) data_get($projectRequest->meta, 'timeline_acceptable', '');

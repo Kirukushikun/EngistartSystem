@@ -94,9 +94,9 @@ class InboxPage extends Component
             $previousOwnerRole = $projectRequest->current_owner_role;
 
             $nextStatus = $isJlReview ? 'jl_approved' : 'vp_approved';
-            $nextStep = $isJlReview ? 'assessment_meeting_pending' : 'ed_manager_acceptance';
-            $nextOwnerRole = $isJlReview ? $projectRequest->requestor_role : 'ed_manager';
-            $nextOwnerId = $isJlReview ? $projectRequest->requestor_id : null;
+            $nextStep = 'ed_manager_acceptance';
+            $nextOwnerRole = 'ed_manager';
+            $nextOwnerId = null;
             $defaultRemarks = $isJlReview ? 'JL approved by VP Gen Services.' : 'Approved by VP Gen Services.';
 
             $projectRequest->fill([
@@ -104,7 +104,7 @@ class InboxPage extends Component
                 'current_step' => $nextStep,
                 'current_owner_role' => $nextOwnerRole,
                 'current_owner_id' => $nextOwnerId,
-                'exception_status' => $isJlReview ? 'pending_requestor_meeting' : $projectRequest->exception_status,
+                'exception_status' => $isJlReview ? null : $projectRequest->exception_status,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
@@ -139,10 +139,9 @@ class InboxPage extends Component
 
         WorkflowNotifier::notifyOwner(
             $projectRequest,
-            $projectRequest->current_step === 'assessment_meeting_pending' ? 'assessment_meeting_needed' : 'accepted',
-            $projectRequest->current_step === 'assessment_meeting_pending' ? 'JL Approved — Schedule Assessment Meeting' : 'Ready for ED Manager Acceptance',
-            $projectRequest->request_number . ' — ' . $projectRequest->title
-                . ($projectRequest->current_step === 'assessment_meeting_pending' ? ' JL was approved. Please schedule the assessment meeting.' : ' needs your acceptance.')
+            'accepted',
+            'Ready for ED Manager Acceptance',
+            $projectRequest->request_number . ' — ' . $projectRequest->title . ' needs your acceptance.'
         );
 
         unset($this->remarks[$requestId]);

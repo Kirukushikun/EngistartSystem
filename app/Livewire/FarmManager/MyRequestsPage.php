@@ -99,7 +99,7 @@ class MyRequestsPage extends Component
             'isLate' => $request->is_late,
             'isEditable' => $request->isEditableByRequestor(),
             'isWithdrawn' => $request->withdrawn_at !== null,
-            'awaitingMeetingRequest' => $request->current_step === 'assessment_meeting_pending' && $request->current_owner_id === Auth::id(),
+            'awaitingReschedule' => $request->current_step === 'requestor_reschedule' && $request->current_owner_id === Auth::id(),
             'remarks' => $this->buildRemarks($request),
             'attachments' => $this->buildAttachments($request),
             'chain' => $this->buildChain($request),

@@ -3,7 +3,9 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/login');
+Route::middleware('prevent-browser-cache')->group(function () {
+    Route::redirect('/', '/login');
+});
 
 Route::middleware(['guest', 'prevent-browser-cache'])->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
@@ -16,7 +18,7 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
     Route::middleware('role:farm_manager')->group(function () {
         Route::get('/farm-manager/requests/new', \App\Livewire\FarmManager\NewRequestPage::class)->name('farm-manager.requests.new');
         Route::get('/farm-manager/requests', \App\Livewire\FarmManager\MyRequestsPage::class)->name('farm-manager.requests.index');
-        Route::get('/farm-manager/requests/{projectRequest}/assessment-meeting', \App\Livewire\FarmManager\AssessmentMeetingRequestPage::class)->name('farm-manager.requests.assessment-meeting');
+        Route::get('/farm-manager/requests/{projectRequest}/reschedule-meeting', \App\Livewire\FarmManager\MeetingReschedulePage::class)->name('farm-manager.requests.reschedule-meeting');
     });
 
     Route::middleware('role:division_head')->group(function () {

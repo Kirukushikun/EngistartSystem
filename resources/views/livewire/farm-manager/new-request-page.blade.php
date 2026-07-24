@@ -9,7 +9,7 @@
                 <p class="text-[16px] font-medium text-apis-text">Request submitted</p>
 
                 <p class="text-[12px] text-apis-text2 leading-[1.6]">
-                    {{ $timelineAcceptable === 'no' ? 'Justification Letter routed to Division Head and VP Gen Services for review.' : 'Please complete the Assessment Meeting Request from My Requests to continue.' }}
+                    {{ $timelineAcceptable === 'no' ? 'Justification Letter routed to Division Head and VP Gen Services for review.' : 'Request routed to Division Head for review.' }}
                 </p>
 
                 <div class="w-full rounded-[8px] p-[12px_20px] text-[12px] text-left" style="background: var(--bg2)">
@@ -21,7 +21,7 @@
                         <span class="text-apis-text2">Routing</span>
                         <span class="font-medium text-[11px] px-2 py-0.5 rounded"
                               style="background: {{ $timelineAcceptable === 'no' ? 'var(--amber-bg)' : 'var(--blue-bg)' }}; color: {{ $timelineAcceptable === 'no' ? 'var(--amber)' : 'var(--blue)' }};">
-                            {{ $timelineAcceptable === 'no' ? 'Justification Letter Review' : 'Assessment Meeting Request' }}
+                            {{ $timelineAcceptable === 'no' ? 'Justification Letter Review' : 'Division Head Review' }}
                         </span>
                     </div>
                 </div>
@@ -141,6 +141,32 @@
                         </div>
                     </div>
                 @endif
+
+                {{-- ── ASSESSMENT MEETING ────────────────────────────── --}}
+                @include('partials.apis.section-divider', ['label' => 'Assessment Meeting'])
+
+                @include('partials.apis.alert', [
+                    'type' => 'info',
+                    'message' => 'Provide your preferred date and time for the assessment meeting. The reviewing role can send this back to you if the schedule doesn\'t work for them.',
+                ])
+
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div>
+                        <label class="apis-form-label">Preferred Date *</label>
+                        <input type="date"
+                               wire:model.live="form.mtgDate"
+                               min="{{ now()->addDay()->format('Y-m-d') }}"
+                               class="apis-form-control @error('form.mtgDate') apis-error @enderror">
+                        @error('form.mtgDate') <p class="apis-error-text">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="apis-form-label">Preferred Time *</label>
+                        <input type="time"
+                               wire:model.live="form.mtgTime"
+                               class="apis-form-control @error('form.mtgTime') apis-error @enderror">
+                        @error('form.mtgTime') <p class="apis-error-text">{{ $message }}</p> @enderror
+                    </div>
+                </div>
 
                 {{-- ── TIMELINE ACCEPTABILITY ────────────────────────── --}}
                 <div class="mt-4 rounded-[8px] p-[14px_16px]" style="background: var(--bg2); border: 0.5px solid var(--border)">

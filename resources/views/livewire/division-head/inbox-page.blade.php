@@ -82,6 +82,12 @@
                         Recommend for Approval
                     </button>
                     <button type="button"
+                            wire:click="confirmReschedule(@js($request['id']))"
+                            class="apis-card-button font-medium"
+                            style="background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-bd)">
+                        Return for Reschedule
+                    </button>
+                    <button type="button"
                             wire:click="confirmReject(@js($request['id']))"
                             class="apis-card-button font-medium"
                             style="background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd)">

@@ -4,6 +4,7 @@ namespace App\Livewire\EDManager;
 
 use App\Livewire\Concerns\BuildsRequestCardData;
 use App\Livewire\Concerns\HasSimplePagination;
+use App\Livewire\Concerns\RequestsMeetingReschedule;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
@@ -21,6 +22,7 @@ class InboxPage extends Component
 {
     use BuildsRequestCardData;
     use HasSimplePagination;
+    use RequestsMeetingReschedule;
 
     public array $remarks = [];
 
@@ -235,6 +237,22 @@ class InboxPage extends Component
         unset($this->remarks[$requestId]);
 
         $this->dispatch('notify', type: 'danger', message: $requestId . ' was returned to the requestor.');
+    }
+
+    #[On('edManagerRescheduleConfirmed')]
+    public function reschedule(array $payload): void
+    {
+        $this->performReschedule((string) ($payload['requestId'] ?? ''), 'ed_manager');
+    }
+
+    protected function rescheduleConfirmEventName(): string
+    {
+        return 'edManagerRescheduleConfirmed';
+    }
+
+    protected function rescheduleRoleLabel(): string
+    {
+        return 'ED Manager';
     }
 
     public function updatedSearch(): void { $this->page = 1; }

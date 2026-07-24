@@ -4,8 +4,8 @@
             <div class="flex w-full flex-col items-center justify-center text-center gap-3 max-w-[480px] px-2">
                 <div class="w-[52px] h-[52px] rounded-full flex items-center justify-center text-[22px]"
                      style="background: var(--green-bg); color: var(--green)">✓</div>
-                <p class="text-[16px] font-medium text-apis-text">Assessment Meeting Request submitted</p>
-                <p class="text-[12px] text-apis-text2 leading-[1.6]">{{ $requestNumber }} is now in the standard approval workflow.</p>
+                <p class="text-[16px] font-medium text-apis-text">New meeting schedule submitted</p>
+                <p class="text-[12px] text-apis-text2 leading-[1.6]">{{ $requestNumber }} has been sent back to the reviewer for a decision.</p>
                 <a href="{{ route('farm-manager.requests.index') }}"
                    class="mt-1 text-xs text-apis-text2 px-4 py-2 rounded transition-colors hover:bg-apis-bg2"
                    style="border: 0.5px solid var(--border2)">
@@ -20,8 +20,8 @@
                 </div>
 
                 @include('partials.apis.alert', [
-                    'type' => 'info',
-                    'message' => 'We kindly request your availability for a meeting to discuss the assessment process and schedule.',
+                    'type' => 'warn',
+                    'message' => 'The reviewer could not accommodate your proposed meeting date/time. Please propose a new one below.',
                 ])
 
                 <div class="grid grid-cols-2 gap-3 mt-4">
@@ -41,7 +41,7 @@
                     <button type="submit"
                             class="text-[13px] font-medium px-6 py-[9px] rounded-[8px] transition-colors"
                             style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd)">
-                        Submit Assessment Meeting Request
+                        Submit New Schedule
                     </button>
                 </div>
             </form>

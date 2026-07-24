@@ -85,6 +85,7 @@
                         </select>
                     </div>
                     <button type="button" wire:click="confirmAccept(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">Accept</button>
+                    <button type="button" wire:click="confirmReschedule(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-bd)">Return for Reschedule</button>
                     <button type="button" wire:click="confirmReturn(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd)">Return</button>
                 @else
                     <p class="text-[11px] text-apis-text2 m-0">View only. No further action is available on this request from this stage.</p>

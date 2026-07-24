@@ -6,7 +6,6 @@ use App\Livewire\DHGenServices\NotingPage as DhNotingPage;
 use App\Livewire\DivisionHead\InboxPage as DivisionHeadInboxPage;
 use App\Livewire\Engineer\InboxPage as EngineerInboxPage;
 use App\Livewire\EDManager\InboxPage as EdManagerInboxPage;
-use App\Livewire\FarmManager\AssessmentMeetingRequestPage;
 use App\Livewire\FarmManager\NewRequestPage;
 use App\Livewire\VPGenServices\InboxPage as VpInboxPage;
 use App\Models\ProjectRequest;
@@ -14,6 +13,7 @@ use App\Models\User;
 use App\Notifications\WorkflowNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -24,6 +24,20 @@ class WorkflowSmokeTest extends TestCase
     protected function makeUser(string $role): User
     {
         return User::factory()->create(['role' => $role, 'is_active' => true]);
+    }
+
+    protected function submitNormalRequest(string $title): Testable
+    {
+        return Livewire::test(NewRequestPage::class)
+            ->set('form.title', $title)
+            ->set('form.type', 'production_building')
+            ->set('form.needed', now()->addDays(60)->toDateString())
+            ->set('form.budgetCategory', 'small')
+            ->set('form.mtgDate', now()->addDays(10)->toDateString())
+            ->set('form.mtgTime', '10:00')
+            ->set('timelineAcceptable', 'yes')
+            ->call('openSubmissionReview')
+            ->call('submit');
     }
 
     public function test_yes_path_full_chain_to_engineer_initialization(): void
@@ -37,22 +51,17 @@ class WorkflowSmokeTest extends TestCase
 
         $this->actingAs($farmManager);
 
-        Livewire::test(NewRequestPage::class)
-            ->set('form.title', 'Test Project Description')
-            ->set('form.type', 'production_building')
-            ->set('form.needed', now()->addDays(60)->toDateString())
-            ->set('form.budgetCategory', 'small')
-            ->set('timelineAcceptable', 'yes')
-            ->call('openSubmissionReview')
-            ->call('submit')
+        $this->submitNormalRequest('Test Project Description')
             ->assertSet('submitted', true);
 
         $request = ProjectRequest::firstOrFail();
         $this->assertSame('submitted', $request->current_status);
-        $this->assertSame('assessment_meeting_pending', $request->current_step);
-        $this->assertSame($farmManager->id, $request->current_owner_id);
+        $this->assertSame('division_head_review', $request->current_step);
+        $this->assertSame('division_head', $request->current_owner_role);
+        $this->assertNull($request->current_owner_id);
         $this->assertNotNull($request->project_start_date);
         $this->assertNotNull($request->project_completion_date);
+        $this->assertNotNull($request->preferred_meeting_date);
         $this->assertSame(
             now()->addDays(30)->toDateString(),
             $request->project_start_date->toDateString()
@@ -61,15 +70,6 @@ class WorkflowSmokeTest extends TestCase
             now()->addDays(30 + 45)->toDateString(),
             $request->project_completion_date->toDateString()
         );
-
-        Livewire::test(AssessmentMeetingRequestPage::class, ['projectRequest' => $request->id])
-            ->set('form.mtgDate', now()->addDays(10)->toDateString())
-            ->set('form.mtgTime', '10:00')
-            ->call('submit');
-
-        $request->refresh();
-        $this->assertSame('division_head_review', $request->current_step);
-        $this->assertSame('division_head', $request->current_owner_role);
 
         $this->actingAs($divisionHead);
         Livewire::test(DivisionHeadInboxPage::class)
@@ -133,6 +133,8 @@ class WorkflowSmokeTest extends TestCase
             ->set('form.typeOther', 'Custom Type')
             ->set('form.needed', now()->addDays(20)->toDateString())
             ->set('form.budgetCategory', 'large')
+            ->set('form.mtgDate', now()->addDays(5)->toDateString())
+            ->set('form.mtgTime', '14:00')
             ->set('timelineAcceptable', 'no')
             ->set('jl.delayReason', 'Site not ready')
             ->set('jl.estimatedTurnoverDate', now()->addDays(120)->toDateString())
@@ -162,18 +164,9 @@ class WorkflowSmokeTest extends TestCase
             ->call('approve', ['requestId' => $request->request_number]);
 
         $request->refresh();
+        // JL path must skip Division Head and VP Gen Services the second time around
+        // and go straight to ED Manager, since the meeting date was already collected at submission.
         $this->assertSame('jl_approved', $request->current_status);
-        $this->assertSame('assessment_meeting_pending', $request->current_step);
-        $this->assertSame($farmManager->id, $request->current_owner_id);
-
-        $this->actingAs($farmManager);
-        Livewire::test(AssessmentMeetingRequestPage::class, ['projectRequest' => $request->id])
-            ->set('form.mtgDate', now()->addDays(5)->toDateString())
-            ->set('form.mtgTime', '14:00')
-            ->call('submit');
-
-        $request->refresh();
-        // JL path must skip Division Head and VP Gen Services the second time around.
         $this->assertSame('ed_manager_acceptance', $request->current_step);
         $this->assertSame('ed_manager', $request->current_owner_role);
     }
@@ -188,22 +181,9 @@ class WorkflowSmokeTest extends TestCase
         $otherDivisionHead = $this->makeUser('division_head');
 
         $this->actingAs($farmManager);
-        Livewire::test(NewRequestPage::class)
-            ->set('form.title', 'Notify Test Project')
-            ->set('form.type', 'production_building')
-            ->set('form.needed', now()->addDays(60)->toDateString())
-            ->set('form.budgetCategory', 'small')
-            ->set('timelineAcceptable', 'yes')
-            ->call('openSubmissionReview')
-            ->call('submit');
+        $this->submitNormalRequest('Notify Test Project');
 
         $request = ProjectRequest::firstOrFail();
-
-        $this->actingAs($farmManager);
-        Livewire::test(AssessmentMeetingRequestPage::class, ['projectRequest' => $request->id])
-            ->set('form.mtgDate', now()->addDays(10)->toDateString())
-            ->set('form.mtgTime', '10:00')
-            ->call('submit');
 
         $this->actingAs($divisionHead);
         Livewire::test(DivisionHeadInboxPage::class)
@@ -233,21 +213,9 @@ class WorkflowSmokeTest extends TestCase
         $engineer = $this->makeUser('engineer');
 
         $this->actingAs($farmManager);
-        Livewire::test(NewRequestPage::class)
-            ->set('form.title', 'Initialization Notify Test')
-            ->set('form.type', 'production_building')
-            ->set('form.needed', now()->addDays(60)->toDateString())
-            ->set('form.budgetCategory', 'small')
-            ->set('timelineAcceptable', 'yes')
-            ->call('openSubmissionReview')
-            ->call('submit');
+        $this->submitNormalRequest('Initialization Notify Test');
 
         $request = ProjectRequest::firstOrFail();
-
-        Livewire::test(AssessmentMeetingRequestPage::class, ['projectRequest' => $request->id])
-            ->set('form.mtgDate', now()->addDays(10)->toDateString())
-            ->set('form.mtgTime', '10:00')
-            ->call('submit');
 
         $this->actingAs($divisionHead);
         Livewire::test(DivisionHeadInboxPage::class)->call('recommend', ['requestId' => $request->request_number]);

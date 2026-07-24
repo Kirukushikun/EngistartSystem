@@ -78,12 +78,12 @@
                             @endif
                         </div>
 
-                        @if ($request['awaitingMeetingRequest'])
+                        @if ($request['awaitingReschedule'])
                             <div class="flex gap-2 flex-wrap justify-end">
-                                <a href="{{ route('farm-manager.requests.assessment-meeting', ['projectRequest' => $request['dbId']]) }}"
+                                <a href="{{ route('farm-manager.requests.reschedule-meeting', ['projectRequest' => $request['dbId']]) }}"
                                    class="text-[11px] font-medium px-3 py-1.5 rounded-[8px] no-underline"
-                                   style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
-                                    Complete Meeting Request
+                                   style="background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-bd)">
+                                    Update Meeting Schedule
                                 </a>
                             </div>
                         @elseif ($request['isEditable'])

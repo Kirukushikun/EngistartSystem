@@ -109,6 +109,7 @@ class ProjectRequest extends Model
             'noted' => 'Noted',
             'initialized' => 'Initialized',
             'returned_to_requestor' => 'Returned to Requestor',
+            'reschedule_requested' => 'Reschedule Requested',
             'rejected' => 'Rejected',
             'withdrawn' => 'Withdrawn',
             'jl_pending' => 'JL Under Review',
