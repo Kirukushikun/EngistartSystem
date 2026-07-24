@@ -5,6 +5,7 @@ namespace App\Livewire\VPGenServices;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Support\ApprovalChainBuilder;
 use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -368,12 +369,17 @@ class InboxPage extends Component
                     'cap' => $request->capacity,
                     'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
                     'mtgTime' => $request->preferred_meeting_time,
+                    'requestorRole' => $request->requestor_role ? $this->roleLabel($request->requestor_role) : null,
+                    'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
+                    'startDate' => optional($request->project_start_date)->format('Y-m-d'),
+                    'completionDate' => optional($request->project_completion_date)->format('Y-m-d'),
+                    'jl' => data_get($request->meta, 'jl'),
                     'remarkHistory' => $this->buildRemarkHistory($request),
                     'attachments' => $this->buildAttachments($request),
                     'isLate' => $request->is_late,
                     'isPendingHere' => $request->current_owner_role === 'vp_gen_services',
                     'isTransparentCopy' => $request->current_owner_role !== 'vp_gen_services' && $hasVpAction,
-                    'chain' => $this->buildApprovalChain($request),
+                    'chain' => ApprovalChainBuilder::steps($request),
                 ];
             })
             ->values();
@@ -452,54 +458,9 @@ class InboxPage extends Component
         };
     }
 
-    protected function buildApprovalChain(ProjectRequest $request): array
+    protected function budgetCategoryLabel(?string $category): ?string
     {
-        $transitions = $request->transitions->keyBy('acted_by_role');
-
-        return [
-            [
-                'role' => 'Farm Manager',
-                'user' => $request->requestor?->name,
-                'action' => $request->is_late ? 'Submitted (Late Filing)' : 'Submitted',
-                'date' => optional($request->submitted_at ?? $request->created_at)?->format('Y-m-d'),
-                'st' => 'done',
-            ],
-            [
-                'role' => 'Division Head',
-                'user' => $transitions->get('division_head')?->actedBy?->name,
-                'action' => 'Recommendation',
-                'date' => optional($transitions->get('division_head')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'division_head' ? 'pending' : ($transitions->has('division_head') ? ($request->current_status === 'returned_to_requestor' && ! $transitions->has('vp_gen_services') ? 'rejected' : 'done') : 'waiting'),
-            ],
-            [
-                'role' => 'VP Gen Services',
-                'user' => $transitions->get('vp_gen_services')?->actedBy?->name,
-                'action' => 'Approval',
-                'date' => optional($transitions->get('vp_gen_services')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'vp_gen_services' ? 'pending' : ($transitions->has('vp_gen_services') ? ($request->current_status === 'returned_to_requestor' ? 'rejected' : 'done') : 'waiting'),
-            ],
-            [
-                'role' => 'ED Manager',
-                'user' => $transitions->get('ed_manager')?->actedBy?->name,
-                'action' => 'Acceptance',
-                'date' => optional($transitions->get('ed_manager')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'ed_manager' ? 'pending' : ($transitions->has('ed_manager') ? 'done' : 'waiting'),
-            ],
-            [
-                'role' => 'DH Gen Services',
-                'user' => $transitions->get('dh_gen_services')?->actedBy?->name,
-                'action' => 'Noted',
-                'date' => optional($transitions->get('dh_gen_services')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'dh_gen_services' ? 'pending' : ($transitions->has('dh_gen_services') ? 'done' : 'waiting'),
-            ],
-            [
-                'role' => 'Engineer',
-                'user' => $transitions->get('engineer')?->actedBy?->name,
-                'action' => 'Initialization',
-                'date' => optional($transitions->get('engineer')?->acted_at)->format('Y-m-d'),
-                'st' => $request->current_owner_role === 'engineer' ? 'pending' : ($transitions->has('engineer') ? 'done' : 'waiting'),
-            ],
-        ];
+        return $category ? config('project_timelines.' . $category . '.label') : null;
     }
 
     public function render()

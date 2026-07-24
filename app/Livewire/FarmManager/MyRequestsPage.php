@@ -5,6 +5,7 @@ namespace App\Livewire\FarmManager;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Support\ApprovalChainBuilder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -233,64 +234,7 @@ class MyRequestsPage extends Component
 
     protected function buildChain(ProjectRequest $request): array
     {
-        $transitions = $request->transitions->keyBy('acted_by_role');
-
-        return [
-            $this->chainStep('Farm Manager', 'done'),
-            $this->chainStep(
-                'Division Head',
-                $request->current_owner_role === 'division_head'
-                    ? 'pending'
-                    : ($transitions->has('division_head') || in_array($request->current_owner_role, ['vp_gen_services', 'dh_gen_services', 'ed_manager'], true)
-                        ? 'done'
-                        : (in_array($request->current_status, ['returned_to_requestor'], true) ? 'rejected' : 'waiting'))
-            ),
-            $this->chainStep(
-                'VP Gen Services',
-                $request->current_owner_role === 'vp_gen_services'
-                    ? 'pending'
-                    : ($transitions->has('vp_gen_services') || in_array($request->current_owner_role, ['ed_manager', 'dh_gen_services', 'engineer'], true)
-                        ? 'done'
-                        : (in_array($request->current_status, ['returned_to_requestor'], true) && $transitions->has('division_head') ? 'rejected' : 'waiting'))
-            ),
-            $this->chainStep(
-                'ED Manager',
-                $request->current_owner_role === 'ed_manager'
-                    ? 'pending'
-                    : ($transitions->has('ed_manager') || in_array($request->current_owner_role, ['dh_gen_services', 'engineer'], true)
-                        ? 'done'
-                        : 'waiting')
-            ),
-            $this->chainStep(
-                'DH Gen Services',
-                $request->current_owner_role === 'dh_gen_services'
-                    ? 'pending'
-                    : ($transitions->has('dh_gen_services') || $request->current_owner_role === 'engineer'
-                        ? 'done'
-                        : 'waiting')
-            ),
-            $this->chainStep(
-                'Engineer',
-                $request->current_owner_role === 'engineer' ? 'pending' : ($transitions->has('engineer') ? 'done' : 'waiting')
-            ),
-        ];
-    }
-
-    protected function chainStep(string $role, string $state): array
-    {
-        return [
-            'kind' => 'step',
-            'role' => $role,
-            'state' => $state,
-        ];
-    }
-
-    protected function chainMarker(string $label): array
-    {
-        return [
-            'kind' => 'marker',
-            'label' => $label,
-        ];
+        return ApprovalChainBuilder::steps($request);
     }
 
     protected function roleLabel(string $role): string

@@ -89,39 +89,23 @@
                         {{ $request['desc'] }}
                     </p>
 
+                    @include('partials.apis.request-detail-fields', [
+                        'requestorRole' => $request['requestorRole'],
+                        'budgetCategory' => $request['budgetCategory'],
+                        'startDate' => $request['startDate'],
+                        'completionDate' => $request['completionDate'],
+                        'jl' => $request['jl'],
+                    ])
+
                     @include('partials.apis.attachments-section', [
                         'attachments' => $request['attachments'],
                     ])
 
-                    <div class="mb-[14px]">
-                        <p class="text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Approval Chain</p>
-                        <div class="flex flex-col gap-[7px]">
-                            @foreach ($request['chain'] as $step)
-                                @php
-                                    $stepStyle = match ($step['st']) {
-                                        'done' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)', 'symbol' => '✓'],
-                                        'pending' => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)', 'symbol' => '●'],
-                                        'rejected' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)', 'symbol' => '✕'],
-                                        default => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)', 'symbol' => '○'],
-                                    };
-                                @endphp
-                                <div class="flex items-start gap-[9px]">
-                                    <span class="apis-step-dot" style="background: {{ $stepStyle['bg'] }}; color: {{ $stepStyle['color'] }};">{{ $stepStyle['symbol'] }}</span>
-                                    <div class="flex-1 pt-[1px]">
-                                        <div class="flex justify-between items-baseline gap-2">
-                                            <span class="text-[12px] {{ $step['st'] === 'waiting' ? 'text-apis-text3' : 'text-apis-text' }} {{ $step['st'] === 'pending' ? 'font-medium' : 'font-normal' }}">{{ $step['role'] }} — {{ $step['action'] }}</span>
-                                            @if ($step['date'])
-                                                <span class="text-[11px] text-apis-text3 flex-shrink-0">{{ $step['date'] }}</span>
-                                            @endif
-                                        </div>
-                                        @if (($step['st'] === 'done' || $step['st'] === 'rejected') && $step['user'])
-                                            <span class="text-[11px] text-apis-text2">{{ $step['user'] }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
+                    @include('partials.apis.approval-chain', [
+                        'chain' => $request['chain'],
+                        'submittedBy' => $request['by'],
+                        'submittedDate' => $request['submitted'],
+                    ])
 
                     @include('partials.apis.remarks-section', [
                         'history' => $request['remarkHistory'],

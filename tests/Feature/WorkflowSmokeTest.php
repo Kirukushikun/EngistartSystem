@@ -58,7 +58,7 @@ class WorkflowSmokeTest extends TestCase
             $request->project_start_date->toDateString()
         );
         $this->assertSame(
-            now()->addDays(45)->toDateString(),
+            now()->addDays(30 + 45)->toDateString(),
             $request->project_completion_date->toDateString()
         );
 

@@ -53,9 +53,27 @@
                 <div x-cloak x-show="open" class="border-t p-[16px_18px]" style="border-color: var(--border)">
                     <div class="mb-[14px] space-y-[8px] text-[12px] text-apis-text2">
                         <div><span class="mr-1">Type:</span><span class="text-apis-text">{{ $request['type'] }}</span></div>
-                        <div><span class="mr-1">Project Start Date:</span><span class="text-apis-text">{{ $request['startDate'] }}</span></div>
-                        <div><span class="mr-1">Project Completion Date:</span><span class="text-apis-text">{{ $request['completionDate'] }}</span></div>
+                        <div><span class="mr-1">Purpose:</span><span class="text-apis-text">{{ $request['purpose'] }}</span></div>
+                        @if ($request['chickin'])<div><span class="mr-1">Chick-in:</span><span class="text-apis-text">{{ $request['chickin'] }}</span></div>@endif
+                        @if ($request['cap'])<div><span class="mr-1">Capacity:</span><span class="text-apis-text">{{ $request['cap'] }}</span></div>@endif
+                        @if ($request['mtgDate'])<div><span class="mr-1">Meeting:</span><span class="text-apis-text">{{ $request['mtgDate'] }} at {{ $request['mtgTime'] }}</span></div>@endif
                     </div>
+                    <p class="text-[12px] leading-[1.7] text-apis-text mb-[14px] border-l-2 pl-3" style="border-color: var(--border)">{{ $request['desc'] }}</p>
+                    @include('partials.apis.request-detail-fields', [
+                        'requestorRole' => $request['requestorRole'],
+                        'budgetCategory' => $request['budgetCategory'],
+                        'startDate' => $request['startDate'],
+                        'completionDate' => $request['completionDate'],
+                        'jl' => $request['jl'],
+                    ])
+                    @include('partials.apis.attachments-section', [
+                        'attachments' => $request['attachments'],
+                    ])
+                    @include('partials.apis.approval-chain', [
+                        'chain' => $request['chain'],
+                        'submittedBy' => $request['by'],
+                        'submittedDate' => $request['submitted'],
+                    ])
                     @include('partials.apis.remarks-section', [
                         'history' => $request['remarkHistory'],
                         'showInput' => $request['isPendingHere'],

@@ -5,6 +5,7 @@ namespace App\Livewire\Engineer;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Support\ApprovalChainBuilder;
 use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -211,9 +212,18 @@ class InboxPage extends Component
                     'title' => $request->title,
                     'farm' => $request->farm_name ?? 'Farm not yet specified',
                     'type' => $request->request_type,
+                    'purpose' => $request->purpose ?? 'No purpose provided',
+                    'desc' => $request->description,
+                    'chickin' => optional($request->chick_in_date)->format('Y-m-d'),
+                    'cap' => $request->capacity,
+                    'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
+                    'mtgTime' => $request->preferred_meeting_time,
                     'needed' => optional($request->date_needed)->format('Y-m-d'),
                     'startDate' => optional($request->project_start_date)->format('Y-m-d'),
                     'completionDate' => optional($request->project_completion_date)->format('Y-m-d'),
+                    'requestorRole' => $request->requestor_role ? $this->roleLabel($request->requestor_role) : null,
+                    'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
+                    'jl' => data_get($request->meta, 'jl'),
                     'submitted' => optional($submittedAt)->format('Y-m-d'),
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
@@ -223,10 +233,34 @@ class InboxPage extends Component
                     },
                     'by' => $request->requestor?->name ?? 'Unknown requester',
                     'remarkHistory' => $this->buildRemarkHistory($request),
+                    'attachments' => $this->buildAttachments($request),
+                    'isLate' => $request->is_late,
                     'isPendingHere' => $request->current_owner_role === 'engineer',
+                    'chain' => ApprovalChainBuilder::steps($request),
                 ];
             })
             ->values();
+    }
+
+    protected function buildAttachments(ProjectRequest $request): array
+    {
+        return $request->attachments
+            ->where('is_active', true)
+            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document'], true))
+            ->map(function ($attachment): array {
+                return [
+                    'label' => $attachment->attachment_type === 'justification_letter' ? 'JL File' : 'Attached File',
+                    'name' => $attachment->original_name,
+                    'url' => Storage::disk($attachment->disk)->url($attachment->path),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    protected function budgetCategoryLabel(?string $category): ?string
+    {
+        return $category ? config('project_timelines.' . $category . '.label') : null;
     }
 
     protected function buildRemarkHistory(ProjectRequest $request): array
