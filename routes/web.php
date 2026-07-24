@@ -42,6 +42,7 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
 
     Route::middleware('role:ed_manager')->group(function () {
         Route::get('/ed-manager/inbox', \App\Livewire\EDManager\InboxPage::class)->name('ed-manager.inbox');
+        Route::get('/ed-manager/assigned-engineers', \App\Livewire\Shared\AssignedEngineersPage::class)->name('ed-manager.assigned-engineers');
         Route::get('/ed-manager/request-summary', \App\Livewire\Shared\RequestSummaryPage::class)->name('ed-manager.request-summary');
         Route::get('/ed-manager/history', \App\Livewire\HistoryPage::class)->name('ed-manager.history');
         Route::get('/ed-manager/change-request', \App\Livewire\EDManager\SettingsChangeRequestPage::class)->name('ed-manager.change-request');

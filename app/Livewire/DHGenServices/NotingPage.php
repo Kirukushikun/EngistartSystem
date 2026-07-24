@@ -7,7 +7,6 @@ use App\Livewire\Concerns\HasSimplePagination;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
-use App\Models\User;
 use App\Support\ApprovalChainBuilder;
 use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
@@ -24,8 +23,6 @@ class NotingPage extends Component
 
     public array $remarks = [];
 
-    public array $selectedEngineer = [];
-
     public string $search = '';
 
     public string $typeFilter = 'all';
@@ -36,16 +33,6 @@ class NotingPage extends Component
 
     public int $page = 1;
 
-    public function getEngineerOptionsProperty(): array
-    {
-        return User::query()
-            ->where('role', 'engineer')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
-
     public function confirmNoteForward(string $requestId): void
     {
         $request = $this->loadNotingItems()->firstWhere('id', $requestId);
@@ -54,15 +41,9 @@ class NotingPage extends Component
             return;
         }
 
-        if (empty($this->selectedEngineer[$requestId])) {
-            $this->dispatch('notify', type: 'warn', message: 'Select an engineer to route this request to before noting.');
-
-            return;
-        }
-
         $this->dispatch('openConfirmationModal', config: [
             'title' => 'Note request and forward?',
-            'message' => 'Mark ' . $request['id'] . ' as noted and route it to the selected engineer for initialization?',
+            'message' => 'Mark ' . $request['id'] . ' as noted and forward it to ' . ($request['assignedEngineerName'] ?? 'the assigned engineer') . ' for initialization?',
             'tone' => 'success',
             'confirmText' => 'Note & Forward',
             'confirmEvent' => 'dhGenServicesNotingConfirmed',
@@ -77,23 +58,20 @@ class NotingPage extends Component
         $requestId = (string) ($payload['requestId'] ?? '');
         $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
-        $engineerId = (int) ($this->selectedEngineer[$requestId] ?? 0);
 
         abort_unless($user, 403);
 
-        if (! $engineerId || ! array_key_exists($engineerId, $this->engineerOptions)) {
-            $this->dispatch('notify', type: 'danger', message: 'Select a valid engineer before noting this request.');
-
-            return;
-        }
-
-        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user, $engineerId) {
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('request_type', '!=', 'Settings Change')
                 ->where('current_owner_role', 'dh_gen_services')
                 ->whereNull('withdrawn_at')
                 ->firstOrFail();
+
+            abort_if(! $projectRequest->assigned_engineer_id, 422, 'This request has no engineer assigned by ED Manager yet.');
+
+            $engineerId = $projectRequest->assigned_engineer_id;
 
             $previousStatus = $projectRequest->current_status;
             $previousStep = $projectRequest->current_step;
@@ -104,7 +82,6 @@ class NotingPage extends Component
                 'current_step' => 'engineer_initialization',
                 'current_owner_role' => 'engineer',
                 'current_owner_id' => $engineerId,
-                'assigned_engineer_id' => $engineerId,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
@@ -145,9 +122,9 @@ class NotingPage extends Component
             $projectRequest->request_number . ' — ' . $projectRequest->title . ' has been noted and assigned to you.'
         );
 
-        unset($this->remarks[$requestId], $this->selectedEngineer[$requestId]);
+        unset($this->remarks[$requestId]);
 
-        $this->dispatch('notify', type: 'info', message: $requestId . ' was noted and routed to the assigned engineer for initialization.');
+        $this->dispatch('notify', type: 'info', message: $requestId . ' was noted and forwarded to the assigned engineer for initialization.');
     }
 
     public function updatedSearch(): void { $this->page = 1; }
@@ -207,7 +184,7 @@ class NotingPage extends Component
     protected function loadNotingItems(): Collection
     {
         return ProjectRequest::query()
-            ->with(['requestor', 'transitions.actedBy', 'attachments'])
+            ->with(['requestor', 'transitions.actedBy', 'attachments', 'assignedEngineer'])
             ->where('request_type', '!=', 'Settings Change')
             ->where(function ($query) {
                 $query->where('current_owner_role', 'dh_gen_services')
@@ -242,6 +219,7 @@ class NotingPage extends Component
                         default => str_replace('_', ' ', str($request->current_status)->title()),
                     },
                     'by' => $request->requestor?->name ?? 'Unknown requester',
+                    'assignedEngineerName' => $request->assignedEngineer?->name,
                     'desc' => $request->description,
                     'chickin' => optional($request->chick_in_date)->format('Y-m-d'),
                     'cap' => $request->capacity,
@@ -268,7 +246,7 @@ class NotingPage extends Component
             ->layout('layouts.app', [
                 'title' => 'For Noting/Remarks | EngiStart',
                 'header' => 'For Noting/Remarks',
-                'subheader' => 'This section includes approved requests, including late filings, that now require DH Gen Services noting before forwarding to ED Manager.',
+                'subheader' => 'This section includes accepted requests, including late filings, that now require DH Gen Services noting before forwarding to the engineer assigned by ED Manager.',
             ]);
     }
 }

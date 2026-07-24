@@ -7,6 +7,7 @@ use App\Livewire\Concerns\HasSimplePagination;
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
 use App\Models\RequestTransition;
+use App\Models\User;
 use App\Support\ApprovalChainBuilder;
 use App\Support\WorkflowNotifier;
 use Carbon\Carbon;
@@ -23,6 +24,8 @@ class InboxPage extends Component
 
     public array $remarks = [];
 
+    public array $selectedEngineer = [];
+
     public string $search = '';
 
     public string $typeFilter = 'all';
@@ -33,6 +36,16 @@ class InboxPage extends Component
 
     public int $page = 1;
 
+    public function getEngineerOptionsProperty(): array
+    {
+        return User::query()
+            ->where('role', 'engineer')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
     public function confirmAccept(string $requestId): void
     {
         $request = $this->loadInboxItems()->firstWhere('id', $requestId);
@@ -41,9 +54,15 @@ class InboxPage extends Component
             return;
         }
 
+        if (empty($this->selectedEngineer[$requestId])) {
+            $this->dispatch('notify', type: 'warn', message: 'Select an engineer to assign this request to before accepting.');
+
+            return;
+        }
+
         $this->dispatch('openConfirmationModal', config: [
             'title' => 'Accept request?',
-            'message' => 'Accept ' . $request['id'] . ' using the current remarks entered on this request?',
+            'message' => 'Accept ' . $request['id'] . ' and assign it to the selected engineer, using the current remarks entered on this request?',
             'tone' => 'success',
             'confirmText' => 'Accept',
             'confirmEvent' => 'edManagerAcceptanceConfirmed',
@@ -77,10 +96,17 @@ class InboxPage extends Component
         $requestId = (string) ($payload['requestId'] ?? '');
         $user = Auth::user();
         $remarks = trim($this->remarks[$requestId] ?? '');
+        $engineerId = (int) ($this->selectedEngineer[$requestId] ?? 0);
 
         abort_unless($user, 403);
 
-        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
+        if (! $engineerId || ! array_key_exists($engineerId, $this->engineerOptions)) {
+            $this->dispatch('notify', type: 'danger', message: 'Select a valid engineer before accepting this request.');
+
+            return;
+        }
+
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user, $engineerId) {
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'ed_manager')
@@ -96,6 +122,7 @@ class InboxPage extends Component
                 'current_step' => 'dh_gen_services_noting',
                 'current_owner_role' => 'dh_gen_services',
                 'current_owner_id' => null,
+                'assigned_engineer_id' => $engineerId,
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
@@ -121,6 +148,7 @@ class InboxPage extends Component
                 'remarks' => $remarks !== '' ? $remarks : 'Accepted by ED Manager.',
                 'context' => [
                     'review_stage' => 'ed_manager',
+                    'assigned_engineer_id' => $engineerId,
                 ],
                 'acted_at' => now(),
             ]);
@@ -135,9 +163,9 @@ class InboxPage extends Component
             $projectRequest->request_number . ' — ' . $projectRequest->title . ' needs your noting.'
         );
 
-        unset($this->remarks[$requestId]);
+        unset($this->remarks[$requestId], $this->selectedEngineer[$requestId]);
 
-        $this->dispatch('notify', type: 'success', message: $requestId . ' was accepted successfully.');
+        $this->dispatch('notify', type: 'success', message: $requestId . ' was accepted and assigned successfully.');
     }
 
     #[On('edManagerReturnConfirmed')]

@@ -114,6 +114,28 @@
                         </p>
                     @endif
 
+                    <div class="mb-[10px] space-y-[6px] text-[12px] text-apis-text2">
+                        <div><span class="mr-1">Farm:</span><span class="text-apis-text">{{ $request['farm'] }}</span></div>
+                        <div><span class="mr-1">Type:</span><span class="text-apis-text">{{ $request['type'] }}</span></div>
+                        @if ($request['purpose'])<div><span class="mr-1">Purpose:</span><span class="text-apis-text">{{ $request['purpose'] }}</span></div>@endif
+                        @if ($request['chickin'])<div><span class="mr-1">Chick-in:</span><span class="text-apis-text">{{ $request['chickin'] }}</span></div>@endif
+                        @if ($request['cap'])<div><span class="mr-1">Capacity:</span><span class="text-apis-text">{{ $request['cap'] }}</span></div>@endif
+                        @if ($request['mtgDate'])<div><span class="mr-1">Meeting:</span><span class="text-apis-text">{{ $request['mtgDate'] }} at {{ $request['mtgTime'] }}</span></div>@endif
+                    </div>
+
+                    @if ($request['desc'])
+                        <p class="text-[12px] leading-[1.7] text-apis-text mb-[10px] border-l-2 pl-3" style="border-color: var(--border)">
+                            {{ $request['desc'] }}
+                        </p>
+                    @endif
+
+                    @include('partials.apis.request-detail-fields', [
+                        'budgetCategory' => $request['budgetCategory'],
+                        'startDate' => $request['startDate'],
+                        'completionDate' => $request['completionDate'],
+                        'jl' => $request['jl'],
+                    ])
+
                     @include('partials.apis.attachments-section', [
                         'attachments' => $request['attachments'],
                     ])

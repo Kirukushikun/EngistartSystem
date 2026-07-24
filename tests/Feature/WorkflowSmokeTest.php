@@ -89,16 +89,17 @@ class WorkflowSmokeTest extends TestCase
 
         $this->actingAs($ed);
         Livewire::test(EdManagerInboxPage::class)
+            ->set("selectedEngineer.{$request->request_number}", $engineer->id)
             ->call('accept', ['requestId' => $request->request_number]);
 
         $request->refresh();
         $this->assertSame('accepted', $request->current_status);
         $this->assertSame('dh_gen_services_noting', $request->current_step);
         $this->assertSame('dh_gen_services', $request->current_owner_role);
+        $this->assertSame($engineer->id, $request->assigned_engineer_id);
 
         $this->actingAs($dh);
         Livewire::test(DhNotingPage::class)
-            ->set("selectedEngineer.{$request->request_number}", $engineer->id)
             ->call('noteForward', ['requestId' => $request->request_number]);
 
         $request->refresh();
@@ -255,11 +256,12 @@ class WorkflowSmokeTest extends TestCase
         Livewire::test(VpInboxPage::class)->call('approve', ['requestId' => $request->request_number]);
 
         $this->actingAs($ed);
-        Livewire::test(EdManagerInboxPage::class)->call('accept', ['requestId' => $request->request_number]);
+        Livewire::test(EdManagerInboxPage::class)
+            ->set("selectedEngineer.{$request->request_number}", $engineer->id)
+            ->call('accept', ['requestId' => $request->request_number]);
 
         $this->actingAs($dh);
         Livewire::test(DhNotingPage::class)
-            ->set("selectedEngineer.{$request->request_number}", $engineer->id)
             ->call('noteForward', ['requestId' => $request->request_number]);
 
         $this->actingAs($engineer);

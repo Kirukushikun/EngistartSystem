@@ -111,6 +111,11 @@ return [
                     'badge' => ['text' => '3', 'tone' => 'green'],
                 ],
                 [
+                    'label' => 'Assigned Engineers',
+                    'route' => 'ed-manager.assigned-engineers',
+                    'active' => ['ed-manager.assigned-engineers'],
+                ],
+                [
                     'label' => 'Project Request Summary',
                     'route' => 'ed-manager.request-summary',
                     'active' => ['ed-manager.request-summary'],

@@ -75,6 +75,15 @@
                 :textarea-model="'remarks.' . $request['id']"
                 textarea-placeholder="Add acceptance or return remarks here...">
                 @if ($request['isPendingHere'])
+                    <div class="w-full mb-2">
+                        <label class="block text-[11px] text-apis-text2 mb-1">Assign to engineer</label>
+                        <select wire:model="selectedEngineer.{{ $request['id'] }}" class="apis-toolbar-control w-full max-w-[280px]">
+                            <option value="">Select an engineer…</option>
+                            @foreach ($this->engineerOptions as $engineerId => $engineerName)
+                                <option value="{{ $engineerId }}">{{ $engineerName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <button type="button" wire:click="confirmAccept(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">Accept</button>
                     <button type="button" wire:click="confirmReturn(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd)">Return</button>
                 @else

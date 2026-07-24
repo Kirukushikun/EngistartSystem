@@ -75,16 +75,10 @@
                 :textarea-model="'remarks.' . $request['id']"
                 textarea-placeholder="Add notation remarks here...">
                 @if ($request['isPendingHere'])
-                    <div class="w-full mb-2">
-                        <label class="block text-[11px] text-apis-text2 mb-1">Assign to engineer</label>
-                        <select wire:model="selectedEngineer.{{ $request['id'] }}" class="apis-toolbar-control w-full max-w-[280px]">
-                            <option value="">Select an engineer…</option>
-                            @foreach ($this->engineerOptions as $engineerId => $engineerName)
-                                <option value="{{ $engineerId }}">{{ $engineerName }}</option>
-                            @endforeach
-                        </select>
+                    <div class="w-full mb-2 text-[12px] text-apis-text2">
+                        Assigned engineer: <span class="text-apis-text font-medium">{{ $request['assignedEngineerName'] ?? 'Not yet assigned' }}</span>
                     </div>
-                    <button type="button" wire:click="confirmNoteForward(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">Note &amp; Forward to ED Manager</button>
+                    <button type="button" wire:click="confirmNoteForward(@js($request['id']))" class="apis-card-button font-medium" style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">Note &amp; Forward to Engineer</button>
                 @else
                     <p class="text-[11px] text-apis-text2 m-0">View only. No further action is available on this request from this stage.</p>
                 @endif
