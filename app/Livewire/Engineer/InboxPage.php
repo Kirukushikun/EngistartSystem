@@ -172,13 +172,8 @@ class InboxPage extends Component
 
         return ProjectRequest::query()
             ->with(['requestor', 'transitions.actedBy', 'attachments'])
-            ->where(function ($query) use ($user) {
-                $query->where('current_owner_role', 'engineer')
-                    ->where('current_owner_id', $user?->id)
-                    ->orWhereHas('transitions', function ($transitionQuery) use ($user) {
-                        $transitionQuery->where('acted_by_role', 'engineer')->where('acted_by_id', $user?->id);
-                    });
-            })
+            ->where('current_owner_role', 'engineer')
+            ->where('current_owner_id', $user?->id)
             ->whereNull('withdrawn_at')
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')

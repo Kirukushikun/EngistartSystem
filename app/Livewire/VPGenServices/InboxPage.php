@@ -299,19 +299,13 @@ class InboxPage extends Component
         return ProjectRequest::query()
             ->with(['requestor', 'transitions.actedBy', 'attachments'])
             ->where('request_type', '!=', 'Settings Change')
-            ->where(function ($query) {
-                $query->where('current_owner_role', 'vp_gen_services')
-                    ->orWhereHas('transitions', function ($transitionQuery) {
-                        $transitionQuery->where('acted_by_role', 'vp_gen_services');
-                    });
-            })
+            ->where('current_owner_role', 'vp_gen_services')
             ->whereNull('withdrawn_at')
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')
             ->get()
             ->map(function (ProjectRequest $request): array {
                 $submittedAt = $request->submitted_at ?? $request->created_at;
-                $hasVpAction = $request->transitions->contains(fn ($transition) => $transition->acted_by_role === 'vp_gen_services');
                 $latestTransition = $request->transitions->sortByDesc('acted_at')->first();
 
                 return [
@@ -348,7 +342,6 @@ class InboxPage extends Component
                     'attachments' => $this->buildAttachments($request),
                     'isLate' => $request->is_late,
                     'isPendingHere' => $request->current_owner_role === 'vp_gen_services',
-                    'isTransparentCopy' => $request->current_owner_role !== 'vp_gen_services' && $hasVpAction,
                     'chain' => ApprovalChainBuilder::steps($request),
                 ];
             })

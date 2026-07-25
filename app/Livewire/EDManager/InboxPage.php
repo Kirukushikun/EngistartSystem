@@ -321,19 +321,13 @@ class InboxPage extends Component
         return ProjectRequest::query()
             ->with(['requestor', 'transitions.actedBy', 'attachments'])
             ->where('request_type', '!=', 'Settings Change')
-            ->where(function ($query) {
-                $query->where('current_owner_role', 'ed_manager')
-                    ->orWhereHas('transitions', function ($transitionQuery) {
-                        $transitionQuery->where('acted_by_role', 'ed_manager');
-                    });
-            })
+            ->where('current_owner_role', 'ed_manager')
             ->whereNull('withdrawn_at')
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')
             ->get()
             ->map(function (ProjectRequest $request): array {
                 $submittedAt = $request->submitted_at ?? $request->created_at;
-                $hasEdAction = $request->transitions->contains(fn ($transition) => $transition->acted_by_role === 'ed_manager');
 
                 return [
                     'dbId' => $request->id,
@@ -368,7 +362,6 @@ class InboxPage extends Component
                     'attachments' => $this->buildAttachments($request),
                     'isLate' => $request->is_late,
                     'isPendingHere' => $request->current_owner_role === 'ed_manager',
-                    'isTransparentCopy' => $request->current_owner_role !== 'ed_manager' && $hasEdAction,
                     'chain' => ApprovalChainBuilder::steps($request),
                 ];
             })

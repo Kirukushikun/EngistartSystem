@@ -226,13 +226,7 @@ class ChangeRequestsPage extends Component
         return ProjectRequest::query()
             ->with('requestor')
             ->where('request_type', 'Settings Change')
-            ->where(function ($query) {
-                $query->where('current_owner_role', 'vp_gen_services')
-                    ->orWhereHas('transitions', function ($transitionQuery) {
-                        $transitionQuery->where('acted_by_role', 'vp_gen_services')
-                            ->whereIn('to_status', ['pending_it', 'cr_rejected']);
-                    });
-            })
+            ->where('current_owner_role', 'vp_gen_services')
             ->whereNull('withdrawn_at')
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')
