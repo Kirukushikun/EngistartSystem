@@ -58,7 +58,7 @@ class MyRequestsPage extends Component
         }
 
         return ProjectRequest::query()
-            ->with(['transitions', 'attachments'])
+            ->with(['transitions.actedBy', 'attachments'])
             ->where('requestor_id', $user->id)
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')
@@ -100,30 +100,10 @@ class MyRequestsPage extends Component
             'isEditable' => $request->isEditableByRequestor(),
             'isWithdrawn' => $request->withdrawn_at !== null,
             'awaitingReschedule' => $request->current_step === 'requestor_reschedule' && $request->current_owner_id === Auth::id(),
-            'remarks' => $this->buildRemarks($request),
+            'remarkHistory' => $this->buildRemarkHistory($request),
             'attachments' => $this->buildAttachments($request),
             'chain' => $this->buildChain($request),
         ];
-    }
-
-    protected function buildRemarks(ProjectRequest $request): array
-    {
-        return $request->transitions
-            ->sortBy('acted_at')
-            ->filter(function (RequestTransition $transition): bool {
-                return $transition->acted_by_role !== 'farm_manager' && filled($transition->remarks);
-            })
-            ->map(function (RequestTransition $transition): array {
-                return [
-                    'role' => $this->roleLabel($transition->acted_by_role),
-                    'action' => $this->remarkLabel($transition->action),
-                    'remarks' => $transition->remarks,
-                    'date' => optional($transition->acted_at)->format('Y-m-d h:i A') ?? '—',
-                    'tone' => $this->remarkTone($transition->action),
-                ];
-            })
-            ->values()
-            ->all();
     }
 
     public function confirmWithdraw(int $requestId): void

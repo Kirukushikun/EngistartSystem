@@ -64,15 +64,26 @@ class RequestSummaryPage extends Component
 
     public function getRowsProperty(): Collection
     {
-        $role = Auth::user()?->role;
+        $user = Auth::user();
 
         return ProjectRequest::query()
             ->with(['requestor', 'attachments'])
-            ->when($role, function ($query) use ($role) {
-                $query->where(function ($query) use ($role) {
-                    $query->where('current_owner_role', $role)
-                        ->orWhereHas('transitions', function ($transitionQuery) use ($role) {
-                            $transitionQuery->where('acted_by_role', $role);
+            ->when($user, function ($query) use ($user) {
+                // Farm Manager's "involvement" is personal (they're the requestor), not
+                // role-wide -- scoping by acted_by_role would leak every other Farm
+                // Manager's requests to each other. Every other role is a shared role-wide
+                // inbox, so scoping by role (currently theirs, or previously acted on by
+                // their role) is correct there.
+                if ($user->role === 'farm_manager') {
+                    $query->where('requestor_id', $user->id);
+
+                    return;
+                }
+
+                $query->where(function ($query) use ($user) {
+                    $query->where('current_owner_role', $user->role)
+                        ->orWhereHas('transitions', function ($transitionQuery) use ($user) {
+                            $transitionQuery->where('acted_by_role', $user->role);
                         });
                 });
             })

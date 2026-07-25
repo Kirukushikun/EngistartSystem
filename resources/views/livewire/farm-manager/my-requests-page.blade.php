@@ -78,7 +78,7 @@
                             @endif
                         </div>
 
-                        @if ($request['awaitingReschedule'])
+                        @if ($request['awaitingReschedule'] && \Illuminate\Support\Facades\Route::has('farm-manager.requests.reschedule-meeting'))
                             <div class="flex gap-2 flex-wrap justify-end">
                                 <a href="{{ route('farm-manager.requests.reschedule-meeting', ['projectRequest' => $request['dbId']]) }}"
                                    class="text-[11px] font-medium px-3 py-1.5 rounded-[8px] no-underline"
@@ -140,34 +140,9 @@
                         'attachments' => $request['attachments'],
                     ])
 
-                    @if (! empty($request['remarks']))
-                        <div class="mb-[10px] rounded-[10px] p-[10px_12px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
-                            <p class="text-[10px] text-apis-text2 mb-[7px] font-medium uppercase tracking-[0.07em]">Remarks</p>
-                            <div class="space-y-2">
-                                @foreach ($request['remarks'] as $remark)
-                                    @php
-                                        $remarkTone = match ($remark['tone']) {
-                                            'success' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)'],
-                                            'danger' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)'],
-                                            default => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)'],
-                                        };
-                                    @endphp
-                                    <div class="rounded-[8px] p-[8px_10px]" style="background: var(--bg); border: 0.5px solid var(--border)">
-                                        <div class="flex items-start justify-between gap-3 flex-wrap mb-1">
-                                            <div class="flex items-center gap-2 flex-wrap">
-                                                <span class="text-[10px] px-[6px] py-[1px] rounded-[999px] font-medium" style="background: {{ $remarkTone['bg'] }}; color: {{ $remarkTone['color'] }}">
-                                                    {{ $remark['action'] }}
-                                                </span>
-                                                <span class="text-[11px] font-medium text-apis-text">{{ $remark['role'] }}</span>
-                                            </div>
-                                            <span class="text-[10px] text-apis-text3">{{ $remark['date'] }}</span>
-                                        </div>
-                                        <p class="text-[11px] text-apis-text2 m-0">{{ $remark['remarks'] }}</p>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
+                    @include('partials.apis.remarks-section', [
+                        'history' => $request['remarkHistory'],
+                    ])
 
                     @include('partials.apis.approval-chain', [
                         'chain' => $request['chain'],

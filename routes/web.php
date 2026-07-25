@@ -19,6 +19,7 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
         Route::get('/farm-manager/requests/new', \App\Livewire\FarmManager\NewRequestPage::class)->name('farm-manager.requests.new');
         Route::get('/farm-manager/requests', \App\Livewire\FarmManager\MyRequestsPage::class)->name('farm-manager.requests.index');
         Route::get('/farm-manager/requests/{projectRequest}/reschedule-meeting', \App\Livewire\FarmManager\MeetingReschedulePage::class)->name('farm-manager.requests.reschedule-meeting');
+        Route::get('/farm-manager/request-summary', \App\Livewire\Shared\RequestSummaryPage::class)->name('farm-manager.request-summary');
     });
 
     Route::middleware('role:division_head')->group(function () {

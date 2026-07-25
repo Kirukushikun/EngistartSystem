@@ -16,6 +16,11 @@ return [
                     'route' => 'farm-manager.requests.index',
                     'active' => ['farm-manager.requests.index'],
                 ],
+                [
+                    'label' => 'Project Request Summary',
+                    'route' => 'farm-manager.request-summary',
+                    'active' => ['farm-manager.request-summary'],
+                ],
             ],
         ],
         'division-head' => [
