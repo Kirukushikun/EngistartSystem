@@ -73,7 +73,7 @@
                     @forelse ($this->paginatedRows as $row)
                         <tr style="border-top: 0.5px solid var(--border)">
                             <td class="px-[14px] py-[9px] font-mono text-[11px] text-apis-text2 whitespace-nowrap">{{ $row['id'] }}</td>
-                            <td class="px-[14px] py-[9px]">@include('partials.apis.request-status-badge', ['status' => $row['status'], 'label' => $row['statusLabel']])</td>
+                            <td class="px-[14px] py-[9px] whitespace-nowrap">@include('partials.apis.request-status-badge', ['status' => $row['status'], 'label' => $row['statusLabel']])</td>
                             <td class="px-[14px] py-[9px] text-[11px] text-apis-text2 whitespace-nowrap">{{ $row['farm'] }}</td>
                             <td class="px-[14px] py-[9px] font-medium text-apis-text whitespace-nowrap">{{ $row['title'] }}</td>
                             <td class="px-[14px] py-[9px] text-[11px] text-apis-text2 whitespace-nowrap">{{ $row['by'] }}</td>

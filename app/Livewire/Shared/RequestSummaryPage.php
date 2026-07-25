@@ -7,6 +7,7 @@ use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\ProjectRequest;
 use App\Support\ProjectTimelineCalculator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class RequestSummaryPage extends Component
@@ -63,8 +64,18 @@ class RequestSummaryPage extends Component
 
     public function getRowsProperty(): Collection
     {
+        $role = Auth::user()?->role;
+
         return ProjectRequest::query()
             ->with(['requestor', 'attachments'])
+            ->when($role, function ($query) use ($role) {
+                $query->where(function ($query) use ($role) {
+                    $query->where('current_owner_role', $role)
+                        ->orWhereHas('transitions', function ($transitionQuery) use ($role) {
+                            $transitionQuery->where('acted_by_role', $role);
+                        });
+                });
+            })
             ->when($this->farmFilter !== 'all', fn ($query) => $query->where('farm_name', $this->farmFilter))
             ->when($this->dateFrom !== '', fn ($query) => $query->whereDate('submitted_at', '>=', $this->dateFrom))
             ->when($this->dateTo !== '', fn ($query) => $query->whereDate('submitted_at', '<=', $this->dateTo))
@@ -119,7 +130,7 @@ class RequestSummaryPage extends Component
             ->layout('layouts.app', [
                 'title' => 'Project Request Summary | EngiStart',
                 'header' => 'Project Request Summary',
-                'subheader' => 'All project requests regardless of status, filterable by farm and date.',
+                'subheader' => 'Requests currently waiting on you or that you\'ve acted on before, filterable by farm and date.',
             ]);
     }
 }
