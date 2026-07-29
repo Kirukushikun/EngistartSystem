@@ -25,6 +25,7 @@ class NewRequestPage extends Component
         'type' => '',
         'typeOther' => '',
         'purpose' => '',
+        'dateSubmitted' => '',
         'budgetCategory' => '',
         'mtgDate' => '',
         'mtgTime' => '',
@@ -93,11 +94,11 @@ class NewRequestPage extends Component
 
     public function getComputedTimelineProperty(): ?array
     {
-        if ($this->form['budgetCategory'] === '') {
+        if ($this->form['budgetCategory'] === '' || $this->form['dateSubmitted'] === '') {
             return null;
         }
 
-        return ProjectTimelineCalculator::forCategory($this->form['budgetCategory'], now());
+        return ProjectTimelineCalculator::forCategory($this->form['budgetCategory'], Carbon::parse($this->form['dateSubmitted']));
     }
 
     public function openSubmissionReview(): void
@@ -118,6 +119,7 @@ class NewRequestPage extends Component
                 ['label' => 'Project Description based on CAPEX', 'value' => $this->form['title']],
                 ['label' => 'Type', 'value' => $this->form['type'] === 'others' ? $this->form['typeOther'] : ($this->typeOptions[$this->form['type']] ?? '')],
                 ['label' => 'Allotted Budget', 'value' => $this->budgetCategoryOptions[$this->form['budgetCategory']] ?? ''],
+                ['label' => 'Date Submitted', 'value' => $this->form['dateSubmitted'] !== '' ? Carbon::parse($this->form['dateSubmitted'])->format('M j, Y') : '—'],
                 ['label' => 'Project Start Date', 'value' => $timeline ? $timeline['start_date']->format('M j, Y') : '—'],
                 ['label' => 'Project Completion Date', 'value' => $timeline ? $timeline['completion_date']->format('M j, Y') : '—'],
                 ['label' => 'Is the estimated timeline acceptable?', 'value' => $this->timelineAcceptable === 'yes' ? 'Yes' : 'No'],
@@ -190,6 +192,7 @@ class NewRequestPage extends Component
                 'budget_category' => $this->form['budgetCategory'],
                 'farm_name' => $projectRequest->farm_name ?? $user->farm,
                 'purpose' => $this->form['purpose'] ?: null,
+                'date_needed' => $this->form['dateSubmitted'],
                 'project_start_date' => $timeline['start_date'] ?? null,
                 'project_completion_date' => $timeline['completion_date'] ?? null,
                 'preferred_meeting_date' => $isJl ? null : $this->form['mtgDate'],
@@ -296,6 +299,7 @@ class NewRequestPage extends Component
             'type' => '',
             'typeOther' => '',
             'purpose' => '',
+            'dateSubmitted' => '',
             'budgetCategory' => '',
             'mtgDate' => '',
             'mtgTime' => '',
@@ -312,6 +316,7 @@ class NewRequestPage extends Component
             'form.type' => ['required', 'string'],
             'form.typeOther' => [Rule::requiredIf($this->form['type'] === 'others'), 'nullable', 'string', 'max:255'],
             'form.purpose' => ['nullable', 'string'],
+            'form.dateSubmitted' => ['required', 'date', 'after:today'],
             'form.budgetCategory' => ['required', 'string', 'in:small,medium,large'],
             'timelineAcceptable' => ['required', 'in:yes,no'],
             'jlAttachment' => ['nullable', 'file', 'max:10240', 'mimes:pdf,doc,docx,jpg,jpeg,png'],
@@ -338,6 +343,8 @@ class NewRequestPage extends Component
             'form.title.required' => 'Project Description based on CAPEX is required.',
             'form.type.required' => 'Type is required.',
             'form.typeOther.required' => 'Please specify the type.',
+            'form.dateSubmitted.required' => 'Date Submitted is required.',
+            'form.dateSubmitted.after' => 'Date Submitted must be a future date.',
             'form.budgetCategory.required' => 'Allotted Budget is required.',
             'form.mtgDate.required' => 'Preferred meeting date is required.',
             'form.mtgDate.after' => 'Preferred meeting date must be a future date.',
@@ -384,6 +391,7 @@ class NewRequestPage extends Component
             'type' => $typeKey !== false ? $typeKey : 'others',
             'typeOther' => $typeKey !== false ? '' : (string) $projectRequest->request_type,
             'purpose' => $projectRequest->purpose ?? '',
+            'dateSubmitted' => optional($projectRequest->date_needed)->toDateString() ?? '',
             'budgetCategory' => (string) $projectRequest->budget_category,
             'mtgDate' => optional($projectRequest->preferred_meeting_date)->toDateString() ?? '',
             'mtgTime' => (string) ($projectRequest->preferred_meeting_time ?? ''),

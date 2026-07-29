@@ -27,7 +27,7 @@ class NormalRoutingLiveCheckTest extends TestCase
         Livewire::test(NewRequestPage::class)
             ->set('form.title', 'Normal Routing Check')
             ->set('form.type', 'production_building')
-            ->set('form.needed', now()->addDays(60)->toDateString())
+            ->set('form.dateSubmitted', now()->addDays(60)->toDateString())
             ->set('form.budgetCategory', 'small')
             ->set('form.mtgDate', now()->addDays(10)->toDateString())
             ->set('form.mtgTime', '10:00')

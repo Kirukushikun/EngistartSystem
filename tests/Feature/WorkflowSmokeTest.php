@@ -49,6 +49,7 @@ class WorkflowSmokeTest extends TestCase
         return Livewire::test(NewRequestPage::class)
             ->set('form.title', $title)
             ->set('form.type', 'production_building')
+            ->set('form.dateSubmitted', now()->addDays(60)->toDateString())
             ->set('form.budgetCategory', 'small')
             ->set('form.mtgDate', now()->addDays(10)->toDateString())
             ->set('form.mtgTime', '10:00')
@@ -79,7 +80,7 @@ class WorkflowSmokeTest extends TestCase
         $this->assertNotNull($request->project_start_date);
         $this->assertNotNull($request->project_completion_date);
         $this->assertNotNull($request->preferred_meeting_date);
-        $expectedStart = $this->addBusinessDays(now(), 30);
+        $expectedStart = $this->addBusinessDays(now()->addDays(60), 30);
         $expectedCompletion = $this->addBusinessDays($expectedStart, 45);
         $this->assertSame(
             $expectedStart->toDateString(),
@@ -150,6 +151,7 @@ class WorkflowSmokeTest extends TestCase
             ->set('form.title', 'Late Project')
             ->set('form.type', 'others')
             ->set('form.typeOther', 'Custom Type')
+            ->set('form.dateSubmitted', now()->addDays(20)->toDateString())
             ->set('form.budgetCategory', 'large')
             ->set('timelineAcceptable', 'no')
             ->set('jl.delayReason', 'Site not ready')

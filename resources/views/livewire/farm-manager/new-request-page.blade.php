@@ -120,8 +120,17 @@
                 </div>
 
                 {{-- ── AUTO-CALCULATED TIMELINE ──────────────────────── --}}
+                <div class="mt-4">
+                    <label class="apis-form-label">Date Submitted *</label>
+                    <input type="date"
+                           wire:model.live="form.dateSubmitted"
+                           min="{{ now()->addDay()->format('Y-m-d') }}"
+                           class="apis-form-control @error('form.dateSubmitted') apis-error @enderror">
+                    @error('form.dateSubmitted') <p class="apis-error-text">{{ $message }}</p> @enderror
+                </div>
+
                 @if ($this->computedTimeline)
-                    <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div class="grid grid-cols-2 gap-3 mt-3">
                         <div>
                             <label class="apis-form-label">Project Start Date</label>
                             <input type="text" readonly value="{{ $this->computedTimeline['start_date']->format('M j, Y') }}" class="apis-form-control" style="opacity: 0.75; cursor: not-allowed;">
