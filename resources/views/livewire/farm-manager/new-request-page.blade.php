@@ -142,34 +142,6 @@
                     </div>
                 @endif
 
-                {{-- ── ASSESSMENT MEETING ────────────────────────────── --}}
-                @if ($timelineAcceptable !== 'no')
-                    @include('partials.apis.section-divider', ['label' => 'Assessment Meeting'])
-
-                    @include('partials.apis.alert', [
-                        'type' => 'info',
-                        'message' => 'Provide your preferred date and time for the assessment meeting. The reviewing role can send this back to you if the schedule doesn\'t work for them.',
-                    ])
-
-                    <div class="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                            <label class="apis-form-label">Preferred Date *</label>
-                            <input type="date"
-                                   wire:model.live="form.mtgDate"
-                                   min="{{ now()->addDay()->format('Y-m-d') }}"
-                                   class="apis-form-control @error('form.mtgDate') apis-error @enderror">
-                            @error('form.mtgDate') <p class="apis-error-text">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="apis-form-label">Preferred Time *</label>
-                            <input type="time"
-                                   wire:model.live="form.mtgTime"
-                                   class="apis-form-control @error('form.mtgTime') apis-error @enderror">
-                            @error('form.mtgTime') <p class="apis-error-text">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                @endif
-
                 {{-- ── TIMELINE ACCEPTABILITY ────────────────────────── --}}
                 <div class="mt-4 rounded-[8px] p-[14px_16px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
                     <label class="apis-form-label">Is the estimated timeline acceptable? *</label>
@@ -223,6 +195,34 @@
                         </div>
                     @endif
                 </div>
+
+                {{-- ── ASSESSMENT MEETING ────────────────────────────── --}}
+                @if ($timelineAcceptable === 'yes')
+                    @include('partials.apis.section-divider', ['label' => 'Assessment Meeting'])
+
+                    @include('partials.apis.alert', [
+                        'type' => 'info',
+                        'message' => 'Provide your preferred date and time for the assessment meeting. The reviewing role can send this back to you if the schedule doesn\'t work for them.',
+                    ])
+
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="apis-form-label">Preferred Date *</label>
+                            <input type="date"
+                                   wire:model.live="form.mtgDate"
+                                   min="{{ now()->addDay()->format('Y-m-d') }}"
+                                   class="apis-form-control @error('form.mtgDate') apis-error @enderror">
+                            @error('form.mtgDate') <p class="apis-error-text">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="apis-form-label">Preferred Time *</label>
+                            <input type="time"
+                                   wire:model.live="form.mtgTime"
+                                   class="apis-form-control @error('form.mtgTime') apis-error @enderror">
+                            @error('form.mtgTime') <p class="apis-error-text">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                @endif
 
                 @if ($errors->any())
                     <div class="mt-4 rounded-[8px] p-[10px_14px]"
