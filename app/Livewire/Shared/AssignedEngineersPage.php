@@ -110,15 +110,19 @@ class AssignedEngineersPage extends Component
         $validated = $this->validate();
 
         if ($this->formMode === 'create') {
+            $atCap = $this->activeEngineerCount() >= 4;
+
             User::create([
                 'name' => $validated['form']['name'],
                 'email' => $validated['form']['email'],
                 'role' => 'engineer',
-                'is_active' => true,
+                'is_active' => ! $atCap,
                 'password' => Hash::make($validated['form']['password']),
             ]);
 
-            $this->dispatch('notify', type: 'success', message: 'Engineer account created.');
+            $this->dispatch('notify', type: $atCap ? 'warn' : 'success', message: $atCap
+                ? '4 engineer accounts are already active — this one was added disabled. Disable another engineer to activate it.'
+                : 'Engineer account created.');
         } elseif ($this->formMode === 'reset' && $this->selectedUserId) {
             $engineer = User::query()->where('role', 'engineer')->find($this->selectedUserId);
 
@@ -131,11 +135,22 @@ class AssignedEngineersPage extends Component
         $this->cancelForm();
     }
 
+    protected function activeEngineerCount(): int
+    {
+        return User::query()->where('role', 'engineer')->where('is_active', true)->count();
+    }
+
     public function toggleActive(int $userId): void
     {
         $engineer = User::query()->where('role', 'engineer')->find($userId);
 
         if (! $engineer) {
+            return;
+        }
+
+        if (! $engineer->is_active && $this->activeEngineerCount() >= 4) {
+            $this->dispatch('notify', type: 'warn', message: 'Only 4 engineer accounts can be active at a time. Disable another engineer first.');
+
             return;
         }
 
