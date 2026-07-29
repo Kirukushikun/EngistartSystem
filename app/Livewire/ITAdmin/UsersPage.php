@@ -273,11 +273,26 @@ class UsersPage extends Component
             $user->email = (string) $directoryUser['email'];
         }
 
+        $wasActiveEngineer = $user->exists && $user->getOriginal('role') === 'engineer' && (bool) $user->getOriginal('is_active');
+
         $user->role = (string) $validated['form']['role'];
 
         if ($this->formMode !== 'role') {
             $user->farm = $this->blankToNull($validated['form']['farm']);
             $user->department = $this->blankToNull($validated['form']['department']);
+        }
+
+        if ($user->role === 'engineer' && $user->is_active && ! $wasActiveEngineer) {
+            $activeEngineerCount = User::query()
+                ->where('role', 'engineer')
+                ->where('is_active', true)
+                ->when($user->exists, fn ($query) => $query->where('id', '!=', $user->id))
+                ->count();
+
+            if ($activeEngineerCount >= 4) {
+                $user->is_active = false;
+                $this->dispatch('notify', type: 'warn', message: '4 engineer accounts are already active — this one was added disabled. Disable another engineer to activate it.');
+            }
         }
 
         $user->save();
@@ -286,11 +301,22 @@ class UsersPage extends Component
         $this->cancelForm();
     }
 
+    protected function activeEngineerCount(): int
+    {
+        return User::query()->where('role', 'engineer')->where('is_active', true)->count();
+    }
+
     public function toggleAccess(int $userId): void
     {
         $user = User::find($userId);
 
         if (! $user) {
+            return;
+        }
+
+        if (! $user->is_active && $user->role === 'engineer' && $this->activeEngineerCount() >= 4) {
+            $this->dispatch('notify', type: 'warn', message: 'Only 4 engineer accounts can be active at a time. Disable another engineer first.');
+
             return;
         }
 

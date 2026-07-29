@@ -17,8 +17,8 @@
                     'attributes' => ['wire:model.live' => 'sortBy'],
                     'options' => [
                         ['value' => 'latest', 'label' => 'Latest submitted'],
-                        ['value' => 'needed_asc', 'label' => 'Date needed: earliest'],
-                        ['value' => 'needed_desc', 'label' => 'Date needed: latest'],
+                        ['value' => 'submitted_asc', 'label' => 'Date submitted: earliest'],
+                        ['value' => 'submitted_desc', 'label' => 'Date submitted: latest'],
                     ],
                 ],
             ],

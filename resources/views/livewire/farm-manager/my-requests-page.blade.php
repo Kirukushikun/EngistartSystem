@@ -27,8 +27,8 @@
                     'attributes' => ['wire:model.live' => 'sortBy'],
                     'options' => [
                         ['value' => 'latest', 'label' => 'Latest submitted'],
-                        ['value' => 'needed_asc', 'label' => 'Date needed: earliest'],
-                        ['value' => 'needed_desc', 'label' => 'Date needed: latest'],
+                        ['value' => 'submitted_asc', 'label' => 'Date submitted: earliest'],
+                        ['value' => 'submitted_desc', 'label' => 'Date submitted: latest'],
                     ],
                 ],
             ],
@@ -78,7 +78,7 @@
                             @endif
                         </div>
 
-                        @if ($request['awaitingReschedule'] && \Illuminate\Support\Facades\Route::has('farm-manager.requests.reschedule-meeting'))
+                        @if ($request['awaitingMeetingSchedule'] && \Illuminate\Support\Facades\Route::has('farm-manager.requests.reschedule-meeting'))
                             <div class="flex gap-2 flex-wrap justify-end">
                                 <a href="{{ route('farm-manager.requests.reschedule-meeting', ['projectRequest' => $request['dbId']]) }}"
                                    class="text-[11px] font-medium px-3 py-1.5 rounded-[8px] no-underline"
@@ -105,7 +105,7 @@
 
                     <p class="text-[13px] font-medium m-0 mb-[2px] text-apis-text">{{ $request['title'] }}</p>
                     <p class="text-[11px] text-apis-text2 m-0 mb-[10px]">
-                        Needed: {{ $request['needed'] }} · Submitted: {{ $request['submitted'] }}
+                        Submitted: {{ $request['submitted'] }}
                     </p>
 
                     @if ($request['isWithdrawn'])

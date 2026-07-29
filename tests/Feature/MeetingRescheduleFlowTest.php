@@ -98,7 +98,7 @@ class MeetingRescheduleFlowTest extends TestCase
         $this->actingAs($farmManager);
         $rows = Livewire::test(MyRequestsPage::class)->get('requests');
         $row = collect($rows)->firstWhere('id', $request->request_number);
-        $this->assertTrue($row['awaitingReschedule']);
+        $this->assertTrue($row['awaitingMeetingSchedule']);
         $this->assertFalse($row['isEditable']);
     }
 

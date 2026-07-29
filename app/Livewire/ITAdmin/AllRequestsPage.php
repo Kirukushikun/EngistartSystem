@@ -50,8 +50,7 @@ class AllRequestsPage extends Component
             ->orderByDesc('id')
             ->get()
             ->map(function (ProjectRequest $request): array {
-                $neededDate = $request->date_needed;
-                $days = $neededDate ? now()->startOfDay()->diffInDays($neededDate->copy()->startOfDay(), false) : null;
+                $submittedAt = $request->submitted_at ?? $request->created_at;
 
                 return [
                     'id' => $request->request_number,
@@ -59,14 +58,12 @@ class AllRequestsPage extends Component
                     'farm' => $request->farm_name ?: 'System-wide',
                     'by' => $request->requestor?->name ?? 'Unknown requester',
                     'type' => $request->request_type,
-                    'needed' => $neededDate?->format('Y-m-d') ?? '—',
-                    'days' => $days,
+                    'submitted' => optional($submittedAt)->format('M j, Y') ?? '—',
                     'routing' => $this->routingLabel($request),
                     'routing_key' => $request->request_type === 'Settings Change' ? 'settings_change' : ($request->is_late ? 'late' : 'standard'),
                     'status' => $request->current_status ?? 'unknown',
                     'status_label' => $this->statusLabel($request->current_status),
-                    'submitted_sort' => ($request->submitted_at ?? $request->created_at)?->timestamp ?? 0,
-                    'needed_sort' => $neededDate?->timestamp ?? PHP_INT_MAX,
+                    'submitted_sort' => $submittedAt?->timestamp ?? 0,
                     'is_in_progress' => ! in_array($request->current_status, ['initialized', 'implemented', 'rejected', 'withdrawn'], true),
                     'is_completed' => in_array($request->current_status, ['initialized', 'implemented'], true),
                     'is_late' => $request->is_late,
@@ -98,8 +95,6 @@ class AllRequestsPage extends Component
         }
 
         return match ($this->sortBy) {
-            'needed_asc' => $items->sortBy('needed_sort')->values(),
-            'needed_desc' => $items->sortByDesc('needed_sort')->values(),
             'oldest' => $items->sortBy('submitted_sort')->values(),
             default => $items->sortByDesc('submitted_sort')->values(),
         };

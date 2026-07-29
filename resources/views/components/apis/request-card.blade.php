@@ -15,6 +15,7 @@
     'budgetCategory' => null,
     'startDate' => null,
     'completionDate' => null,
+    'assignedEngineer' => null,
     'jl' => null,
     'attachments' => [],
     'chain' => [],
@@ -66,6 +67,7 @@
             'budgetCategory' => $budgetCategory,
             'startDate' => $startDate,
             'completionDate' => $completionDate,
+            'assignedEngineer' => $assignedEngineer,
             'jl' => $jl,
         ])
 

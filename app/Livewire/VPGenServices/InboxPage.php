@@ -93,10 +93,17 @@ class InboxPage extends Component
             $previousStep = $projectRequest->current_step;
             $previousOwnerRole = $projectRequest->current_owner_role;
 
-            $nextStatus = $isJlReview ? 'jl_approved' : 'vp_approved';
-            $nextStep = 'ed_manager_acceptance';
-            $nextOwnerRole = 'ed_manager';
-            $nextOwnerId = null;
+            if ($isJlReview) {
+                $nextStatus = 'jl_meeting_pending';
+                $nextStep = 'requestor_meeting_schedule';
+                $nextOwnerRole = $projectRequest->requestor_role;
+                $nextOwnerId = $projectRequest->requestor_id;
+            } else {
+                $nextStatus = 'vp_approved';
+                $nextStep = 'ed_manager_acceptance';
+                $nextOwnerRole = 'ed_manager';
+                $nextOwnerId = null;
+            }
             $defaultRemarks = $isJlReview ? 'JL approved by VP Gen Services.' : 'Approved by VP Gen Services.';
 
             $projectRequest->fill([
@@ -137,12 +144,21 @@ class InboxPage extends Component
             return $projectRequest;
         });
 
-        WorkflowNotifier::notifyOwner(
-            $projectRequest,
-            'accepted',
-            'Ready for ED Manager Acceptance',
-            $projectRequest->request_number . ' — ' . $projectRequest->title . ' needs your acceptance.'
-        );
+        if ($projectRequest->current_step === 'requestor_meeting_schedule') {
+            WorkflowNotifier::notifyOwner(
+                $projectRequest,
+                'jl_meeting_pending',
+                'Please Set Your Assessment Meeting',
+                $projectRequest->request_number . ' — ' . $projectRequest->title . ' was JL-approved. Please set a preferred assessment meeting date/time.'
+            );
+        } else {
+            WorkflowNotifier::notifyOwner(
+                $projectRequest,
+                'accepted',
+                'Ready for ED Manager Acceptance',
+                $projectRequest->request_number . ' — ' . $projectRequest->title . ' needs your acceptance.'
+            );
+        }
 
         unset($this->remarks[$requestId]);
 
@@ -263,9 +279,9 @@ class InboxPage extends Component
         }
 
         return match ($this->sortBy) {
-            'needed_asc' => $items->sortBy('needed')->values(),
-            'needed_desc' => $items->sortByDesc('needed')->values(),
-            default => $items->sortByDesc('submitted')->values(),
+            'submitted_asc' => $items->sortBy('submittedSort')->values(),
+            'submitted_desc' => $items->sortByDesc('submittedSort')->values(),
+            default => $items->sortByDesc('submittedSort')->values(),
         };
     }
 
@@ -315,9 +331,8 @@ class InboxPage extends Component
                     'farm' => $request->farm_name ?? 'Farm not yet specified',
                     'type' => $request->request_type,
                     'purpose' => $request->purpose ?? 'No purpose provided',
-                    'needed' => optional($request->date_needed)->format('Y-m-d'),
-                    'submitted' => optional($submittedAt)->format('Y-m-d'),
-                    'days' => $request->date_needed ? max(0, Carbon::today()->diffInDays($request->date_needed, false)) : 0,
+                    'submitted' => optional($submittedAt)->format('M j, Y'),
+                    'submittedSort' => optional($submittedAt)->timestamp ?? 0,
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
                         'submitted' => 'Submitted',
@@ -330,13 +345,13 @@ class InboxPage extends Component
                     },
                     'by' => $request->requestor?->name ?? 'Unknown requester',
                     'desc' => $request->description,
-                    'chickin' => optional($request->chick_in_date)->format('Y-m-d'),
+                    'chickin' => optional($request->chick_in_date)->format('M j, Y'),
                     'cap' => $request->capacity,
-                    'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
+                    'mtgDate' => optional($request->preferred_meeting_date)->format('M j, Y'),
                     'mtgTime' => $request->preferred_meeting_time,
                     'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
-                    'startDate' => optional($request->project_start_date)->format('Y-m-d'),
-                    'completionDate' => optional($request->project_completion_date)->format('Y-m-d'),
+                    'startDate' => optional($request->project_start_date)->format('M j, Y'),
+                    'completionDate' => optional($request->project_completion_date)->format('M j, Y'),
                     'jl' => data_get($request->meta, 'jl'),
                     'remarkHistory' => $this->buildRemarkHistory($request),
                     'attachments' => $this->buildAttachments($request),

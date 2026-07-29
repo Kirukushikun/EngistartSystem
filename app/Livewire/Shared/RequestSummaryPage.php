@@ -67,7 +67,7 @@ class RequestSummaryPage extends Component
         $user = Auth::user();
 
         return ProjectRequest::query()
-            ->with(['requestor', 'attachments'])
+            ->with(['requestor', 'attachments', 'assignedEngineer'])
             ->when($user, function ($query) use ($user) {
                 // Farm Manager's "involvement" is personal (they're the requestor), not
                 // role-wide -- scoping by acted_by_role would leak every other Farm
@@ -106,15 +106,16 @@ class RequestSummaryPage extends Component
                     'title' => $request->title,
                     'by' => $request->requestor?->name ?? 'Unknown requester',
                     'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
-                    'dateOfRequest' => optional($request->submitted_at ?? $request->created_at)->format('Y-m-d'),
-                    'acceptanceDate' => $acceptanceDate ? \Illuminate\Support\Carbon::parse($acceptanceDate)->format('Y-m-d') : '—',
-                    'projectStartDate' => optional($request->project_start_date)->format('Y-m-d') ?: '—',
-                    'projectCompletionDate' => optional($request->project_completion_date)->format('Y-m-d') ?: '—',
-                    'requestedCompletionDate' => $requestedTimeline ? $requestedTimeline['completion_date']->format('Y-m-d') : '—',
+                    'dateOfRequest' => optional($request->submitted_at ?? $request->created_at)->format('M j, Y'),
+                    'acceptanceDate' => $acceptanceDate ? \Illuminate\Support\Carbon::parse($acceptanceDate)->format('M j, Y') : '—',
+                    'projectStartDate' => optional($request->project_start_date)->format('M j, Y') ?: '—',
+                    'projectCompletionDate' => optional($request->project_completion_date)->format('M j, Y') ?: '—',
+                    'requestedCompletionDate' => $requestedTimeline ? $requestedTimeline['completion_date']->format('M j, Y') : '—',
                     'type' => $request->request_type,
                     'purpose' => $request->purpose,
                     'desc' => $request->description,
                     'jl' => data_get($request->meta, 'jl'),
+                    'assignedEngineer' => $request->assignedEngineer?->name ?? '—',
                     'attachments' => $this->buildAttachments($request),
                 ];
             })

@@ -49,7 +49,7 @@
                 <div class="grid grid-cols-2 gap-x-5 gap-y-1 text-[12px] rounded-[8px] p-[11px_16px] mb-4"
                      style="background: var(--bg2); border: 0.5px solid var(--border)">
                     <div><span class="text-apis-text2">TO: </span><span class="font-medium">Div. Head Santos</span></div>
-                    <div><span class="text-apis-text2">DATE OF REQUEST: </span><span class="font-medium">{{ now()->format('F j, Y') }}</span></div>
+                    <div><span class="text-apis-text2">DATE OF REQUEST: </span><span class="font-medium">{{ now()->format('M j, Y') }}</span></div>
                     <div><span class="text-apis-text2">FROM: </span><span class="font-medium">Jose Santos</span></div>
                     <div><span class="text-apis-text2">FARM: </span><span class="font-medium">Farm A – Bamban, Tarlac</span></div>
                 </div>
@@ -120,53 +120,46 @@
                 </div>
 
                 {{-- ── AUTO-CALCULATED TIMELINE ──────────────────────── --}}
-                <div class="mt-4">
-                    <label class="apis-form-label">Date Needed *</label>
-                    <input type="date"
-                           wire:model.live="form.needed"
-                           min="{{ now()->addDay()->format('Y-m-d') }}"
-                           class="apis-form-control @error('form.needed') apis-error @enderror">
-                    @error('form.needed') <p class="apis-error-text">{{ $message }}</p> @enderror
-                </div>
-
                 @if ($this->computedTimeline)
-                    <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div class="grid grid-cols-2 gap-3 mt-4">
                         <div>
                             <label class="apis-form-label">Project Start Date</label>
-                            <input type="text" readonly value="{{ $this->computedTimeline['start_date']->format('F j, Y') }}" class="apis-form-control" style="opacity: 0.75; cursor: not-allowed;">
+                            <input type="text" readonly value="{{ $this->computedTimeline['start_date']->format('M j, Y') }}" class="apis-form-control" style="opacity: 0.75; cursor: not-allowed;">
                         </div>
                         <div>
                             <label class="apis-form-label">Project Completion Date</label>
-                            <input type="text" readonly value="{{ $this->computedTimeline['completion_date']->format('F j, Y') }}" class="apis-form-control" style="opacity: 0.75; cursor: not-allowed;">
+                            <input type="text" readonly value="{{ $this->computedTimeline['completion_date']->format('M j, Y') }}" class="apis-form-control" style="opacity: 0.75; cursor: not-allowed;">
                         </div>
                     </div>
                 @endif
 
                 {{-- ── ASSESSMENT MEETING ────────────────────────────── --}}
-                @include('partials.apis.section-divider', ['label' => 'Assessment Meeting'])
+                @if ($timelineAcceptable !== 'no')
+                    @include('partials.apis.section-divider', ['label' => 'Assessment Meeting'])
 
-                @include('partials.apis.alert', [
-                    'type' => 'info',
-                    'message' => 'Provide your preferred date and time for the assessment meeting. The reviewing role can send this back to you if the schedule doesn\'t work for them.',
-                ])
+                    @include('partials.apis.alert', [
+                        'type' => 'info',
+                        'message' => 'Provide your preferred date and time for the assessment meeting. The reviewing role can send this back to you if the schedule doesn\'t work for them.',
+                    ])
 
-                <div class="grid grid-cols-2 gap-3 mt-3">
-                    <div>
-                        <label class="apis-form-label">Preferred Date *</label>
-                        <input type="date"
-                               wire:model.live="form.mtgDate"
-                               min="{{ now()->addDay()->format('Y-m-d') }}"
-                               class="apis-form-control @error('form.mtgDate') apis-error @enderror">
-                        @error('form.mtgDate') <p class="apis-error-text">{{ $message }}</p> @enderror
+                    <div class="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="apis-form-label">Preferred Date *</label>
+                            <input type="date"
+                                   wire:model.live="form.mtgDate"
+                                   min="{{ now()->addDay()->format('Y-m-d') }}"
+                                   class="apis-form-control @error('form.mtgDate') apis-error @enderror">
+                            @error('form.mtgDate') <p class="apis-error-text">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="apis-form-label">Preferred Time *</label>
+                            <input type="time"
+                                   wire:model.live="form.mtgTime"
+                                   class="apis-form-control @error('form.mtgTime') apis-error @enderror">
+                            @error('form.mtgTime') <p class="apis-error-text">{{ $message }}</p> @enderror
+                        </div>
                     </div>
-                    <div>
-                        <label class="apis-form-label">Preferred Time *</label>
-                        <input type="time"
-                               wire:model.live="form.mtgTime"
-                               class="apis-form-control @error('form.mtgTime') apis-error @enderror">
-                        @error('form.mtgTime') <p class="apis-error-text">{{ $message }}</p> @enderror
-                    </div>
-                </div>
+                @endif
 
                 {{-- ── TIMELINE ACCEPTABILITY ────────────────────────── --}}
                 <div class="mt-4 rounded-[8px] p-[14px_16px]" style="background: var(--bg2); border: 0.5px solid var(--border)">
@@ -207,6 +200,16 @@
                                 <label class="apis-form-label">Estimated financial opportunity loss *</label>
                                 <input type="text" wire:model.live="jl.estimatedFinancialOpportunityLoss" placeholder="e.g. ₱150,000" class="apis-form-control @error('jl.estimatedFinancialOpportunityLoss') apis-error @enderror">
                                 @error('jl.estimatedFinancialOpportunityLoss') <p class="apis-error-text">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label class="apis-form-label">Supporting attachment (optional)</label>
+                                <input type="file" wire:model="jlAttachment" class="apis-form-control @error('jlAttachment') apis-error @enderror">
+                                <div wire:loading wire:target="jlAttachment" class="text-[11px] text-apis-text2 mt-1">Uploading…</div>
+                                @if ($jlAttachment)
+                                    <p class="text-[11px] text-apis-text2 mt-1">Selected: {{ $jlAttachment->getClientOriginalName() }}</p>
+                                @endif
+                                @error('jlAttachment') <p class="apis-error-text">{{ $message }}</p> @enderror
                             </div>
                         </div>
                     @endif

@@ -27,8 +27,8 @@
                     'attributes' => ['wire:model.live' => 'sortBy'],
                     'options' => [
                         ['value' => 'latest', 'label' => 'Latest submitted'],
-                        ['value' => 'needed_asc', 'label' => 'Date needed: earliest'],
-                        ['value' => 'needed_desc', 'label' => 'Date needed: latest'],
+                        ['value' => 'submitted_asc', 'label' => 'Date submitted: earliest'],
+                        ['value' => 'submitted_desc', 'label' => 'Date submitted: latest'],
                     ],
                 ],
             ],
@@ -54,7 +54,7 @@
                 :status-label="$request['statusLabel']"
                 :is-late="$request['isLate']"
                 :title="$request['title']"
-                subtitle="{{ $request['farm'] }} · Needed {{ $request['needed'] }} · {{ $request['days'] }}d ahead · By {{ $request['by'] }}"
+                subtitle="{{ $request['farm'] }} · Submitted {{ $request['submitted'] }} · By {{ $request['by'] }}"
                 :type="$request['type']"
                 :purpose="$request['purpose']"
                 :chickin="$request['chickin']"
@@ -74,7 +74,20 @@
                 :is-pending-here="$request['isPendingHere']"
                 :textarea-model="'remarks.' . $request['id']"
                 textarea-placeholder="Add your recommendation or rejection remarks here...">
-                @if ($request['isPendingHere'])
+                @if ($request['isPendingHere'] && $request['status'] === 'jl_meeting_review')
+                    <button type="button"
+                            wire:click="confirmMeetingApproval(@js($request['id']))"
+                            class="apis-card-button font-medium"
+                            style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
+                        Approve Meeting
+                    </button>
+                    <button type="button"
+                            wire:click="confirmReschedule(@js($request['id']))"
+                            class="apis-card-button font-medium"
+                            style="background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-bd)">
+                        Request Different Time
+                    </button>
+                @elseif ($request['isPendingHere'])
                     <button type="button"
                             wire:click="confirmRecommend(@js($request['id']))"
                             class="apis-card-button font-medium"

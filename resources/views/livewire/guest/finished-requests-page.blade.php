@@ -24,7 +24,7 @@
                         @include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['statusLabel']])
                     </div>
                     <p class="text-[14px] font-medium m-0 mb-[3px] overflow-hidden text-ellipsis whitespace-nowrap text-apis-text">{{ $request['title'] }}</p>
-                    <p class="text-[11px] text-apis-text2 m-0">{{ $request['farm'] }} · Needed {{ $request['needed'] }} · Requested by {{ $request['by'] }} · Finished {{ $request['completedAt'] }}</p>
+                    <p class="text-[11px] text-apis-text2 m-0">{{ $request['farm'] }} · Submitted {{ $request['submitted'] }} · Requested by {{ $request['by'] }} · Finished {{ $request['completedAt'] }}</p>
                 </div>
                 <span class="text-[10px] text-apis-text3 flex-shrink-0 mt-[3px]"><span x-show="!open">▼</span><span x-show="open">▲</span></span>
             </button>

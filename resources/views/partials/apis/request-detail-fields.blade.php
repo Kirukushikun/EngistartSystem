@@ -16,6 +16,13 @@
                 </span>
             </div>
         @endif
+
+        @if ($assignedEngineer ?? null)
+            <div class="flex items-center gap-[9px]">
+                <span class="apis-step-dot mt-[1px]" style="background: var(--blue-bg); color: var(--blue);">👷</span>
+                <span class="text-[12px] text-apis-text">Assigned engineer: <span class="text-apis-text2">{{ $assignedEngineer }}</span></span>
+            </div>
+        @endif
     </div>
 
     @if ($jl ?? null)

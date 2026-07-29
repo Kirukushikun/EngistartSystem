@@ -31,8 +31,6 @@
                 'options' => [
                     ['value' => 'latest', 'label' => 'Latest submitted'],
                     ['value' => 'oldest', 'label' => 'Earliest submitted'],
-                    ['value' => 'needed_asc', 'label' => 'Date needed nearest'],
-                    ['value' => 'needed_desc', 'label' => 'Date needed farthest'],
                 ],
             ],
         ],
@@ -60,8 +58,7 @@
                         <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">Project Title</th>
                         <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">Farm</th>
                         <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">By</th>
-                        <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">Date Needed</th>
-                        <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">Days</th>
+                        <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">Date Submitted</th>
                         <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">Routing</th>
                         <th class="px-[14px] py-[9px] text-left text-[11px] font-medium text-apis-text2 whitespace-nowrap">Status</th>
                     </tr>
@@ -73,14 +70,13 @@
                             <td class="px-[14px] py-[9px] font-medium text-apis-text whitespace-nowrap">{{ $request['title'] }}</td>
                             <td class="px-[14px] py-[9px] text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['farm'] }}</td>
                             <td class="px-[14px] py-[9px] text-[11px] text-apis-text2 whitespace-nowrap">{{ $request['by'] }}</td>
-                            <td class="px-[14px] py-[9px] text-apis-text2 whitespace-nowrap">{{ $request['needed'] }}</td>
-                            <td class="px-[14px] py-[9px]"><span class="font-medium" style="color: {{ ($request['days'] ?? 0) < 0 ? 'var(--red)' : 'var(--green)' }}">{{ $request['days'] !== null ? $request['days'] . 'd' : '—' }}</span></td>
+                            <td class="px-[14px] py-[9px] text-apis-text2 whitespace-nowrap">{{ $request['submitted'] }}</td>
                             <td class="px-[14px] py-[9px]"><span class="text-[10px] px-2 py-0.5 rounded" style="background: var(--blue-bg); color: var(--blue)">{{ $request['routing'] }}</span></td>
                             <td class="px-[14px] py-[9px]">@include('partials.apis.request-status-badge', ['status' => $request['status'], 'label' => $request['status_label']])</td>
                         </tr>
                     @empty
                         <tr style="border-top: 0.5px solid var(--border)">
-                            <td colspan="8" class="px-[14px] py-[32px] text-center text-[12px] text-apis-text2">No requests match the current filters.</td>
+                            <td colspan="7" class="px-[14px] py-[32px] text-center text-[12px] text-apis-text2">No requests match the current filters.</td>
                         </tr>
                     @endforelse
                 </tbody>

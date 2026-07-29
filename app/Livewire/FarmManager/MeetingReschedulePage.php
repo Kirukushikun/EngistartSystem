@@ -19,6 +19,8 @@ class MeetingReschedulePage extends Component
 
     public bool $submitted = false;
 
+    public bool $isFirstTimeSchedule = false;
+
     public array $form = [
         'mtgDate' => '',
         'mtgTime' => '',
@@ -31,7 +33,7 @@ class MeetingReschedulePage extends Component
         $request = ProjectRequest::query()
             ->whereKey($projectRequest)
             ->where('requestor_id', $user?->id)
-            ->where('current_step', 'requestor_reschedule')
+            ->whereIn('current_step', ['requestor_reschedule', 'requestor_meeting_schedule'])
             ->where('current_owner_id', $user?->id)
             ->whereNull('withdrawn_at')
             ->firstOrFail();
@@ -39,6 +41,7 @@ class MeetingReschedulePage extends Component
         $this->projectRequestId = $request->id;
         $this->requestNumber = $request->request_number;
         $this->requestTitle = $request->title;
+        $this->isFirstTimeSchedule = $request->current_step === 'requestor_meeting_schedule';
         $this->form['mtgDate'] = optional($request->preferred_meeting_date)->toDateString() ?? '';
         $this->form['mtgTime'] = (string) ($request->preferred_meeting_time ?? '');
     }
@@ -63,13 +66,23 @@ class MeetingReschedulePage extends Component
             $projectRequest = ProjectRequest::query()
                 ->whereKey($this->projectRequestId)
                 ->where('requestor_id', $user->id)
-                ->where('current_step', 'requestor_reschedule')
+                ->whereIn('current_step', ['requestor_reschedule', 'requestor_meeting_schedule'])
                 ->whereNull('withdrawn_at')
                 ->firstOrFail();
 
-            $returnTo = data_get($projectRequest->meta, 'reschedule_return');
+            $isFirstTimeSchedule = $projectRequest->current_step === 'requestor_meeting_schedule';
 
-            abort_if(! $returnTo, 422, 'This request has no reviewer to return to.');
+            if ($isFirstTimeSchedule) {
+                $returnTo = [
+                    'status' => 'jl_meeting_review',
+                    'step' => 'division_head_meeting_review',
+                    'owner_role' => 'division_head',
+                ];
+            } else {
+                $returnTo = data_get($projectRequest->meta, 'reschedule_return');
+
+                abort_if(! $returnTo, 422, 'This request has no reviewer to return to.');
+            }
 
             $previousStatus = $projectRequest->current_status;
             $previousStep = $projectRequest->current_step;
@@ -95,7 +108,7 @@ class MeetingReschedulePage extends Component
                 'project_request_id' => $projectRequest->id,
                 'acted_by_id' => $user->id,
                 'acted_by_role' => $user->role,
-                'action' => 'reschedule_submitted',
+                'action' => $isFirstTimeSchedule ? 'meeting_schedule_submitted' : 'reschedule_submitted',
                 'from_status' => $previousStatus,
                 'to_status' => $returnTo['status'],
                 'from_step' => $previousStep,
@@ -108,7 +121,7 @@ class MeetingReschedulePage extends Component
                 'is_terminal' => false,
                 'remarks' => 'New meeting schedule submitted by requestor.',
                 'context' => [
-                    'review_stage' => 'requestor_reschedule',
+                    'review_stage' => $previousStep,
                 ],
                 'acted_at' => now(),
             ]);
@@ -134,7 +147,7 @@ class MeetingReschedulePage extends Component
             ->layout('layouts.app', [
                 'title' => 'Update Meeting Schedule | EngiStart',
                 'header' => 'Update Meeting Schedule',
-                'subheader' => 'The reviewer asked for a different meeting date/time before they can proceed.',
+                'subheader' => 'Set or update the meeting date/time before the reviewer can proceed.',
             ]);
     }
 }

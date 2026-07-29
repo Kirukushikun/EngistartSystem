@@ -4,6 +4,7 @@ namespace App\Livewire\FarmManager;
 
 use App\Livewire\Shared\ConfirmationModal;
 use App\Models\ProjectRequest;
+use App\Models\RequestAttachment;
 use App\Models\RequestTransition;
 use App\Support\ProjectTimelineCalculator;
 use App\Support\WorkflowNotifier;
@@ -13,15 +14,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class NewRequestPage extends Component
 {
+    use WithFileUploads;
+
     public array $form = [
         'title' => '',
         'type' => '',
         'typeOther' => '',
         'purpose' => '',
-        'needed' => '',
         'budgetCategory' => '',
         'mtgDate' => '',
         'mtgTime' => '',
@@ -35,6 +38,8 @@ class NewRequestPage extends Component
         'implicationIfNotCompleted' => '',
         'estimatedFinancialOpportunityLoss' => '',
     ];
+
+    public $jlAttachment = null;
 
     public bool $submitted = false;
 
@@ -92,7 +97,7 @@ class NewRequestPage extends Component
             return null;
         }
 
-        return ProjectTimelineCalculator::forCategory($this->form['budgetCategory']);
+        return ProjectTimelineCalculator::forCategory($this->form['budgetCategory'], now());
     }
 
     public function openSubmissionReview(): void
@@ -109,18 +114,18 @@ class NewRequestPage extends Component
             'confirmText' => $isJl ? 'Submit JL' : ($this->isEditing ? 'Save and resubmit' : 'Confirm and submit'),
             'confirmEvent' => 'requestSubmissionConfirmed',
             'confirmTarget' => self::class,
-            'summary' => [
+            'summary' => array_values(array_filter([
                 ['label' => 'Project Description based on CAPEX', 'value' => $this->form['title']],
                 ['label' => 'Type', 'value' => $this->form['type'] === 'others' ? $this->form['typeOther'] : ($this->typeOptions[$this->form['type']] ?? '')],
                 ['label' => 'Allotted Budget', 'value' => $this->budgetCategoryOptions[$this->form['budgetCategory']] ?? ''],
-                ['label' => 'Project Start Date', 'value' => $timeline ? $timeline['start_date']->format('F j, Y') : '—'],
-                ['label' => 'Project Completion Date', 'value' => $timeline ? $timeline['completion_date']->format('F j, Y') : '—'],
+                ['label' => 'Project Start Date', 'value' => $timeline ? $timeline['start_date']->format('M j, Y') : '—'],
+                ['label' => 'Project Completion Date', 'value' => $timeline ? $timeline['completion_date']->format('M j, Y') : '—'],
                 ['label' => 'Is the estimated timeline acceptable?', 'value' => $this->timelineAcceptable === 'yes' ? 'Yes' : 'No'],
-                ['label' => 'Preferred Meeting Date/Time', 'value' => $this->form['mtgDate'] !== '' ? $this->form['mtgDate'] . ' at ' . $this->form['mtgTime'] : '—'],
+                $isJl ? null : ['label' => 'Preferred Meeting Date/Time', 'value' => $this->form['mtgDate'] !== '' ? $this->form['mtgDate'] . ' at ' . $this->form['mtgTime'] : '—'],
                 ['label' => 'Routing', 'value' => $isJl
-                    ? 'Division Head (JL review) → VP Gen Services (JL review) → ED Manager → DH Gen Services → Engineer'
+                    ? 'Division Head (JL review) → VP Gen Services (JL review) → Requestor (set meeting) → Division Head (meeting approval) → ED Manager → DH Gen Services → Engineer'
                     : 'Division Head → VP Gen Services → ED Manager → DH Gen Services → Engineer'],
-            ],
+            ])),
         ])->to(ConfirmationModal::class);
     }
 
@@ -185,11 +190,10 @@ class NewRequestPage extends Component
                 'budget_category' => $this->form['budgetCategory'],
                 'farm_name' => $projectRequest->farm_name ?? $user->farm,
                 'purpose' => $this->form['purpose'] ?: null,
-                'date_needed' => $this->form['needed'],
                 'project_start_date' => $timeline['start_date'] ?? null,
                 'project_completion_date' => $timeline['completion_date'] ?? null,
-                'preferred_meeting_date' => $this->form['mtgDate'],
-                'preferred_meeting_time' => $this->form['mtgTime'],
+                'preferred_meeting_date' => $isJl ? null : $this->form['mtgDate'],
+                'preferred_meeting_time' => $isJl ? null : $this->form['mtgTime'],
                 'description' => $description,
                 'locked_at' => null,
                 'cancelled_at' => null,
@@ -204,6 +208,23 @@ class NewRequestPage extends Component
                 ]),
             ]);
             $projectRequest->save();
+
+            if ($this->jlAttachment) {
+                $path = $this->jlAttachment->store('request-attachments/' . $projectRequest->id, 'local');
+
+                RequestAttachment::create([
+                    'project_request_id' => $projectRequest->id,
+                    'uploaded_by_id' => $user->id,
+                    'attachment_type' => 'jl_supporting_document',
+                    'original_name' => $this->jlAttachment->getClientOriginalName(),
+                    'disk' => 'local',
+                    'path' => $path,
+                    'mime_type' => $this->jlAttachment->getMimeType(),
+                    'size_bytes' => $this->jlAttachment->getSize(),
+                    'is_active' => true,
+                    'uploaded_at' => now(),
+                ]);
+            }
 
             RequestTransition::create([
                 'project_request_id' => $projectRequest->id,
@@ -263,6 +284,7 @@ class NewRequestPage extends Component
             'form',
             'timelineAcceptable',
             'jl',
+            'jlAttachment',
             'submitted',
             'submittedId',
             'editingRequestId',
@@ -274,7 +296,6 @@ class NewRequestPage extends Component
             'type' => '',
             'typeOther' => '',
             'purpose' => '',
-            'needed' => '',
             'budgetCategory' => '',
             'mtgDate' => '',
             'mtgTime' => '',
@@ -291,12 +312,15 @@ class NewRequestPage extends Component
             'form.type' => ['required', 'string'],
             'form.typeOther' => [Rule::requiredIf($this->form['type'] === 'others'), 'nullable', 'string', 'max:255'],
             'form.purpose' => ['nullable', 'string'],
-            'form.needed' => ['required', 'date', 'after:today'],
             'form.budgetCategory' => ['required', 'string', 'in:small,medium,large'],
-            'form.mtgDate' => ['required', 'date', 'after:today'],
-            'form.mtgTime' => ['required'],
             'timelineAcceptable' => ['required', 'in:yes,no'],
+            'jlAttachment' => ['nullable', 'file', 'max:10240', 'mimes:pdf,doc,docx,jpg,jpeg,png'],
         ];
+
+        if ($this->timelineAcceptable === 'yes') {
+            $rules['form.mtgDate'] = ['required', 'date', 'after:today'];
+            $rules['form.mtgTime'] = ['required'];
+        }
 
         if ($this->timelineAcceptable === 'no') {
             $rules['jl.delayReason'] = ['required', 'string'];
@@ -314,8 +338,6 @@ class NewRequestPage extends Component
             'form.title.required' => 'Project Description based on CAPEX is required.',
             'form.type.required' => 'Type is required.',
             'form.typeOther.required' => 'Please specify the type.',
-            'form.needed.required' => 'Date Needed is required.',
-            'form.needed.after' => 'Date Needed must be a future date.',
             'form.budgetCategory.required' => 'Allotted Budget is required.',
             'form.mtgDate.required' => 'Preferred meeting date is required.',
             'form.mtgDate.after' => 'Preferred meeting date must be a future date.',
@@ -325,6 +347,9 @@ class NewRequestPage extends Component
             'jl.estimatedTurnoverDate.required' => 'Estimated turnover date is required.',
             'jl.implicationIfNotCompleted.required' => 'Implication if not completed is required.',
             'jl.estimatedFinancialOpportunityLoss.required' => 'Estimated financial opportunity loss is required.',
+            'jlAttachment.file' => 'Supporting attachment must be a valid file.',
+            'jlAttachment.max' => 'Supporting attachment must be 10MB or smaller.',
+            'jlAttachment.mimes' => 'Supporting attachment must be a PDF, Word document, or image.',
         ];
     }
 
@@ -359,7 +384,6 @@ class NewRequestPage extends Component
             'type' => $typeKey !== false ? $typeKey : 'others',
             'typeOther' => $typeKey !== false ? '' : (string) $projectRequest->request_type,
             'purpose' => $projectRequest->purpose ?? '',
-            'needed' => optional($projectRequest->date_needed)->toDateString() ?? '',
             'budgetCategory' => (string) $projectRequest->budget_category,
             'mtgDate' => optional($projectRequest->preferred_meeting_date)->toDateString() ?? '',
             'mtgTime' => (string) ($projectRequest->preferred_meeting_time ?? ''),

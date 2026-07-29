@@ -94,6 +94,7 @@ class InboxPage extends Component
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'division_head')
+                ->whereIn('current_step', ['division_head_review', 'division_head_jl_review'])
                 ->whereNull('withdrawn_at')
                 ->firstOrFail();
 
@@ -171,6 +172,7 @@ class InboxPage extends Component
             $projectRequest = ProjectRequest::query()
                 ->where('request_number', $requestId)
                 ->where('current_owner_role', 'division_head')
+                ->whereIn('current_step', ['division_head_review', 'division_head_jl_review'])
                 ->whereNull('withdrawn_at')
                 ->firstOrFail();
 
@@ -233,6 +235,94 @@ class InboxPage extends Component
         $this->performReschedule((string) ($payload['requestId'] ?? ''), 'division_head');
     }
 
+    public function confirmMeetingApproval(string $requestId): void
+    {
+        $request = $this->loadInboxItems()->firstWhere('id', $requestId);
+
+        if (! $request || ! $request['isPendingHere'] || $request['status'] !== 'jl_meeting_review') {
+            return;
+        }
+
+        $this->dispatch('openConfirmationModal', config: [
+            'title' => 'Approve meeting date?',
+            'message' => 'Approve the proposed meeting date/time for ' . $request['id'] . ' and route it straight to ED Manager?',
+            'tone' => 'success',
+            'confirmText' => 'Approve Meeting',
+            'confirmEvent' => 'divisionHeadMeetingApprovalConfirmed',
+            'confirmTarget' => self::class,
+            'payload' => ['requestId' => $requestId],
+        ])->to(ConfirmationModal::class);
+    }
+
+    #[On('divisionHeadMeetingApprovalConfirmed')]
+    public function approveMeeting(array $payload): void
+    {
+        $requestId = (string) ($payload['requestId'] ?? '');
+        $remarks = trim($this->remarks[$requestId] ?? '');
+
+        $user = Auth::user();
+
+        abort_unless($user, 403);
+
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
+            $projectRequest = ProjectRequest::query()
+                ->where('request_number', $requestId)
+                ->where('current_owner_role', 'division_head')
+                ->where('current_step', 'division_head_meeting_review')
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $previousStatus = $projectRequest->current_status;
+            $previousStep = $projectRequest->current_step;
+            $previousOwnerRole = $projectRequest->current_owner_role;
+
+            $projectRequest->fill([
+                'current_status' => 'jl_approved',
+                'current_step' => 'ed_manager_acceptance',
+                'current_owner_role' => 'ed_manager',
+                'current_owner_id' => null,
+                'last_transitioned_at' => now(),
+                'latest_remarks' => $remarks !== '' ? $remarks : 'Meeting date approved by Division Head.',
+            ]);
+            $projectRequest->save();
+
+            RequestTransition::create([
+                'project_request_id' => $projectRequest->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'meeting_approved',
+                'from_status' => $previousStatus,
+                'to_status' => 'jl_approved',
+                'from_step' => $previousStep,
+                'to_step' => 'ed_manager_acceptance',
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => 'ed_manager',
+                'to_owner_id' => null,
+                'is_rework' => false,
+                'is_exception_path' => true,
+                'is_terminal' => false,
+                'remarks' => $remarks !== '' ? $remarks : 'Meeting date approved by Division Head.',
+                'context' => [
+                    'review_stage' => 'division_head_meeting_review',
+                ],
+                'acted_at' => now(),
+            ]);
+
+            return $projectRequest;
+        });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            'accepted',
+            'Ready for ED Manager Acceptance',
+            $projectRequest->request_number . ' — ' . $projectRequest->title . ' needs your acceptance.'
+        );
+
+        unset($this->remarks[$requestId]);
+
+        $this->dispatch('notify', type: 'info', message: $requestId . ' meeting approved and routed to ED Manager.');
+    }
+
     protected function rescheduleConfirmEventName(): string
     {
         return 'divisionHeadRescheduleConfirmed';
@@ -288,9 +378,9 @@ class InboxPage extends Component
         }
 
         return match ($this->sortBy) {
-            'needed_asc' => $items->sortBy('needed')->values(),
-            'needed_desc' => $items->sortByDesc('needed')->values(),
-            default => $items->sortByDesc('submitted')->values(),
+            'submitted_asc' => $items->sortBy('submittedSort')->values(),
+            'submitted_desc' => $items->sortByDesc('submittedSort')->values(),
+            default => $items->sortByDesc('submittedSort')->values(),
         };
     }
 
@@ -340,9 +430,8 @@ class InboxPage extends Component
                     'farm' => $request->farm_name ?? 'Farm not yet specified',
                     'type' => $request->request_type,
                     'purpose' => $request->purpose ?? 'No purpose provided',
-                    'needed' => optional($request->date_needed)->format('Y-m-d'),
-                    'submitted' => optional($submittedAt)->format('Y-m-d'),
-                    'days' => $request->date_needed ? max(0, Carbon::today()->diffInDays($request->date_needed, false)) : 0,
+                    'submitted' => optional($submittedAt)->format('M j, Y'),
+                    'submittedSort' => optional($submittedAt)->timestamp ?? 0,
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
                         'submitted' => 'Submitted',
@@ -355,13 +444,13 @@ class InboxPage extends Component
                     },
                     'by' => $request->requestor?->name ?? 'Unknown requester',
                     'desc' => $request->description,
-                    'chickin' => optional($request->chick_in_date)->format('Y-m-d'),
+                    'chickin' => optional($request->chick_in_date)->format('M j, Y'),
                     'cap' => $request->capacity,
-                    'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
+                    'mtgDate' => optional($request->preferred_meeting_date)->format('M j, Y'),
                     'mtgTime' => $request->preferred_meeting_time,
                     'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
-                    'startDate' => optional($request->project_start_date)->format('Y-m-d'),
-                    'completionDate' => optional($request->project_completion_date)->format('Y-m-d'),
+                    'startDate' => optional($request->project_start_date)->format('M j, Y'),
+                    'completionDate' => optional($request->project_completion_date)->format('M j, Y'),
                     'jl' => data_get($request->meta, 'jl'),
                     'remarkHistory' => $this->buildRemarkHistory($request),
                     'attachments' => $this->buildAttachments($request),

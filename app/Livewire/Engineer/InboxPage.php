@@ -146,9 +146,9 @@ class InboxPage extends Component
         }
 
         return match ($this->sortBy) {
-            'needed_asc' => $items->sortBy('needed')->values(),
-            'needed_desc' => $items->sortByDesc('needed')->values(),
-            default => $items->sortByDesc('submitted')->values(),
+            'submitted_asc' => $items->sortBy('submittedSort')->values(),
+            'submitted_desc' => $items->sortByDesc('submittedSort')->values(),
+            default => $items->sortByDesc('submittedSort')->values(),
         };
     }
 
@@ -189,16 +189,16 @@ class InboxPage extends Component
                     'type' => $request->request_type,
                     'purpose' => $request->purpose ?? 'No purpose provided',
                     'desc' => $request->description,
-                    'chickin' => optional($request->chick_in_date)->format('Y-m-d'),
+                    'chickin' => optional($request->chick_in_date)->format('M j, Y'),
                     'cap' => $request->capacity,
-                    'mtgDate' => optional($request->preferred_meeting_date)->format('Y-m-d'),
+                    'mtgDate' => optional($request->preferred_meeting_date)->format('M j, Y'),
                     'mtgTime' => $request->preferred_meeting_time,
-                    'needed' => optional($request->date_needed)->format('Y-m-d'),
-                    'startDate' => optional($request->project_start_date)->format('Y-m-d'),
-                    'completionDate' => optional($request->project_completion_date)->format('Y-m-d'),
+                    'startDate' => optional($request->project_start_date)->format('M j, Y'),
+                    'completionDate' => optional($request->project_completion_date)->format('M j, Y'),
                     'budgetCategory' => $this->budgetCategoryLabel($request->budget_category),
                     'jl' => data_get($request->meta, 'jl'),
-                    'submitted' => optional($submittedAt)->format('Y-m-d'),
+                    'submitted' => optional($submittedAt)->format('M j, Y'),
+                    'submittedSort' => optional($submittedAt)->timestamp ?? 0,
                     'status' => $request->current_status,
                     'statusLabel' => match ($request->current_status) {
                         'noted' => 'For Initialization',

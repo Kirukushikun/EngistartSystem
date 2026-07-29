@@ -13,7 +13,7 @@ final class ProjectTimelineCalculator
             ->all();
     }
 
-    public static function forCategory(string $category, ?Carbon $from = null): ?array
+    public static function forCategory(string $category, Carbon $from): ?array
     {
         $config = config('project_timelines.' . $category);
 
@@ -21,12 +21,27 @@ final class ProjectTimelineCalculator
             return null;
         }
 
-        $from = ($from ?? Carbon::today())->copy();
-        $startDate = $from->copy()->addDays($config['start_offset_days']);
+        $startDate = self::addBusinessDays($from->copy(), $config['start_offset_days']);
 
         return [
             'start_date' => $startDate,
-            'completion_date' => $startDate->copy()->addDays($config['completion_offset_days']),
+            'completion_date' => self::addBusinessDays($startDate->copy(), $config['completion_offset_days']),
         ];
+    }
+
+    private static function addBusinessDays(Carbon $date, int $days): Carbon
+    {
+        $result = $date->copy();
+        $added = 0;
+
+        while ($added < $days) {
+            $result->addDay();
+
+            if (! $result->isWeekend()) {
+                $added++;
+            }
+        }
+
+        return $result;
     }
 }

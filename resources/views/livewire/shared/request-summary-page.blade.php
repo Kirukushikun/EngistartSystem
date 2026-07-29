@@ -141,6 +141,7 @@
                         'budgetCategory' => $row['budgetCategory'],
                         'startDate' => $row['projectStartDate'],
                         'completionDate' => $row['projectCompletionDate'],
+                        'assignedEngineer' => $row['assignedEngineer'] === '—' ? null : $row['assignedEngineer'],
                         'jl' => $row['jl'],
                     ])
 

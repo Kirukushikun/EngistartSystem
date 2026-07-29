@@ -27,8 +27,8 @@
                     'attributes' => ['wire:model.live' => 'sortBy'],
                     'options' => [
                         ['value' => 'latest', 'label' => 'Latest submitted'],
-                        ['value' => 'needed_asc', 'label' => 'Date needed: earliest'],
-                        ['value' => 'needed_desc', 'label' => 'Date needed: latest'],
+                        ['value' => 'submitted_asc', 'label' => 'Date submitted: earliest'],
+                        ['value' => 'submitted_desc', 'label' => 'Date submitted: latest'],
                     ],
                 ],
             ],
@@ -54,7 +54,7 @@
                 :status-label="$request['statusLabel']"
                 :is-late="$request['isLate']"
                 :title="$request['title']"
-                subtitle="{{ $request['farm'] }} · Needed {{ $request['needed'] }} · {{ $request['days'] }}d ahead · By {{ $request['by'] }}"
+                subtitle="{{ $request['farm'] }} · Submitted {{ $request['submitted'] }} · By {{ $request['by'] }}"
                 :type="$request['type']"
                 :purpose="$request['purpose']"
                 :chickin="$request['chickin']"

@@ -6,11 +6,13 @@ use App\Livewire\DHGenServices\NotingPage as DhNotingPage;
 use App\Livewire\DivisionHead\InboxPage as DivisionHeadInboxPage;
 use App\Livewire\Engineer\InboxPage as EngineerInboxPage;
 use App\Livewire\EDManager\InboxPage as EdManagerInboxPage;
+use App\Livewire\FarmManager\MeetingReschedulePage;
 use App\Livewire\FarmManager\NewRequestPage;
 use App\Livewire\VPGenServices\InboxPage as VpInboxPage;
 use App\Models\ProjectRequest;
 use App\Models\User;
 use App\Notifications\WorkflowNotification;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Features\SupportTesting\Testable;
@@ -26,12 +28,27 @@ class WorkflowSmokeTest extends TestCase
         return User::factory()->create(['role' => $role, 'is_active' => true]);
     }
 
+    protected function addBusinessDays(Carbon $date, int $days): Carbon
+    {
+        $result = $date->copy();
+        $added = 0;
+
+        while ($added < $days) {
+            $result->addDay();
+
+            if (! $result->isWeekend()) {
+                $added++;
+            }
+        }
+
+        return $result;
+    }
+
     protected function submitNormalRequest(string $title): Testable
     {
         return Livewire::test(NewRequestPage::class)
             ->set('form.title', $title)
             ->set('form.type', 'production_building')
-            ->set('form.needed', now()->addDays(60)->toDateString())
             ->set('form.budgetCategory', 'small')
             ->set('form.mtgDate', now()->addDays(10)->toDateString())
             ->set('form.mtgTime', '10:00')
@@ -62,12 +79,14 @@ class WorkflowSmokeTest extends TestCase
         $this->assertNotNull($request->project_start_date);
         $this->assertNotNull($request->project_completion_date);
         $this->assertNotNull($request->preferred_meeting_date);
+        $expectedStart = $this->addBusinessDays(now(), 30);
+        $expectedCompletion = $this->addBusinessDays($expectedStart, 45);
         $this->assertSame(
-            now()->addDays(30)->toDateString(),
+            $expectedStart->toDateString(),
             $request->project_start_date->toDateString()
         );
         $this->assertSame(
-            now()->addDays(30 + 45)->toDateString(),
+            $expectedCompletion->toDateString(),
             $request->project_completion_date->toDateString()
         );
 
@@ -131,10 +150,7 @@ class WorkflowSmokeTest extends TestCase
             ->set('form.title', 'Late Project')
             ->set('form.type', 'others')
             ->set('form.typeOther', 'Custom Type')
-            ->set('form.needed', now()->addDays(20)->toDateString())
             ->set('form.budgetCategory', 'large')
-            ->set('form.mtgDate', now()->addDays(5)->toDateString())
-            ->set('form.mtgTime', '14:00')
             ->set('timelineAcceptable', 'no')
             ->set('jl.delayReason', 'Site not ready')
             ->set('jl.estimatedTurnoverDate', now()->addDays(120)->toDateString())
@@ -164,8 +180,32 @@ class WorkflowSmokeTest extends TestCase
             ->call('approve', ['requestId' => $request->request_number]);
 
         $request->refresh();
-        // JL path must skip Division Head and VP Gen Services the second time around
-        // and go straight to ED Manager, since the meeting date was already collected at submission.
+        // JL path collects no meeting date at submission -- VP's JL approval sends it to
+        // the requestor to set one for the first time.
+        $this->assertSame('jl_meeting_pending', $request->current_status);
+        $this->assertSame('requestor_meeting_schedule', $request->current_step);
+        $this->assertSame('farm_manager', $request->current_owner_role);
+        $this->assertSame($farmManager->id, $request->current_owner_id);
+
+        $this->actingAs($farmManager);
+        Livewire::test(MeetingReschedulePage::class, ['projectRequest' => $request->id])
+            ->set('form.mtgDate', now()->addDays(15)->toDateString())
+            ->set('form.mtgTime', '14:00')
+            ->call('submit')
+            ->assertSet('submitted', true);
+
+        $request->refresh();
+        // Requestor's proposed date goes to Division Head for a lightweight approval, not a full re-review.
+        $this->assertSame('jl_meeting_review', $request->current_status);
+        $this->assertSame('division_head_meeting_review', $request->current_step);
+        $this->assertSame('division_head', $request->current_owner_role);
+
+        $this->actingAs($divisionHead);
+        Livewire::test(DivisionHeadInboxPage::class)
+            ->call('approveMeeting', ['requestId' => $request->request_number]);
+
+        $request->refresh();
+        // Meeting approval skips VP entirely and goes straight to ED Manager.
         $this->assertSame('jl_approved', $request->current_status);
         $this->assertSame('ed_manager_acceptance', $request->current_step);
         $this->assertSame('ed_manager', $request->current_owner_role);

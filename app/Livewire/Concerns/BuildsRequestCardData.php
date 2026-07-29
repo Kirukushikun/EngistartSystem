@@ -11,10 +11,14 @@ trait BuildsRequestCardData
     {
         return $request->attachments
             ->where('is_active', true)
-            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document'], true))
+            ->filter(fn ($attachment) => in_array($attachment->attachment_type, ['justification_letter', 'supporting_document', 'jl_supporting_document'], true))
             ->map(function ($attachment): array {
                 return [
-                    'label' => $attachment->attachment_type === 'justification_letter' ? 'JL File' : 'Attached File',
+                    'label' => match ($attachment->attachment_type) {
+                        'justification_letter' => 'JL File',
+                        'jl_supporting_document' => 'JL Supporting Document',
+                        default => 'Attached File',
+                    },
                     'name' => $attachment->original_name,
                     'url' => Storage::disk($attachment->disk)->url($attachment->path),
                 ];

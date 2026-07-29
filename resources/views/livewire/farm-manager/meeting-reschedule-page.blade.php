@@ -21,7 +21,9 @@
 
                 @include('partials.apis.alert', [
                     'type' => 'warn',
-                    'message' => 'The reviewer could not accommodate your proposed meeting date/time. Please propose a new one below.',
+                    'message' => $isFirstTimeSchedule
+                        ? 'Your Justification Letter was approved. Please propose an assessment meeting date/time below.'
+                        : 'The reviewer could not accommodate your proposed meeting date/time. Please propose a new one below.',
                 ])
 
                 <div class="grid grid-cols-2 gap-3 mt-4">
