@@ -68,9 +68,10 @@
 
                                         <button type="button"
                                                 @click="selected = (selected === '{{ $row['id'] }}') ? null : '{{ $row['id'] }}'"
-                                                class="absolute top-[8px] bottom-[8px] rounded-[7px] px-[9px] flex items-center text-[11.5px] font-medium truncate cursor-pointer transition"
+                                                class="absolute top-[8px] bottom-[8px] rounded-[7px] px-[9px] flex items-center justify-between gap-[6px] text-[11.5px] font-medium cursor-pointer transition"
                                                 :style="`left:{{ $row['left'] }}%;width:{{ $row['width'] }}%;background:{{ $statusStyle['bg'] }};color:{{ $statusStyle['color'] }};border:0.5px {{ $row['isProjected'] ? 'dashed' : 'solid' }} {{ $statusStyle['bd'] }}; ${selected === '{{ $row['id'] }}' ? 'box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text)' : ''}`">
-                                            {{ $row['title'] }}
+                                            <span class="truncate">{{ $row['title'] }}</span>
+                                            <span class="flex-shrink-0 whitespace-nowrap font-mono text-[10px] opacity-70">{{ $row['daysRemainingLabel'] }}</span>
                                         </button>
                                     </div>
                                 @endforeach
@@ -136,6 +137,7 @@
                     <div class="flex flex-col gap-[9px] mb-3 text-[12px]">
                         <div class="flex justify-between gap-[10px]"><span class="text-apis-text2">Project start</span><span class="font-mono font-medium text-right">{{ $row['startDate']->format('M j, Y') }}</span></div>
                         <div class="flex justify-between gap-[10px]"><span class="text-apis-text2">Completion</span><span class="font-mono font-medium text-right">{{ $row['completionDate']->format('M j, Y') }}</span></div>
+                        <div class="flex justify-between gap-[10px]"><span class="text-apis-text2">Status</span><span class="font-mono font-medium text-right">{{ $row['daysRemainingLabel'] }}</span></div>
                     </div>
                     @if ($row['purpose'])
                         <hr class="my-3" style="border-color: var(--border)">

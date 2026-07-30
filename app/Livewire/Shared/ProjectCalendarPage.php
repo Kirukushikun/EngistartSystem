@@ -93,11 +93,31 @@ class ProjectCalendarPage extends Component
                     'isProjected' => $isProjected,
                     'startDate' => $start,
                     'completionDate' => $completion,
+                    'daysRemainingLabel' => $this->daysRemainingLabel($start, $completion),
                 ];
             })
             ->filter()
             ->sortBy('startDate')
             ->values();
+    }
+
+    protected function daysRemainingLabel(Carbon $start, Carbon $completion): string
+    {
+        $today = Carbon::today();
+        $start = $start->copy()->startOfDay();
+        $completion = $completion->copy()->startOfDay();
+
+        if ($today->lt($start)) {
+            return 'Starts in ' . (int) $today->diffInDays($start) . 'd';
+        }
+
+        if ($today->gt($completion)) {
+            return (int) $completion->diffInDays($today) . 'd overdue';
+        }
+
+        $daysLeft = (int) $today->diffInDays($completion);
+
+        return $daysLeft === 0 ? 'Due today' : $daysLeft . 'd left';
     }
 
     public function getTimelineProperty(): ?array
