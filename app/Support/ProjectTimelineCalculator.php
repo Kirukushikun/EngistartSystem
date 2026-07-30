@@ -34,6 +34,10 @@ final class ProjectTimelineCalculator
         $result = $date->copy();
         $added = 0;
 
+        if (! $result->isWeekend()) {
+            $added++;
+        }
+
         while ($added < $days) {
             $result->addDay();
 
