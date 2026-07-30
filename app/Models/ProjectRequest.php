@@ -99,6 +99,11 @@ class ProjectRequest extends Model
         return $this->hasMany(RequestAttachment::class);
     }
 
+    public function referenceLinks(): HasMany
+    {
+        return $this->hasMany(ProjectReferenceLink::class)->latest();
+    }
+
     public static function statusLabel(?string $status): string
     {
         return match ($status) {

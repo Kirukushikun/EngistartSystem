@@ -21,6 +21,11 @@ return [
                     'route' => 'farm-manager.request-summary',
                     'active' => ['farm-manager.request-summary'],
                 ],
+                [
+                    'label' => 'Project Calendar',
+                    'route' => 'farm-manager.calendar',
+                    'active' => ['farm-manager.calendar'],
+                ],
             ],
         ],
         'division-head' => [
@@ -42,6 +47,11 @@ return [
                     'label' => 'History',
                     'route' => 'division-head.history',
                     'active' => ['division-head.history'],
+                ],
+                [
+                    'label' => 'Project Calendar',
+                    'route' => 'division-head.calendar',
+                    'active' => ['division-head.calendar'],
                 ],
             ],
         ],
@@ -70,6 +80,11 @@ return [
                     'label' => 'History',
                     'route' => 'vp-gen-services.history',
                     'active' => ['vp-gen-services.history'],
+                ],
+                [
+                    'label' => 'Project Calendar',
+                    'route' => 'vp-gen-services.calendar',
+                    'active' => ['vp-gen-services.calendar'],
                 ],
             ],
         ],
@@ -103,6 +118,11 @@ return [
                     'route' => 'dh-gen-services.administration-facility',
                     'active' => ['dh-gen-services.administration-facility'],
                 ],
+                [
+                    'label' => 'Project Calendar',
+                    'route' => 'dh-gen-services.calendar',
+                    'active' => ['dh-gen-services.calendar'],
+                ],
             ],
         ],
         'ed-manager' => [
@@ -134,6 +154,11 @@ return [
                     'label' => 'Assigned Engineers',
                     'route' => 'ed-manager.assigned-engineers',
                     'active' => ['ed-manager.assigned-engineers'],
+                ],
+                [
+                    'label' => 'Project Calendar',
+                    'route' => 'ed-manager.calendar',
+                    'active' => ['ed-manager.calendar'],
                 ],
             ],
         ],
@@ -182,6 +207,11 @@ return [
                     'route' => 'it-admin.danger-zone',
                     'active' => ['it-admin.danger-zone'],
                 ],
+                [
+                    'label' => 'Project Calendar',
+                    'route' => 'it-admin.calendar',
+                    'active' => ['it-admin.calendar'],
+                ],
             ],
         ],
         'engineer' => [
@@ -197,6 +227,11 @@ return [
                     'label' => 'Project Request Summary',
                     'route' => 'engineer.request-summary',
                     'active' => ['engineer.request-summary'],
+                ],
+                [
+                    'label' => 'Project Calendar',
+                    'route' => 'engineer.calendar',
+                    'active' => ['engineer.calendar'],
                 ],
             ],
         ],

@@ -4,6 +4,7 @@ namespace App\Livewire\Shared;
 
 use App\Livewire\Concerns\BuildsRequestCardData;
 use App\Livewire\Concerns\HasSimplePagination;
+use App\Models\ProjectReferenceLink;
 use App\Models\ProjectRequest;
 use App\Support\ProjectTimelineCalculator;
 use Illuminate\Support\Collection;
@@ -26,6 +27,44 @@ class RequestSummaryPage extends Component
     public int $perPage = 15;
 
     public int $page = 1;
+
+    public array $newLinkUrl = [];
+
+    public array $newLinkLabel = [];
+
+    public function addReferenceLink(int $requestId): void
+    {
+        $this->validate([
+            'newLinkUrl.' . $requestId => ['required', 'url', 'max:2048'],
+            'newLinkLabel.' . $requestId => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $projectRequest = ProjectRequest::findOrFail($requestId);
+
+        $projectRequest->referenceLinks()->create([
+            'added_by_id' => Auth::id(),
+            'url' => $this->newLinkUrl[$requestId],
+            'label' => $this->newLinkLabel[$requestId] ?: null,
+        ]);
+
+        unset($this->newLinkUrl[$requestId], $this->newLinkLabel[$requestId]);
+    }
+
+    public function removeReferenceLink(int $linkId): void
+    {
+        $link = ProjectReferenceLink::find($linkId);
+        $user = Auth::user();
+
+        if (! $link || ! $user) {
+            return;
+        }
+
+        if ($link->added_by_id !== $user->id && $user->role !== 'it_admin') {
+            return;
+        }
+
+        $link->delete();
+    }
 
     public function updatedFarmFilter(): void
     {
@@ -67,7 +106,7 @@ class RequestSummaryPage extends Component
         $user = Auth::user();
 
         return ProjectRequest::query()
-            ->with(['requestor', 'attachments', 'assignedEngineer'])
+            ->with(['requestor', 'attachments', 'assignedEngineer', 'referenceLinks.addedBy'])
             ->when($user, function ($query) use ($user) {
                 // Farm Manager's "involvement" is personal (they're the requestor), not
                 // role-wide -- scoping by acted_by_role would leak every other Farm
@@ -92,7 +131,7 @@ class RequestSummaryPage extends Component
             ->when($this->dateTo !== '', fn ($query) => $query->whereDate('submitted_at', '<=', $this->dateTo))
             ->orderBy('submitted_at', $this->sortDirection)
             ->get()
-            ->map(function (ProjectRequest $request): array {
+            ->map(function (ProjectRequest $request) use ($user): array {
                 $acceptanceDate = $request->transitions()->where('to_status', 'accepted')->value('acted_at');
                 $requestedTimeline = $request->budget_category
                     ? ProjectTimelineCalculator::forCategory($request->budget_category, $request->submitted_at ?? $request->created_at)
@@ -100,6 +139,7 @@ class RequestSummaryPage extends Component
 
                 return [
                     'id' => $request->request_number,
+                    'requestId' => $request->id,
                     'status' => $request->current_status,
                     'statusLabel' => ProjectRequest::statusLabel($request->current_status),
                     'farm' => $request->farm_name ?? 'Farm not yet specified',
@@ -117,9 +157,21 @@ class RequestSummaryPage extends Component
                     'jl' => data_get($request->meta, 'jl'),
                     'assignedEngineer' => $request->assignedEngineer?->name ?? '—',
                     'attachments' => $this->buildAttachments($request),
+                    'referenceLinks' => $request->referenceLinks->map(fn (\App\Models\ProjectReferenceLink $link) => [
+                        'id' => $link->id,
+                        'url' => $link->url,
+                        'label' => $link->label ?: $link->url,
+                        'addedBy' => $link->addedBy?->name,
+                        'canDelete' => $user && ($link->added_by_id === $user->id || $user->role === 'it_admin'),
+                    ])->values()->all(),
                 ];
             })
             ->values();
+    }
+
+    public function getHasAssignedEngineersProperty(): bool
+    {
+        return $this->rows->contains(fn (array $row) => $row['assignedEngineer'] !== '—');
     }
 
     public function getPaginatedRowsProperty(): Collection
