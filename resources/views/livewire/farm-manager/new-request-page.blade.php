@@ -124,7 +124,7 @@
                     <label class="apis-form-label">Date Submitted *</label>
                     <input type="date"
                            wire:model.live="form.dateSubmitted"
-                           min="{{ now()->addDay()->format('Y-m-d') }}"
+                           min="{{ now()->format('Y-m-d') }}"
                            class="apis-form-control @error('form.dateSubmitted') apis-error @enderror">
                     @error('form.dateSubmitted') <p class="apis-error-text">{{ $message }}</p> @enderror
                 </div>

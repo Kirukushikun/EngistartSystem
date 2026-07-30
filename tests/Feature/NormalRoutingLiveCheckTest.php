@@ -65,4 +65,24 @@ class NormalRoutingLiveCheckTest extends TestCase
             ->assertOk()
             ->assertSee($request->request_number);
     }
+
+    public function test_date_submitted_accepts_todays_date(): void
+    {
+        $farmManager = User::factory()->create(['role' => 'farm_manager', 'is_active' => true]);
+
+        $this->actingAs($farmManager);
+
+        Livewire::test(NewRequestPage::class)
+            ->set('form.title', 'Submitted Today Check')
+            ->set('form.type', 'production_building')
+            ->set('form.dateSubmitted', now()->toDateString())
+            ->set('form.budgetCategory', 'small')
+            ->set('form.mtgDate', now()->addDays(10)->toDateString())
+            ->set('form.mtgTime', '10:00')
+            ->set('timelineAcceptable', 'yes')
+            ->call('openSubmissionReview')
+            ->call('submit')
+            ->assertSet('submitted', true)
+            ->assertHasNoErrors('form.dateSubmitted');
+    }
 }
