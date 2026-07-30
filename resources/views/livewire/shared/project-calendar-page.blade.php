@@ -22,61 +22,72 @@
         <div class="rounded-[12px] overflow-hidden" style="border: 0.5px solid var(--border); background: var(--bg)">
             @if ($this->timeline)
                 <div class="overflow-x-auto">
-                    <div class="min-w-[820px] grid relative" style="grid-template-columns: 220px 1fr">
-                        {{-- Ruler --}}
-                        <div class="px-[14px] py-[9px] text-[11px] font-medium text-apis-text2 sticky top-0" style="background: var(--bg2); border-bottom: 0.5px solid var(--border)"></div>
-                        <div class="relative sticky top-0" style="background: var(--bg2); border-bottom: 0.5px solid var(--border); height: 34px">
-                            @foreach ($this->timeline['months'] as $month)
-                                <div class="absolute top-0 bottom-0 flex items-center text-[11px] text-apis-text2 px-2"
-                                     style="left: {{ $month['left'] }}%; width: {{ $month['width'] }}%; border-left: 0.5px dashed var(--border)">
-                                    {{ $month['label'] }}
+                    {{-- Wraps the grid so the today-line overlay below can be a plain sibling,
+                         positioned via calc() against this wrapper's own width/height, rather than
+                         a grid item. Grid-row spans interact unpredictably with the ruler's `sticky`
+                         positioning, so the line is kept out of the grid entirely instead. --}}
+                    <div class="min-w-[820px] relative">
+                        <div class="grid" style="grid-template-columns: 220px 1fr">
+                            {{-- Ruler --}}
+                            <div class="px-[14px] py-[9px] text-[11px] font-medium text-apis-text2 sticky top-0" style="background: var(--bg2); border-bottom: 0.5px solid var(--border)"></div>
+                            <div class="relative sticky top-0" style="background: var(--bg2); border-bottom: 0.5px solid var(--border); height: 34px">
+                                @foreach ($this->timeline['months'] as $month)
+                                    <div class="absolute top-0 bottom-0 flex items-center text-[11px] text-apis-text2 px-2"
+                                         style="left: {{ $month['left'] }}%; width: {{ $month['width'] }}%; border-left: 0.5px dashed var(--border)">
+                                        {{ $month['label'] }}
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            {{-- Farm groups --}}
+                            @foreach ($this->timeline['farms'] as $group)
+                                <div class="px-[14px] py-[7px] text-[11px] font-semibold uppercase tracking-wide text-apis-text3 col-span-2" style="border-top: 0.5px solid var(--border)">
+                                    {{ $group['farm'] }}
                                 </div>
+
+                                @foreach ($group['rows'] as $row)
+                                    @php
+                                        $statusStyle = match ($row['status']) {
+                                            'submitted' => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)', 'bd' => 'var(--blue-bd)'],
+                                            'recommended' => ['bg' => 'var(--violet-bg)', 'color' => 'var(--violet)', 'bd' => 'var(--violet-bd)'],
+                                            'vp_approved' => ['bg' => 'var(--indigo-bg)', 'color' => 'var(--indigo)', 'bd' => 'var(--indigo-bd)'],
+                                            'noted' => ['bg' => 'var(--teal-bg)', 'color' => 'var(--teal)', 'bd' => 'var(--teal-bd)'],
+                                            'jl_pending' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)', 'bd' => 'var(--amber-bd)'],
+                                            'accepted', 'initialized' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)', 'bd' => 'var(--green-bd)'],
+                                            default => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)', 'bd' => 'var(--border2)'],
+                                        };
+                                    @endphp
+                                    <div class="px-[14px] py-[9px] text-[12px] text-apis-text truncate" style="border-top: 0.5px solid var(--border)" title="{{ $row['title'] }}">
+                                        {{ $row['title'] }}
+                                    </div>
+                                    <div class="relative" style="border-top: 0.5px solid var(--border); min-height: 46px">
+                                        {{-- Month grid lines, behind the bar --}}
+                                        @foreach ($this->timeline['months'] as $month)
+                                            <div class="absolute top-0 bottom-0 pointer-events-none" style="left: {{ $month['left'] }}%; border-left: 0.5px dashed var(--border)"></div>
+                                        @endforeach
+
+                                        <button type="button"
+                                                @click="selected = (selected === '{{ $row['id'] }}') ? null : '{{ $row['id'] }}'"
+                                                class="absolute top-[8px] bottom-[8px] rounded-[7px] px-[9px] flex items-center text-[11.5px] font-medium truncate cursor-pointer transition"
+                                                :style="`left:{{ $row['left'] }}%;width:{{ $row['width'] }}%;background:{{ $statusStyle['bg'] }};color:{{ $statusStyle['color'] }};border:0.5px {{ $row['isProjected'] ? 'dashed' : 'solid' }} {{ $statusStyle['bd'] }}; ${selected === '{{ $row['id'] }}' ? 'box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text)' : ''}`">
+                                            {{ $row['title'] }}
+                                        </button>
+                                    </div>
+                                @endforeach
                             @endforeach
                         </div>
 
-                        {{-- Today marker spans the full grid height --}}
+                        {{-- Today marker: a plain overlay sibling (not a grid item), positioned via
+                             calc() against the wrapper's own width so it spans the full height
+                             regardless of how many rows are rendered. --}}
                         @if ($this->timeline['todayLeft'] !== null)
-                            <div class="relative" style="grid-column: 2; grid-row: 1 / -1">
-                                <div class="absolute top-0 bottom-0 z-[1]" style="left: {{ $this->timeline['todayLeft'] }}%; border-left: 1.5px solid var(--red)">
-                                    <span class="absolute -top-[1px] -translate-x-1/2 -translate-y-full text-[9.5px] font-semibold px-[5px] py-px rounded whitespace-nowrap"
-                                          style="color: var(--red); background: var(--red-bg); border: 0.5px solid var(--red-bd)">
-                                        Today
-                                    </span>
-                                </div>
+                            <div class="absolute top-0 bottom-0 z-[1]" style="left: calc(220px + (100% - 220px) * {{ $this->timeline['todayLeft'] }} / 100); border-left: 1.5px solid var(--red)">
+                                <span class="absolute -top-[1px] -translate-x-1/2 -translate-y-full text-[9.5px] font-semibold px-[5px] py-px rounded whitespace-nowrap"
+                                      style="color: var(--red); background: var(--red-bg); border: 0.5px solid var(--red-bd)">
+                                    Today
+                                </span>
                             </div>
                         @endif
-
-                        {{-- Farm groups --}}
-                        @foreach ($this->timeline['farms'] as $group)
-                            <div class="px-[14px] py-[7px] text-[11px] font-semibold uppercase tracking-wide text-apis-text3 col-span-2" style="border-top: 0.5px solid var(--border)">
-                                {{ $group['farm'] }}
-                            </div>
-
-                            @foreach ($group['rows'] as $row)
-                                @php
-                                    $statusStyle = match ($row['status']) {
-                                        'submitted' => ['bg' => 'var(--blue-bg)', 'color' => 'var(--blue)', 'bd' => 'var(--blue-bd)'],
-                                        'recommended' => ['bg' => 'var(--violet-bg)', 'color' => 'var(--violet)', 'bd' => 'var(--violet-bd)'],
-                                        'vp_approved' => ['bg' => 'var(--indigo-bg)', 'color' => 'var(--indigo)', 'bd' => 'var(--indigo-bd)'],
-                                        'noted' => ['bg' => 'var(--teal-bg)', 'color' => 'var(--teal)', 'bd' => 'var(--teal-bd)'],
-                                        'jl_pending' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)', 'bd' => 'var(--amber-bd)'],
-                                        'accepted', 'initialized' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)', 'bd' => 'var(--green-bd)'],
-                                        default => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)', 'bd' => 'var(--border2)'],
-                                    };
-                                @endphp
-                                <div class="px-[14px] py-[9px] text-[12px] text-apis-text truncate" style="border-top: 0.5px solid var(--border)" title="{{ $row['title'] }}">
-                                    {{ $row['title'] }}
-                                </div>
-                                <div class="relative" style="border-top: 0.5px solid var(--border); min-height: 46px">
-                                    <button type="button"
-                                            @click="selected = (selected === '{{ $row['id'] }}') ? null : '{{ $row['id'] }}'"
-                                            class="absolute top-[8px] bottom-[8px] rounded-[7px] px-[9px] flex items-center text-[11.5px] font-medium truncate cursor-pointer transition"
-                                            :style="`left:{{ $row['left'] }}%;width:{{ $row['width'] }}%;background:{{ $statusStyle['bg'] }};color:{{ $statusStyle['color'] }};border:0.5px {{ $row['isProjected'] ? 'dashed' : 'solid' }} {{ $statusStyle['bd'] }}; ${selected === '{{ $row['id'] }}' ? 'box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text)' : ''}`">
-                                        {{ $row['title'] }}
-                                    </button>
-                                </div>
-                            @endforeach
-                        @endforeach
                     </div>
                 </div>
 

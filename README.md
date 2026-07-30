@@ -32,10 +32,12 @@ There are no REST/API controllers beyond authentication — the UI is built enti
 
 **Key features:**
 
-- Budget-category-driven timeline auto-calculation on new requests
+- Budget-category-driven timeline auto-calculation on new requests (business-day start/completion dates via `App\Support\ProjectTimelineCalculator`)
 - Multi-role approval chain with owner-based request routing (`current_owner_role` / `current_owner_id`)
 - Justification Letter (JL) exception flow for requests with unacceptable timelines
-- Project Request Summary view and full audit/history trail per request
+- Project Request Summary view (with Assigned Engineer column, shown only when applicable) and full audit/history trail per request
+- Project Calendar: a Gantt-style timeline of every project's Start → Completion window, scoped per role (own requests for Farm Manager, assigned projects for Engineer, full oversight for reviewer roles)
+- Reference Links: attach any number of external URLs to a project request (e.g. links into another tracking system) so reviewers can jump straight to related progress info
 - Settings-Change sub-flow (separate from the main approval chain) for VP Gen Services, DH Gen Services, and ED Manager
 - IT Admin console: user management, audit trail, status override, danger zone, pending settings-changes
 - DH Gen Services & IT Admin can both manage Engineer accounts (Administration Facility / Assigned Engineers)
@@ -67,14 +69,16 @@ There are no REST/API controllers beyond authentication — the UI is built enti
 
 | Role | Landing area |
 |------|--------------|
-| `farm_manager` | Submit new requests, assessment meeting scheduling, my requests |
-| `division_head` | Inbox (recommend/reject), history, request summary |
-| `vp_gen_services` | Inbox (approve/reject), settings change-requests, history, request summary |
-| `dh_gen_services` | Noting (assign engineer), settings change-request, history, request summary, administration facility (engineer accounts) |
-| `ed_manager` | Inbox (accept/return), settings change-request, history, request summary |
-| `it_admin` | All requests, users, audit trail, status override, pending changes, settings, danger zone, assigned engineers |
-| `engineer` | Inbox (mark initialized) |
+| `farm_manager` | Submit new requests, assessment meeting scheduling, my requests, request summary, project calendar |
+| `division_head` | Inbox (recommend/reject), history, request summary, project calendar |
+| `vp_gen_services` | Inbox (approve/reject), settings change-requests, history, request summary, project calendar |
+| `dh_gen_services` | Noting (assign engineer), settings change-request, history, request summary, administration facility (engineer accounts), project calendar |
+| `ed_manager` | Inbox (accept/return), settings change-request, history, request summary, project calendar |
+| `it_admin` | All requests, users, audit trail, status override, pending changes, settings, danger zone, assigned engineers, project calendar |
+| `engineer` | Inbox (mark initialized), request summary, project calendar |
 | `guest` | Finished requests (read-only) |
+
+Project Calendar (`/{role}/calendar`) is registered for every role above and reuses the same `App\Livewire\Shared\ProjectCalendarPage` component: Farm Manager sees only requests they submitted, Engineer sees only requests assigned to them (`assigned_engineer_id`), and every other role sees the full set for oversight.
 
 Roles and route/middleware protection are defined in [routes/web.php](routes/web.php); the `role:` middleware is `App\Http\Middleware\EnsureUserHasRole`.
 
@@ -223,10 +227,10 @@ app/
 │   ├── ITAdmin/           # all-requests, users, audit, override, settings, danger zone
 │   ├── Engineer/          # inbox
 │   ├── Guest/             # finished requests
-│   └── Shared/            # request summary, assigned engineers, notification bell, confirmation modal
-├── Models/                # ProjectRequest, User, etc.
+│   └── Shared/            # request summary, project calendar, assigned engineers, notification bell, confirmation modal
+├── Models/                # ProjectRequest, ProjectReferenceLink, User, etc.
 ├── Notifications/         # WorkflowNotification
-└── Support/               # WorkflowNotifier and other helpers
+└── Support/               # WorkflowNotifier, ProjectTimelineCalculator, and other helpers
 
 routes/
 ├── web.php
