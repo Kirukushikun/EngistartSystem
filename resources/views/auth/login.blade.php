@@ -7,7 +7,7 @@
         document.documentElement.classList.toggle('dark', localStorage.getItem('darkMode') === 'true');
     </script>
     <link rel="icon" href="{{ asset('engistart.ico') }}" type="image/x-icon">
-    <title>Login | EngiStart</title>
+    <title>Login | Project Initialization System</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full overflow-hidden bg-apis-bg3 text-apis-text" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', value => { localStorage.setItem('darkMode', value); document.documentElement.classList.toggle('dark', value); });">
@@ -15,8 +15,7 @@
         <div class="w-full max-w-[380px] rounded-[16px] p-10 bg-apis-bg" style="border: 0.5px solid var(--border2)">
             <div class="text-center mb-8">
                 <div class="text-[10px] tracking-[0.14em] uppercase text-apis-text2 mb-2">Brookside Group of Companies</div>
-                <div class="text-[42px] font-bold tracking-[-0.04em] text-apis-text">EngiStart</div>
-                <div class="text-[11px] text-apis-text2 mt-1">Automated Project Initialization System</div>
+                <div class="text-[42px] font-bold tracking-[-0.04em] text-apis-text">Project Initialization System</div>
             </div>
 
             @if ($errors->any())

@@ -1,4 +1,4 @@
-# EngiStart
+# Project Initialization System
 
 > Automated Project Initialization System (PIF/APIS) for BFC Group — routes farm project requests through a role-based approval chain, from submission to engineer assignment.
 
@@ -26,7 +26,7 @@
 
 ## About
 
-EngiStart is a Project Initialization Form (PIF) system: Farm Managers submit project requests (with budget-driven auto-calculated timelines), which are routed through an approval chain — Division Head → VP General Services → ED Manager → DH General Services → Engineer — before landing back with the requestor as an initialized project. Requests with an unacceptable timeline go through a Justification Letter (JL) sub-flow instead, which reorders the same approval chain around a dual DH/VP review.
+Project Initialization System is a Project Initialization Form (PIF) system: Farm Managers submit project requests (with budget-driven auto-calculated timelines), which are routed through an approval chain — Division Head → VP General Services → ED Manager → DH General Services → Engineer — before landing back with the requestor as an initialized project. Requests with an unacceptable timeline go through a Justification Letter (JL) sub-flow instead, which reorders the same approval chain around a dual DH/VP review.
 
 There are no REST/API controllers beyond authentication — the UI is built entirely from full-page Livewire components rendered inside a shared Blade layout, with Alpine.js for client-side interactivity (dropdowns, dark mode, toasts).
 

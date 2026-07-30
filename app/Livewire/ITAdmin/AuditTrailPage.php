@@ -184,7 +184,7 @@ class AuditTrailPage extends Component
     {
         return view('livewire.it-admin.audit-trail-page')
             ->layout('layouts.app', [
-                'title' => 'Audit Trail | EngiStart',
+                'title' => 'Audit Trail | Project Initialization System',
                 'header' => 'Audit Trail',
                 'subheader' => 'Track system activities and approval actions.',
             ]);

@@ -161,7 +161,7 @@ class AssignedEngineersPage extends Component
     {
         return view('livewire.shared.assigned-engineers-page')
             ->layout('layouts.app', [
-                'title' => 'Assigned Engineers | EngiStart',
+                'title' => 'Assigned Engineers | Project Initialization System',
                 'header' => 'Assigned Engineers',
                 'subheader' => 'Create and manage local login credentials for Engineer 1/2/3, independent of the external directory.',
             ]);

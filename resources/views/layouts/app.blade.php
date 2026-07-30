@@ -16,7 +16,7 @@
     <script>
         document.documentElement.classList.toggle('dark', localStorage.getItem('darkMode') === 'true');
     </script>
-    <title>{{ $title ?? trim($__env->yieldContent('title')) ?: 'EngiStart' }}</title>
+    <title>{{ $title ?? trim($__env->yieldContent('title')) ?: 'Project Initialization System' }}</title>
     <link rel="icon" href="{{ asset('engistart.ico') }}" type="image/x-icon">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -127,9 +127,9 @@
 
             {{-- Logo / Brand --}}
             <div class="px-5 py-4" style="border-bottom: 0.5px solid var(--border)">
-                <h1 class="text-lg font-bold tracking-tight">EngiStart</h1>
+                <h1 class="text-lg font-bold tracking-tight">Project Initialization System</h1>
                 <p class="mt-0.5 text-[10px] leading-snug text-apis-text3">
-                    Automated Project Initialization System
+                    Brookside Group of Companies
                 </p>
             </div>
 

@@ -145,7 +145,7 @@ class MeetingReschedulePage extends Component
     {
         return view('livewire.farm-manager.meeting-reschedule-page')
             ->layout('layouts.app', [
-                'title' => 'Update Meeting Schedule | EngiStart',
+                'title' => 'Update Meeting Schedule | Project Initialization System',
                 'header' => 'Update Meeting Schedule',
                 'subheader' => 'Set or update the meeting date/time before the reviewer can proceed.',
             ]);

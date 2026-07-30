@@ -181,7 +181,7 @@ class AllRequestsPage extends Component
     {
         return view('livewire.it-admin.all-requests-page')
             ->layout('layouts.app', [
-                'title' => 'All Requests | EngiStart',
+                'title' => 'All Requests | Project Initialization System',
                 'header' => 'All Requests',
                 'subheader' => 'Monitor request flow across the entire system.',
             ]);

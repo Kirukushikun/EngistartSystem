@@ -16,7 +16,7 @@ class SettingsPage extends Component
     public function getSystemInformationProperty(): Collection
     {
         return collect([
-            ['label' => 'System Name', 'value' => 'EngiStart – Automated Project Initialization System'],
+            ['label' => 'System Name', 'value' => 'Project Initialization System'],
             ['label' => 'Organization', 'value' => 'Brookside Group of Companies'],
             ['label' => 'IT Support Email', 'value' => 'j.montiano@brooksidegroup.org'],
         ]);
@@ -26,7 +26,7 @@ class SettingsPage extends Component
     {
         return view('livewire.it-admin.settings-page')
             ->layout('layouts.app', [
-                'title' => 'Settings | EngiStart',
+                'title' => 'Settings | Project Initialization System',
                 'header' => 'Settings',
                 'subheader' => 'Review current system values and control information.',
             ]);

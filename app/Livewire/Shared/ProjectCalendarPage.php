@@ -174,7 +174,7 @@ class ProjectCalendarPage extends Component
     {
         return view('livewire.shared.project-calendar-page')
             ->layout('layouts.app', [
-                'title' => 'Project Calendar | EngiStart',
+                'title' => 'Project Calendar | Project Initialization System',
                 'header' => 'Project Calendar',
                 'subheader' => 'A timeline view of project requests from start to completion.',
             ]);

@@ -466,7 +466,7 @@ class InboxPage extends Component
     {
         return view('livewire.division-head.inbox-page')
             ->layout('layouts.app', [
-                'title' => 'For Recommendation | EngiStart',
+                'title' => 'For Recommendation | Project Initialization System',
                 'header' => 'For Recommendation',
                 'subheader' => 'Review incoming project requests and recommend them for approval.',
             ]);

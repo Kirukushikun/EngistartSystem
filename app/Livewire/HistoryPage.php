@@ -316,7 +316,7 @@ class HistoryPage extends Component
 
         return view('livewire.history-page')
             ->layout('layouts.app', [
-                'title' => $this->pageTitle . ' | EngiStart',
+                'title' => $this->pageTitle . ' | Project Initialization System',
                 'header' => $this->pageTitle,
                 'subheader' => $this->pageDescription,
             ]);

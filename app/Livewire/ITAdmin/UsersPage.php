@@ -374,7 +374,7 @@ class UsersPage extends Component
     {
         return view('livewire.it-admin.users-page')
             ->layout('layouts.app', [
-                'title'     => 'User Management | EngiStart',
+                'title'     => 'User Management | Project Initialization System',
                 'header'    => 'User Management',
                 'subheader' => 'Maintain access and roles for system users.',
             ]);

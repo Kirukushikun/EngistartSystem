@@ -271,7 +271,7 @@ class StatusOverridePage extends Component
     {
         return view('livewire.it-admin.status-override-page')
             ->layout('layouts.app', [
-                'title' => 'Status Override | EngiStart',
+                'title' => 'Status Override | Project Initialization System',
                 'header' => 'Status Override',
                 'subheader' => 'Apply exceptional workflow changes with proper authorization.',
             ]);

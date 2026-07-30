@@ -192,7 +192,7 @@ class RequestSummaryPage extends Component
     {
         return view('livewire.shared.request-summary-page')
             ->layout('layouts.app', [
-                'title' => 'Project Request Summary | EngiStart',
+                'title' => 'Project Request Summary | Project Initialization System',
                 'header' => 'Project Request Summary',
                 'subheader' => 'Requests currently waiting on you or that you\'ve acted on before, filterable by farm and date.',
             ]);

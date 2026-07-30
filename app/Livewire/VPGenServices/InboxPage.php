@@ -367,7 +367,7 @@ class InboxPage extends Component
     {
         return view('livewire.vp-gen-services.inbox-page')
             ->layout('layouts.app', [
-                'title' => 'For Approval | EngiStart',
+                'title' => 'For Approval | Project Initialization System',
                 'header' => 'For Approval',
                 'subheader' => 'Review Division Head recommendations and issue VP approval decisions.',
             ]);

@@ -410,7 +410,7 @@ class NewRequestPage extends Component
     {
         return view('livewire.farm-manager.new-request-page')
             ->layout('layouts.app', [
-                'title' => ($this->isEditing ? 'Edit Request' : 'New Request') . ' | EngiStart',
+                'title' => ($this->isEditing ? 'Edit Request' : 'New Request') . ' | Project Initialization System',
                 'header' => $this->isEditing ? 'Edit Request' : 'New Request',
                 'subheader' => $this->isEditing
                     ? 'Update your request before the first reviewer action locks it.'

@@ -262,7 +262,7 @@ class MyRequestsPage extends Component
     {
         return view('livewire.farm-manager.my-requests-page')
             ->layout('layouts.app', [
-                'title' => 'My Requests | EngiStart',
+                'title' => 'My Requests | Project Initialization System',
                 'header' => 'My Requests',
                 'subheader' => 'Track the status of your submitted project requests.',
             ]);

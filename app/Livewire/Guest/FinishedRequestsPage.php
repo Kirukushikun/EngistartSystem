@@ -57,7 +57,7 @@ class FinishedRequestsPage extends Component
     {
         return view('livewire.guest.finished-requests-page')
             ->layout('layouts.app', [
-                'title' => 'All Requests | EngiStart',
+                'title' => 'All Requests | Project Initialization System',
                 'header' => 'All Requests',
                 'subheader' => 'View all project requests and their current status.',
             ]);

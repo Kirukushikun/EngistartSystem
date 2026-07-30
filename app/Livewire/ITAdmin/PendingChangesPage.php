@@ -107,7 +107,7 @@ class PendingChangesPage extends Component
     {
         return view('livewire.it-admin.pending-changes-page')
             ->layout('layouts.app', [
-                'title' => 'Pending Changes | EngiStart',
+                'title' => 'Pending Changes | Project Initialization System',
                 'header' => 'Pending Changes',
                 'subheader' => 'Implement VP-approved settings changes.',
             ]);

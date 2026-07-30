@@ -338,7 +338,7 @@ class DangerZonePage extends Component
     {
         return view('livewire.it-admin.danger-zone-page')
             ->layout('layouts.app', [
-                'title' => 'Danger Zone | EngiStart',
+                'title' => 'Danger Zone | Project Initialization System',
                 'header' => 'Danger Zone',
                 'subheader' => 'Preview high-risk maintenance operations and require deliberate confirmation before execution.',
             ]);

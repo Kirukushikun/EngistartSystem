@@ -210,7 +210,7 @@ abstract class SettingsChangeRequestBase extends Component
     {
         return view($this->viewName())
             ->layout('layouts.app', [
-                'title' => 'Settings Change Request | EngiStart',
+                'title' => 'Settings Change Request | Project Initialization System',
                 'header' => 'Settings Change Request',
                 'subheader' => 'Submit a system-wide settings change request for VP approval.',
             ]);

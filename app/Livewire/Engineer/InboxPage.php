@@ -220,7 +220,7 @@ class InboxPage extends Component
     {
         return view('livewire.engineer.inbox-page')
             ->layout('layouts.app', [
-                'title' => 'For Initialization | EngiStart',
+                'title' => 'For Initialization | Project Initialization System',
                 'header' => 'For Initialization',
                 'subheader' => 'Requests noted by DH Gen Services and assigned to you for initialization.',
             ]);

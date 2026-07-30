@@ -256,7 +256,7 @@ class ChangeRequestsPage extends Component
     {
         return view('livewire.vp-gen-services.change-requests-page')
             ->layout('layouts.app', [
-                'title' => 'Change Requests | EngiStart',
+                'title' => 'Change Requests | Project Initialization System',
                 'header' => 'Change Requests',
                 'subheader' => 'Review settings change requests before they are forwarded for implementation.',
             ]);
