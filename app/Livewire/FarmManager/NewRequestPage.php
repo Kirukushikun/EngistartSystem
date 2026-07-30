@@ -213,14 +213,14 @@ class NewRequestPage extends Component
             $projectRequest->save();
 
             if ($this->jlAttachment) {
-                $path = $this->jlAttachment->store('request-attachments/' . $projectRequest->id, 'local');
+                $path = $this->jlAttachment->store('request-attachments/' . $projectRequest->id, 'public');
 
                 RequestAttachment::create([
                     'project_request_id' => $projectRequest->id,
                     'uploaded_by_id' => $user->id,
                     'attachment_type' => 'jl_supporting_document',
                     'original_name' => $this->jlAttachment->getClientOriginalName(),
-                    'disk' => 'local',
+                    'disk' => 'public',
                     'path' => $path,
                     'mime_type' => $this->jlAttachment->getMimeType(),
                     'size_bytes' => $this->jlAttachment->getSize(),
