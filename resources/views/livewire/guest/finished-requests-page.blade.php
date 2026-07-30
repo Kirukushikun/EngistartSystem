@@ -40,7 +40,10 @@
                         <div><span class="mr-1">Capacity:</span><span class="text-apis-text">{{ $request['cap'] }}</span></div>
                     @endif
                     @if ($request['mtgDate'])
-                        <div><span class="mr-1">Meeting:</span><span class="text-apis-text">{{ $request['mtgDate'] }} at {{ $request['mtgTime'] }}</span></div>
+                        <div>
+                            <span class="mr-1">{{ in_array($request['status'], ['submitted', 'jl_pending', 'jl_meeting_review', 'reschedule_requested'], true) ? 'Requested Assessment Meeting:' : 'Assessment Meeting:' }}</span>
+                            <span class="text-apis-text">{{ $request['mtgDate'] }} at {{ $request['mtgTime'] }}</span>
+                        </div>
                     @endif
                 </div>
 

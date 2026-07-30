@@ -54,7 +54,12 @@
             @if ($purpose)<div><span class="mr-1">Purpose:</span><span class="text-apis-text">{{ $purpose }}</span></div>@endif
             @if ($chickin)<div><span class="mr-1">Chick-in:</span><span class="text-apis-text">{{ $chickin }}</span></div>@endif
             @if ($cap)<div><span class="mr-1">Capacity:</span><span class="text-apis-text">{{ $cap }}</span></div>@endif
-            @if ($mtgDate)<div><span class="mr-1">Meeting:</span><span class="text-apis-text">{{ $mtgDate }} at {{ $mtgTime }}</span></div>@endif
+            @if ($mtgDate)
+                <div>
+                    <span class="mr-1">{{ in_array($status, ['submitted', 'jl_pending', 'jl_meeting_review', 'reschedule_requested'], true) ? 'Requested Assessment Meeting:' : 'Assessment Meeting:' }}</span>
+                    <span class="text-apis-text">{{ $mtgDate }} at {{ $mtgTime }}</span>
+                </div>
+            @endif
         </div>
 
         @if ($desc)
