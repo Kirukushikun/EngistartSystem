@@ -197,7 +197,7 @@
                             <input type="url"
                                    wire:model="newLinkUrl.{{ $row['requestId'] }}"
                                    placeholder="https://..."
-                                   class="apis-form-control flex-1 @error('newLinkUrl.' . $row['requestId']) apis-error @enderror">
+                                   class="apis-form-control @error('newLinkUrl.' . $row['requestId']) apis-error @enderror">
                             <input type="text"
                                    wire:model="newLinkLabel.{{ $row['requestId'] }}"
                                    placeholder="Label (optional)"
