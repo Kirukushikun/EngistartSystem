@@ -106,7 +106,7 @@ class RequestSummaryPage extends Component
         $user = Auth::user();
 
         return ProjectRequest::query()
-            ->with(['requestor', 'attachments', 'assignedEngineer', 'referenceLinks.addedBy'])
+            ->with(['requestor', 'attachments', 'assignedEngineer', 'referenceLinks.addedBy', 'transitions.actedBy'])
             ->when($user, function ($query) use ($user) {
                 // Farm Manager's "involvement" is personal (they're the requestor), not
                 // role-wide -- scoping by acted_by_role would leak every other Farm
@@ -157,6 +157,7 @@ class RequestSummaryPage extends Component
                     'jl' => data_get($request->meta, 'jl'),
                     'assignedEngineer' => $request->assignedEngineer?->name ?? '—',
                     'attachments' => $this->buildAttachments($request),
+                    'remarkHistory' => $this->buildRemarkHistory($request),
                     'referenceLinks' => $request->referenceLinks->map(fn (\App\Models\ProjectReferenceLink $link) => [
                         'id' => $link->id,
                         'url' => $link->url,

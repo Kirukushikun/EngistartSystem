@@ -155,6 +155,12 @@
                         'attachments' => $row['attachments'],
                     ])
 
+                    @if (!empty($row['remarkHistory']))
+                        @include('partials.apis.remarks-section', [
+                            'history' => $row['remarkHistory'],
+                        ])
+                    @endif
+
                     <div class="mb-[14px]">
                         <p class="text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Reference Links</p>
 
