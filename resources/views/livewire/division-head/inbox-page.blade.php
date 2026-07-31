@@ -87,6 +87,19 @@
                             style="background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-bd)">
                         Request Different Time
                     </button>
+                @elseif ($request['isPendingHere'] && $request['status'] === 'reschedule_meeting_review')
+                    <button type="button"
+                            wire:click="confirmRescheduleApproval(@js($request['id']))"
+                            class="apis-card-button font-medium"
+                            style="background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd)">
+                        Approve New Schedule
+                    </button>
+                    <button type="button"
+                            wire:click="confirmReschedule(@js($request['id']))"
+                            class="apis-card-button font-medium"
+                            style="background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-bd)">
+                        Request Different Time
+                    </button>
                 @elseif ($request['isPendingHere'])
                     <button type="button"
                             wire:click="confirmRecommend(@js($request['id']))"

@@ -72,29 +72,46 @@ class MeetingReschedulePage extends Component
 
             $isFirstTimeSchedule = $projectRequest->current_step === 'requestor_meeting_schedule';
 
+            $meta = $projectRequest->meta ?? [];
+
             if ($isFirstTimeSchedule) {
-                $returnTo = [
+                $target = [
                     'status' => 'jl_meeting_review',
                     'step' => 'division_head_meeting_review',
                     'owner_role' => 'division_head',
                 ];
             } else {
-                $returnTo = data_get($projectRequest->meta, 'reschedule_return');
+                $finalReturnTo = data_get($projectRequest->meta, 'reschedule_return');
 
-                abort_if(! $returnTo, 422, 'This request has no reviewer to return to.');
+                abort_if(! $finalReturnTo, 422, 'This request has no reviewer to return to.');
+
+                unset($meta['reschedule_return']);
+
+                if ($finalReturnTo['owner_role'] === 'division_head') {
+                    // Division Head requested the reschedule themselves, so the new
+                    // schedule goes straight back into their own queue.
+                    $target = $finalReturnTo;
+                } else {
+                    // Every other role's reschedule request must still pass through
+                    // Division Head approval before continuing to its real destination,
+                    // which is stashed here for the DH's approve action to pick up.
+                    $meta['reschedule_final_return'] = $finalReturnTo;
+                    $target = [
+                        'status' => 'reschedule_meeting_review',
+                        'step' => 'division_head_reschedule_review',
+                        'owner_role' => 'division_head',
+                    ];
+                }
             }
 
             $previousStatus = $projectRequest->current_status;
             $previousStep = $projectRequest->current_step;
             $previousOwnerRole = $projectRequest->current_owner_role;
 
-            $meta = $projectRequest->meta ?? [];
-            unset($meta['reschedule_return']);
-
             $projectRequest->fill([
-                'current_status' => $returnTo['status'],
-                'current_step' => $returnTo['step'],
-                'current_owner_role' => $returnTo['owner_role'],
+                'current_status' => $target['status'],
+                'current_step' => $target['step'],
+                'current_owner_role' => $target['owner_role'],
                 'current_owner_id' => null,
                 'preferred_meeting_date' => $this->form['mtgDate'],
                 'preferred_meeting_time' => $this->form['mtgTime'],
@@ -110,11 +127,11 @@ class MeetingReschedulePage extends Component
                 'acted_by_role' => $user->role,
                 'action' => $isFirstTimeSchedule ? 'meeting_schedule_submitted' : 'reschedule_submitted',
                 'from_status' => $previousStatus,
-                'to_status' => $returnTo['status'],
+                'to_status' => $target['status'],
                 'from_step' => $previousStep,
-                'to_step' => $returnTo['step'],
+                'to_step' => $target['step'],
                 'from_owner_role' => $previousOwnerRole,
-                'to_owner_role' => $returnTo['owner_role'],
+                'to_owner_role' => $target['owner_role'],
                 'to_owner_id' => null,
                 'is_rework' => false,
                 'is_exception_path' => $projectRequest->is_late,

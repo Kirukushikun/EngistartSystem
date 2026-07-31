@@ -339,6 +339,8 @@ class InboxPage extends Component
                         'recommended' => 'DH Recommended',
                         'vp_approved' => 'VP Approved',
                         'returned_to_requestor' => 'Returned to Requestor',
+                        'reschedule_requested' => 'Returned for Reschedule',
+                        'reschedule_meeting_review' => 'New Schedule Pending DH Approval',
                         'rejected' => 'Rejected',
                         'withdrawn' => 'Withdrawn',
                         default => str_replace('_', ' ', str($request->current_status)->title()),

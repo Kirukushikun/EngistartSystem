@@ -239,6 +239,7 @@ class StatusOverridePage extends Component
             'implemented' => ['step' => 'implementation_completed', 'owner_role' => null, 'owner_id' => null, 'is_terminal' => true, 'lock' => true],
             'returned_to_requestor' => ['step' => 'requestor_revision', 'owner_role' => 'farm_manager', 'owner_id' => null, 'is_terminal' => false, 'lock' => true],
             'reschedule_requested' => ['step' => 'requestor_reschedule', 'owner_role' => 'farm_manager', 'owner_id' => null, 'is_terminal' => false, 'lock' => true],
+            'reschedule_meeting_review' => ['step' => 'division_head_reschedule_review', 'owner_role' => 'division_head', 'owner_id' => null, 'is_terminal' => false, 'lock' => true],
             'rejected' => ['step' => 'terminal_rejection', 'owner_role' => null, 'owner_id' => null, 'is_terminal' => true, 'lock' => true],
             'cr_rejected' => ['step' => 'terminal_rejection', 'owner_role' => null, 'owner_id' => null, 'is_terminal' => true, 'lock' => true],
         ];
@@ -259,7 +260,8 @@ class StatusOverridePage extends Component
             'pending_it' => 'Pending IT Implementation',
             'implemented' => 'Implemented',
             'returned_to_requestor' => 'Returned to Requestor',
-            'reschedule_requested' => 'Reschedule Requested',
+            'reschedule_requested' => 'Returned for Reschedule',
+            'reschedule_meeting_review' => 'New Schedule Pending DH Approval',
             'rejected' => 'Rejected',
             'cr_rejected' => 'Change Request Rejected',
             null => 'Unknown',

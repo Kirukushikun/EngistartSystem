@@ -172,6 +172,8 @@ class AllRequestsPage extends Component
             'withdrawn' => 'Withdrawn',
             'jl_pending' => 'JL Under Review',
             'jl_approved' => 'JL Approved',
+            'reschedule_requested' => 'Returned for Reschedule',
+            'reschedule_meeting_review' => 'New Schedule Pending DH Approval',
             null => 'Unknown',
             default => str_replace('_', ' ', str($status)->title()),
         };

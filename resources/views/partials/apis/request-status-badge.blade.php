@@ -13,6 +13,8 @@
         'approved_late', 'accepted', 'initialized' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)'],
         'jl_pending' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)'],
         'jl_approved' => ['bg' => 'var(--indigo-bg)', 'color' => 'var(--indigo)'],
+        'reschedule_requested' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)'],
+        'reschedule_meeting_review' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)'],
         'returned', 'returned_to_requestor', 'rejected', 'rejected_late', 'cr_rejected' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)'],
         'withdrawn' => ['bg' => 'var(--red-bg)', 'color' => 'var(--red)'],
         default => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)'],

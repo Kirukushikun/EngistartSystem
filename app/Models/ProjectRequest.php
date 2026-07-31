@@ -114,11 +114,12 @@ class ProjectRequest extends Model
             'noted' => 'Noted',
             'initialized' => 'Initialized',
             'returned_to_requestor' => 'Returned to Requestor',
-            'reschedule_requested' => 'Reschedule Requested',
+            'reschedule_requested' => 'Returned for Reschedule',
             'rejected' => 'Rejected',
             'withdrawn' => 'Withdrawn',
             'jl_pending' => 'JL Under Review',
             'jl_approved' => 'JL Approved',
+            'reschedule_meeting_review' => 'New Schedule Pending DH Approval',
             null => 'Unknown',
             default => str_replace('_', ' ', str($status)->title()),
         };

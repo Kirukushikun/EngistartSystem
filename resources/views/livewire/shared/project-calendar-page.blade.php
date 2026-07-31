@@ -53,6 +53,7 @@
                                             'vp_approved' => ['bg' => 'var(--indigo-bg)', 'color' => 'var(--indigo)', 'bd' => 'var(--indigo-bd)'],
                                             'noted' => ['bg' => 'var(--teal-bg)', 'color' => 'var(--teal)', 'bd' => 'var(--teal-bd)'],
                                             'jl_pending' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)', 'bd' => 'var(--amber-bd)'],
+                                            'reschedule_requested', 'reschedule_meeting_review' => ['bg' => 'var(--amber-bg)', 'color' => 'var(--amber)', 'bd' => 'var(--amber-bd)'],
                                             'accepted', 'initialized' => ['bg' => 'var(--green-bg)', 'color' => 'var(--green)', 'bd' => 'var(--green-bd)'],
                                             default => ['bg' => 'var(--gray-bg)', 'color' => 'var(--text3)', 'bd' => 'var(--border2)'],
                                         };

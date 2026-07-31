@@ -323,6 +323,102 @@ class InboxPage extends Component
         $this->dispatch('notify', type: 'info', message: $requestId . ' meeting approved and routed to ED Manager.');
     }
 
+    public function confirmRescheduleApproval(string $requestId): void
+    {
+        $request = $this->loadInboxItems()->firstWhere('id', $requestId);
+
+        if (! $request || ! $request['isPendingHere'] || $request['status'] !== 'reschedule_meeting_review') {
+            return;
+        }
+
+        $this->dispatch('openConfirmationModal', config: [
+            'title' => 'Approve new schedule?',
+            'message' => 'Approve the new meeting date/time for ' . $request['id'] . ' and route it back to continue its review?',
+            'tone' => 'success',
+            'confirmText' => 'Approve New Schedule',
+            'confirmEvent' => 'divisionHeadRescheduleApprovalConfirmed',
+            'confirmTarget' => self::class,
+            'payload' => ['requestId' => $requestId],
+        ])->to(ConfirmationModal::class);
+    }
+
+    #[On('divisionHeadRescheduleApprovalConfirmed')]
+    public function approveReschedule(array $payload): void
+    {
+        $requestId = (string) ($payload['requestId'] ?? '');
+        $remarks = trim($this->remarks[$requestId] ?? '');
+
+        $user = Auth::user();
+
+        abort_unless($user, 403);
+
+        $projectRequest = DB::transaction(function () use ($requestId, $remarks, $user) {
+            $projectRequest = ProjectRequest::query()
+                ->where('request_number', $requestId)
+                ->where('current_owner_role', 'division_head')
+                ->where('current_step', 'division_head_reschedule_review')
+                ->whereNull('withdrawn_at')
+                ->firstOrFail();
+
+            $finalReturnTo = data_get($projectRequest->meta, 'reschedule_final_return');
+
+            abort_if(! $finalReturnTo, 422, 'This request has no reviewer to return to.');
+
+            $previousStatus = $projectRequest->current_status;
+            $previousStep = $projectRequest->current_step;
+            $previousOwnerRole = $projectRequest->current_owner_role;
+
+            $meta = $projectRequest->meta ?? [];
+            unset($meta['reschedule_final_return']);
+
+            $projectRequest->fill([
+                'current_status' => $finalReturnTo['status'],
+                'current_step' => $finalReturnTo['step'],
+                'current_owner_role' => $finalReturnTo['owner_role'],
+                'current_owner_id' => null,
+                'last_transitioned_at' => now(),
+                'latest_remarks' => $remarks !== '' ? $remarks : 'New meeting schedule approved by Division Head.',
+                'meta' => $meta,
+            ]);
+            $projectRequest->save();
+
+            RequestTransition::create([
+                'project_request_id' => $projectRequest->id,
+                'acted_by_id' => $user->id,
+                'acted_by_role' => $user->role,
+                'action' => 'reschedule_approved',
+                'from_status' => $previousStatus,
+                'to_status' => $finalReturnTo['status'],
+                'from_step' => $previousStep,
+                'to_step' => $finalReturnTo['step'],
+                'from_owner_role' => $previousOwnerRole,
+                'to_owner_role' => $finalReturnTo['owner_role'],
+                'to_owner_id' => null,
+                'is_rework' => false,
+                'is_exception_path' => $projectRequest->is_late,
+                'is_terminal' => false,
+                'remarks' => $remarks !== '' ? $remarks : 'New meeting schedule approved by Division Head.',
+                'context' => [
+                    'review_stage' => 'division_head_reschedule_review',
+                ],
+                'acted_at' => now(),
+            ]);
+
+            return $projectRequest;
+        });
+
+        WorkflowNotifier::notifyOwner(
+            $projectRequest,
+            'reschedule_approved',
+            'New Meeting Schedule Approved',
+            $projectRequest->request_number . ' — ' . $projectRequest->title . ' has an approved new meeting date/time and is back in your queue.'
+        );
+
+        unset($this->remarks[$requestId]);
+
+        $this->dispatch('notify', type: 'info', message: $requestId . ' new schedule approved and routed onward.');
+    }
+
     protected function rescheduleConfirmEventName(): string
     {
         return 'divisionHeadRescheduleConfirmed';
@@ -438,6 +534,8 @@ class InboxPage extends Component
                         'recommended' => 'DH Recommended',
                         'vp_approved' => 'VP Approved',
                         'returned_to_requestor' => 'Returned to Requestor',
+                        'reschedule_requested' => 'Returned for Reschedule',
+                        'reschedule_meeting_review' => 'New Schedule Pending DH Approval',
                         'rejected' => 'Rejected',
                         'withdrawn' => 'Withdrawn',
                         default => str_replace('_', ' ', str($request->current_status)->title()),
