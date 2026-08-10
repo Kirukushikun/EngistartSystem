@@ -188,6 +188,7 @@ class InboxPage extends Component
                 'first_reviewed_at' => $projectRequest->first_reviewed_at ?? now(),
                 'locked_at' => $projectRequest->locked_at ?? now(),
                 'last_transitioned_at' => now(),
+                'requestor_notice_seen_at' => null,
                 'latest_remarks' => $remarks !== '' ? $remarks : 'Returned to requestor by Division Head.',
             ]);
             $projectRequest->save();

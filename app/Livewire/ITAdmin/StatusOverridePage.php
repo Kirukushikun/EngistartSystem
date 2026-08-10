@@ -111,6 +111,7 @@ class StatusOverridePage extends Component
                 'completed_at' => $statusConfig['is_terminal'] ? ($request->completed_at ?? now()) : null,
                 'locked_at' => $statusConfig['lock'] ? ($request->locked_at ?? now()) : null,
                 'last_transitioned_at' => now(),
+                'requestor_notice_seen_at' => in_array($targetStatus, ['returned_to_requestor', 'rejected'], true) ? null : $request->requestor_notice_seen_at,
                 'latest_remarks' => 'Status overridden by IT Admin to ' . $this->statusLabel($targetStatus) . '.',
             ]);
             $request->save();

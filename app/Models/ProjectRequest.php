@@ -43,6 +43,7 @@ class ProjectRequest extends Model
         'completed_at',
         'cancelled_at',
         'withdrawn_at',
+        'requestor_notice_seen_at',
         'latest_remarks',
         'meta',
     ];
@@ -65,6 +66,7 @@ class ProjectRequest extends Model
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'withdrawn_at' => 'datetime',
+            'requestor_notice_seen_at' => 'datetime',
             'meta' => 'array',
         ];
     }

@@ -221,6 +221,10 @@
 
         <livewire:shared.confirmation-modal />
 
+        @if ($authUser?->role === 'farm_manager')
+            <livewire:farm-manager.returned-requests-notice />
+        @endif
+
         <div
             x-data="{
                 visible: false,
