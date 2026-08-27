@@ -219,7 +219,8 @@
   }
 
   .quote-tag {
-    display: inline-flex;
+    display: flex !important;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 28px;
@@ -227,9 +228,9 @@
     border-radius: 50%;
     font-family: var(--font-mono);
     font-size: 13px;
-    font-weight: 500;
-    background: var(--bg3);
-    color: var(--text2);
+    font-weight: 600;
+    background: var(--bg);
+    color: var(--text);
     border: 0.5px solid var(--border2);
     margin-bottom: 12px;
   }
@@ -534,56 +535,31 @@
     <div class="slide-inner">
       <div class="eyebrow">01 — The Reality</div>
       <h2 class="display">Some friction was never anyone's fault.</h2>
-      <p class="lede">A request that has to pass through several places will always take time and cross hands — that's not a flaw to fix, it's what a real approval chain looks like. The problem was everything that got layered on top of it.</p>
-      <div class="quote-row">
-        <div class="quote-card">
-          <span class="quote-tag">01</span>
-          <p>Several places, one request.</p>
-          <span>Each one needs its own turn, every time.</span>
-        </div>
-        <div class="quote-card">
-          <span class="quote-tag">02</span>
-          <p>A proper review takes days, not minutes.</p>
-          <span>That's diligence — not a delay.</span>
-        </div>
-        <div class="quote-card">
-          <span class="quote-tag">03</span>
-          <p>Once it's handed off, it's someone else's turn to carry it.</p>
-          <span>Remembering its whole history was never one person's job.</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="slide">
-    <div class="slide-inner">
-      <div class="eyebrow">02 — What It Cost</div>
-      <h2 class="display">Every gap became someone's problem, later.</h2>
+      <p class="lede">A request that has to pass through several places will always take time and cross hands — that's not a flaw to fix, it's what a real approval chain looks like. What made it hard was running that chain on paper, by hand, with coordination scattered across group chats.</p>
       <div class="cost-list">
         <div class="cost-item">
           <span class="n">01</span>
-          <p>A physical form had to be printed, signed, and hand-carried between offices — before the review even started.</p>
+          <p>The requestor filled out a physical form, then personally carried it — office to office — to get it approved by Division Head and VP Gen Services.</p>
         </div>
         <div class="cost-item">
           <span class="n">02</span>
-          <p>The actual approval conversation happened wherever it happened — Viber, a text, a phone call — never in the same place as the form itself.</p>
+          <p>Once approved, it was forwarded to two people at once for acceptance — what's now two separate, accountable steps, handled together out of necessity.</p>
         </div>
         <div class="cost-item">
           <span class="n">03</span>
-          <p>A form could sit in a drawer, a bag, or a stack for days without anyone downstream knowing it existed.</p>
+          <p>From there, coordination moved into a group chat — the meeting, the inspection, all of it — separate from the form itself.</p>
         </div>
         <div class="cost-item">
           <span class="n">04</span>
-          <p>And if it was misplaced along the way, the request started over from scratch — printing included.</p>
+          <p>And if the form was misplaced anywhere along that trip, the request started over from scratch — printing included.</p>
         </div>
       </div>
-      <div class="stat-box">One workflow. Scattered across paper, chats, and calls.</div>
     </div>
   </section>
 
   <section class="slide thesis-slide">
     <div class="slide-inner">
-      <div class="eyebrow">03 — The Shift</div>
+      <div class="eyebrow">02 — The Shift</div>
       <h1 class="display">One request. One record. <span class="accent-blue">One path</span> — from submission to the field.</h1>
       <p class="lede">Every role sees the same request, at the same status, with the same history — no matter where it entered the chain.</p>
     </div>
@@ -591,8 +567,8 @@
 
   <section class="slide">
     <div class="slide-inner is-wide">
-      <div class="eyebrow">04 — How It Holds Together</div>
-      <h2 class="display">A fixed path, with nothing skipped.</h2>
+      <div class="eyebrow">03 — How It Holds Together</div>
+      <h2 class="display">Same chain. Now it's one click away.</h2>
 
       <div class="chain-wrap">
         <div class="chain-step"><div class="role">Farm Manager</div></div>
@@ -607,20 +583,20 @@
         <div class="chain-arrow">→</div>
         <div class="chain-step"><div class="role">Engineer</div></div>
       </div>
-      <p class="chain-caption">Late filings branch through a justification letter, reviewed the same way. A rescheduled meeting always returns through Division Head before a new date is locked in — no exceptions, regardless of who requested the change.</p>
+      <p class="chain-caption">The same five checkpoints, the same people — just systemized. Nothing about who reviews what has changed. What changed is what it takes to move a request from one to the next.</p>
 
       <div class="pillars">
         <div class="pillar">
-          <h3>Full accountability</h3>
-          <p>Every handoff is timestamped, remarked, and attributed to a name — not a memory.</p>
+          <h3>One click, not one trip</h3>
+          <p>What used to mean printing, hand-carrying, and waiting for someone to be at their desk is now a single click, from wherever you are.</p>
         </div>
         <div class="pillar">
-          <h3>Unambiguous status</h3>
-          <p>Returned is never mistaken for new. A returned request says so, clearly, the moment you log in.</p>
+          <h3>Recorded, and easy to trace</h3>
+          <p>Every step leaves a record — no relying on memory, a stack of paper, or a message thread to reconstruct what happened.</p>
         </div>
         <div class="pillar">
-          <h3>Built around the farms</h3>
-          <p>Budget-category timelines and a farm calendar — not a generic ticket queue borrowed from elsewhere.</p>
+          <h3>Transparent by default</h3>
+          <p>No need to flood a chat thread to stay in the loop — status and remarks are visible instantly, to any role that needs them.</p>
         </div>
       </div>
     </div>
@@ -628,7 +604,7 @@
 
   <section class="slide">
     <div class="slide-inner">
-      <div class="eyebrow">05 — What Changes</div>
+      <div class="eyebrow">04 — What Changes</div>
       <h2 class="display">The difference shows up on day one.</h2>
       <div class="compare">
         <div class="compare-row">
