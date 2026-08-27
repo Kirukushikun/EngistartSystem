@@ -59,8 +59,9 @@
                             'Farm Manager'      => ['name' => 'Jose Santos',       'email' => 'j.santos@brooksidegroup.org'],
                             'Division Head'     => ['name' => 'Div. Head Santos',  'email' => 'dh.santos@brooksidegroup.org'],
                             'VP Gen Services'   => ['name' => 'Atty. T. Dizon',    'email' => 't.dizon@brooksidegroup.org'],
-                            'DH Gen Services'   => ['name' => 'Ancel Roque',       'email' => 'a.roque@brooksidegroup.org'],
                             'ED Manager'        => ['name' => 'Engr. D. Baniaga',  'email' => 'd.baniaga@brooksidegroup.org'],
+                            'DH Gen Services'   => ['name' => 'Ancel Roque',       'email' => 'a.roque@brooksidegroup.org'],
+                            'Engineer'          => ['name' => 'Engr. L. Bautista', 'email' => 'l.bautista@brooksidegroup.org'],
                             'IT Admin'          => ['name' => 'Jeff Montiano',     'email' => 'j.montiano@brooksidegroup.org'],
                             'Guest'             => ['name' => 'Guest Viewer',      'email' => 'guest@brooksidegroup.org'],
                         ];
