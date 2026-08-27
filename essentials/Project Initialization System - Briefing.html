@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Initialization System — Briefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:       #ffffff;
+    --bg2:      #f7f6f3;
+    --bg3:      #eeede9;
+    --text:     #1c1c1a;
+    --text2:    #6b6b67;
+    --text3:    #a0a09b;
+    --border:   rgba(0,0,0,0.09);
+    --border2:  rgba(0,0,0,0.16);
+
+    --blue-bg:  #e8f0fb;
+    --blue:     #1a4fa0;
+    --blue-bd:  rgba(26,79,160,0.22);
+
+    --green-bg: #e8f5ee;
+    --green:    #1a6e3a;
+    --green-bd: rgba(26,110,58,0.22);
+
+    --red-bg:   #fdeaea;
+    --red:      #a32020;
+    --red-bd:   rgba(163,32,32,0.22);
+
+    --amber-bg: #fef3e2;
+    --amber:    #7a4f00;
+    --amber-bd: rgba(122,79,0,0.22);
+
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:       #12161d;
+      --bg2:      #1a2029;
+      --bg3:      #0d1117;
+      --text:     #edf2f7;
+      --text2:    #a9b4c2;
+      --text3:    #748091;
+      --border:   rgba(255,255,255,0.08);
+      --border2:  rgba(255,255,255,0.16);
+
+      --blue-bg:  #13243b;
+      --blue:     #8ab4f8;
+      --blue-bd:  rgba(138,180,248,0.28);
+
+      --green-bg: #11281d;
+      --green:    #7bd79a;
+      --green-bd: rgba(123,215,154,0.28);
+
+      --red-bg:   #35161a;
+      --red:      #ff9c9c;
+      --red-bd:   rgba(255,156,156,0.28);
+
+      --amber-bg: #352611;
+      --amber:    #f6c66f;
+      --amber-bd: rgba(246,198,111,0.28);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg:       #12161d;
+    --bg2:      #1a2029;
+    --bg3:      #0d1117;
+    --text:     #edf2f7;
+    --text2:    #a9b4c2;
+    --text3:    #748091;
+    --border:   rgba(255,255,255,0.08);
+    --border2:  rgba(255,255,255,0.16);
+
+    --blue-bg:  #13243b;
+    --blue:     #8ab4f8;
+    --blue-bd:  rgba(138,180,248,0.28);
+
+    --green-bg: #11281d;
+    --green:    #7bd79a;
+    --green-bd: rgba(123,215,154,0.28);
+
+    --red-bg:   #35161a;
+    --red:      #ff9c9c;
+    --red-bd:   rgba(255,156,156,0.28);
+
+    --amber-bg: #352611;
+    --amber:    #f6c66f;
+    --amber-bd: rgba(246,198,111,0.28);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    overflow: hidden;
+  }
+
+  * { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background-color: var(--border2); border-radius: 9999px; }
+
+  h1, h2, h3, p, ul { margin: 0; }
+
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 500;
+  }
+
+  .deck { position: relative; height: 100svh; width: 100%; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: clamp(28px, 5vw, 72px) clamp(24px, 7vw, 96px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(14px);
+    transition: opacity 0.45s ease, transform 0.5s ease;
+    pointer-events: none;
+    background: var(--bg);
+  }
+
+  .slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .slide-inner {
+    width: 100%;
+    max-width: 1080px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  .slide-inner.is-wide { max-width: 1220px; }
+
+  h1.display {
+    font-weight: 700;
+    font-size: clamp(2.7rem, 6.2vw, 4.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    color: var(--text);
+  }
+
+  h2.display {
+    font-weight: 700;
+    font-size: clamp(2.1rem, 4.4vw, 2.9rem);
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    color: var(--text);
+  }
+
+  .lede {
+    font-size: clamp(1.15rem, 1.7vw, 1.35rem);
+    line-height: 1.65;
+    color: var(--text2);
+    max-width: 64ch;
+  }
+
+  .brand-line {
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  /* Title slide */
+  .title-slide .slide-inner { gap: 32px; }
+
+  .mark {
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    background: var(--blue-bg);
+    border: 0.5px solid var(--blue-bd);
+    color: var(--blue);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Quote cards */
+  .quote-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 6px;
+  }
+
+  .quote-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 22px 20px;
+  }
+
+  .quote-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--bg3);
+    color: var(--text2);
+    border: 0.5px solid var(--border2);
+    margin-bottom: 12px;
+  }
+
+  .quote-card p {
+    font-size: 1.22rem;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .quote-card span {
+    display: block;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  /* Cost list */
+  .cost-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+  }
+
+  .cost-item {
+    display: flex;
+    gap: 18px;
+    align-items: baseline;
+    padding: 15px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .cost-item:last-child { border-bottom: none; }
+
+  .cost-item .n {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text3);
+    flex-shrink: 0;
+    width: 1.8em;
+  }
+
+  .cost-item p { font-size: 1.18rem; line-height: 1.55; color: var(--text2); }
+
+  .stat-box {
+    margin-top: 8px;
+    border-radius: 14px;
+    border: 0.5px solid var(--border);
+    background: var(--bg2);
+    padding: 20px 24px;
+    font-weight: 600;
+    font-size: clamp(1.2rem, 2.1vw, 1.45rem);
+    color: var(--text);
+  }
+
+  /* Thesis */
+  .thesis-slide .slide-inner { align-items: center; text-align: center; }
+  .thesis-slide .lede { max-width: 46ch; margin: 0 auto; }
+  .thesis-slide h1.display { max-width: 17ch; }
+  .accent-blue { color: var(--blue); }
+
+  /* Chain diagram */
+  .chain-wrap {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .chain-step {
+    flex: 1 1 0;
+    min-width: 140px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border2);
+    border-radius: 11px;
+    padding: 16px 13px;
+    text-align: center;
+  }
+
+  .chain-step .role {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .chain-arrow {
+    flex: 0 0 auto;
+    width: clamp(18px, 3vw, 36px);
+    color: var(--blue);
+    text-align: center;
+    font-size: 1.2rem;
+  }
+
+  .chain-caption {
+    margin-top: 15px;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text3);
+    max-width: 74ch;
+  }
+
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-top: 20px;
+  }
+
+  .pillar {
+    border-left: 2px solid var(--border);
+    padding-left: 16px;
+  }
+
+  .pillar h3 { font-weight: 600; font-size: 1.14rem; color: var(--text); margin-bottom: 7px; }
+  .pillar p { font-size: 1.02rem; line-height: 1.55; color: var(--text2); }
+
+  /* Before / now */
+  .compare { display: flex; flex-direction: column; gap: 11px; margin-top: 6px; }
+
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 18px;
+    padding: 17px 19px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 11px;
+  }
+
+  .tone-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 3px 10px;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+
+  .tone-pill.before { background: var(--red-bg); color: var(--red); border: 0.5px solid var(--red-bd); }
+  .tone-pill.now { background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-bd); }
+
+  .compare-row .before-text { font-size: 1.08rem; color: var(--text2); }
+  .compare-row .now-text { font-size: 1.12rem; color: var(--text); font-weight: 500; }
+  .compare-row .arrow { color: var(--text3); font-size: 1.15rem; }
+
+  /* Closing */
+  .closing-slide .slide-inner { align-items: flex-start; gap: 26px; }
+
+  .demo-list { display: flex; flex-direction: column; gap: 11px; margin-top: 2px; }
+  .demo-list li { list-style: none; display: flex; gap: 12px; font-size: 1.14rem; color: var(--text2); }
+  .demo-list li::before { content: '→'; color: var(--blue); flex-shrink: 0; font-weight: 600; }
+
+  /* Chrome */
+  .chrome-mark {
+    position: fixed;
+    top: clamp(18px, 3vw, 30px);
+    left: clamp(20px, 4vw, 42px);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--blue-bg);
+    border: 0.5px solid var(--blue-bd);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+
+  .chrome-right {
+    position: fixed;
+    top: clamp(18px, 3vw, 30px);
+    right: clamp(20px, 4vw, 42px);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 20;
+  }
+
+  .chrome-counter {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13.5px;
+    color: var(--text3);
+  }
+
+  .chrome-counter b { color: var(--text); font-weight: 600; }
+
+  .theme-toggle {
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    color: var(--text2);
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .theme-toggle:hover { background: var(--bg2); }
+
+  .dots {
+    position: fixed;
+    bottom: clamp(20px, 4vw, 34px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--border2);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .dot:hover { background: var(--text3); }
+  .dot.is-active { background: var(--blue); transform: scale(1.4); }
+
+  .nav-btn {
+    position: fixed;
+    bottom: clamp(16px, 3.5vw, 30px);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    color: var(--text);
+    font-size: 1.15rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .nav-btn:hover { border-color: var(--blue-bd); color: var(--blue); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-btn:disabled:hover { border-color: var(--border2); color: var(--text); }
+
+  .nav-prev { left: clamp(20px, 4vw, 42px); }
+  .nav-next { right: clamp(20px, 4vw, 42px); }
+
+  .nav-btn:focus-visible, .dot:focus-visible, .theme-toggle:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 760px) {
+    .quote-row { grid-template-columns: 1fr; }
+    .pillars { grid-template-columns: 1fr; }
+    .chain-wrap { flex-direction: column; }
+    .chain-arrow { transform: rotate(90deg); }
+    .chain-step { width: 100%; }
+    .compare-row { grid-template-columns: 1fr; text-align: left; }
+    .compare-row .arrow { display: none; }
+    .nav-btn { width: 38px; height: 38px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide { transition: opacity 0.15s linear; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="chrome-mark">PI</div>
+<div class="chrome-right">
+  <span class="chrome-counter"><b id="slideNow">01</b> / <span id="slideTotal">07</span></span>
+  <button type="button" class="theme-toggle" id="themeToggle">Dark Mode</button>
+</div>
+
+<div class="deck" id="deck">
+
+  <section class="slide title-slide is-active">
+    <div class="slide-inner">
+      <div class="mark">PI</div>
+      <div class="eyebrow">Brookside Group of Companies · Internal Briefing</div>
+      <h1 class="display">Project Initialization System</h1>
+      <p class="lede">A short briefing on why every farm project request now moves through one system — before we hand it over to a live walkthrough.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">01 — The Reality</div>
+      <h2 class="display">Some friction was never anyone's fault.</h2>
+      <p class="lede">A request that has to pass through several places will always take time and cross hands — that's not a flaw to fix, it's what a real approval chain looks like. The problem was everything that got layered on top of it.</p>
+      <div class="quote-row">
+        <div class="quote-card">
+          <span class="quote-tag">01</span>
+          <p>Several places, one request.</p>
+          <span>Each one needs its own turn, every time.</span>
+        </div>
+        <div class="quote-card">
+          <span class="quote-tag">02</span>
+          <p>A proper review takes days, not minutes.</p>
+          <span>That's diligence — not a delay.</span>
+        </div>
+        <div class="quote-card">
+          <span class="quote-tag">03</span>
+          <p>Once it's handed off, it's someone else's turn to carry it.</p>
+          <span>Remembering its whole history was never one person's job.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">02 — What It Cost</div>
+      <h2 class="display">Every gap became someone's problem, later.</h2>
+      <div class="cost-list">
+        <div class="cost-item">
+          <span class="n">01</span>
+          <p>A physical form had to be printed, signed, and hand-carried between offices — before the review even started.</p>
+        </div>
+        <div class="cost-item">
+          <span class="n">02</span>
+          <p>The actual approval conversation happened wherever it happened — Viber, a text, a phone call — never in the same place as the form itself.</p>
+        </div>
+        <div class="cost-item">
+          <span class="n">03</span>
+          <p>A form could sit in a drawer, a bag, or a stack for days without anyone downstream knowing it existed.</p>
+        </div>
+        <div class="cost-item">
+          <span class="n">04</span>
+          <p>And if it was misplaced along the way, the request started over from scratch — printing included.</p>
+        </div>
+      </div>
+      <div class="stat-box">One workflow. Scattered across paper, chats, and calls.</div>
+    </div>
+  </section>
+
+  <section class="slide thesis-slide">
+    <div class="slide-inner">
+      <div class="eyebrow">03 — The Shift</div>
+      <h1 class="display">One request. One record. <span class="accent-blue">One path</span> — from submission to the field.</h1>
+      <p class="lede">Every role sees the same request, at the same status, with the same history — no matter where it entered the chain.</p>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-inner is-wide">
+      <div class="eyebrow">04 — How It Holds Together</div>
+      <h2 class="display">A fixed path, with nothing skipped.</h2>
+
+      <div class="chain-wrap">
+        <div class="chain-step"><div class="role">Farm Manager</div></div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step"><div class="role">Division Head</div></div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step"><div class="role">VP Gen Services</div></div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step"><div class="role">ED Manager</div></div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step"><div class="role">DH Gen Services</div></div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step"><div class="role">Engineer</div></div>
+      </div>
+      <p class="chain-caption">Late filings branch through a justification letter, reviewed the same way. A rescheduled meeting always returns through Division Head before a new date is locked in — no exceptions, regardless of who requested the change.</p>
+
+      <div class="pillars">
+        <div class="pillar">
+          <h3>Full accountability</h3>
+          <p>Every handoff is timestamped, remarked, and attributed to a name — not a memory.</p>
+        </div>
+        <div class="pillar">
+          <h3>Unambiguous status</h3>
+          <p>Returned is never mistaken for new. A returned request says so, clearly, the moment you log in.</p>
+        </div>
+        <div class="pillar">
+          <h3>Built around the farms</h3>
+          <p>Budget-category timelines and a farm calendar — not a generic ticket queue borrowed from elsewhere.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="slide-inner">
+      <div class="eyebrow">05 — What Changes</div>
+      <h2 class="display">The difference shows up on day one.</h2>
+      <div class="compare">
+        <div class="compare-row">
+          <div><span class="tone-pill before">Before</span><div class="before-text">A paper form, printed and hand-carried</div></div>
+          <div class="arrow">→</div>
+          <div><span class="tone-pill now">Now</span><div class="now-text">One digital record, open from anywhere</div></div>
+        </div>
+        <div class="compare-row">
+          <div><span class="tone-pill before">Before</span><div class="before-text">Silence after a return</div></div>
+          <div class="arrow">→</div>
+          <div><span class="tone-pill now">Now</span><div class="now-text">A heads-up the moment you log back in</div></div>
+        </div>
+        <div class="compare-row">
+          <div><span class="tone-pill before">Before</span><div class="before-text">Approval history lived in memory</div></div>
+          <div class="arrow">→</div>
+          <div><span class="tone-pill now">Now</span><div class="now-text">A full remarks trail on every request</div></div>
+        </div>
+        <div class="compare-row">
+          <div><span class="tone-pill before">Before</span><div class="before-text">A reschedule could slip past Division Head</div></div>
+          <div class="arrow">→</div>
+          <div><span class="tone-pill now">Now</span><div class="now-text">Every new date is re-approved, no exceptions</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide closing-slide">
+    <div class="slide-inner">
+      <div class="eyebrow">What's Next</div>
+      <h1 class="display">That's the why. Here's the how.</h1>
+      <p class="lede">A short live walkthrough, end to end:</p>
+      <ul class="demo-list">
+        <li>Submit a request as a Farm Manager</li>
+        <li>Follow it through the approval chain</li>
+        <li>Watch a return-and-resubmit cycle play out, remarks included</li>
+        <li>Check the calendar and status view a reviewer actually sees</li>
+      </ul>
+      <div class="brand-line">Project Initialization System — Brookside Group of Companies</div>
+    </div>
+  </section>
+
+</div>
+
+<button class="nav-btn nav-prev" id="prevBtn" type="button" aria-label="Previous slide">‹</button>
+<button class="nav-btn nav-next" id="nextBtn" type="button" aria-label="Next slide">›</button>
+<div class="dots" id="dots"></div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var stored = null;
+    try { stored = localStorage.getItem('pisDeckTheme'); } catch (e) {}
+    if (stored === 'dark' || stored === 'light') {
+      root.setAttribute('data-theme', stored);
+    }
+
+    function currentIsDark() {
+      if (root.getAttribute('data-theme') === 'dark') return true;
+      if (root.getAttribute('data-theme') === 'light') return false;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    var themeToggle = document.getElementById('themeToggle');
+
+    function syncToggleLabel() {
+      themeToggle.textContent = currentIsDark() ? 'Light Mode' : 'Dark Mode';
+    }
+
+    themeToggle.addEventListener('click', function () {
+      var next = currentIsDark() ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('pisDeckTheme', next); } catch (e) {}
+      syncToggleLabel();
+    });
+
+    syncToggleLabel();
+
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var total = slides.length;
+    var current = 0;
+
+    var dotsWrap = document.getElementById('dots');
+    var slideNow = document.getElementById('slideNow');
+    var slideTotal = document.getElementById('slideTotal');
+    var prevBtn = document.getElementById('prevBtn');
+    var nextBtn = document.getElementById('nextBtn');
+
+    slideTotal.textContent = String(total).padStart(2, '0');
+
+    slides.forEach(function (_, i) {
+      var dot = document.createElement('button');
+      dot.className = 'dot';
+      dot.type = 'button';
+      dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+      dot.addEventListener('click', function () { go(i); });
+      dotsWrap.appendChild(dot);
+    });
+
+    var dots = Array.prototype.slice.call(dotsWrap.children);
+
+    function render() {
+      slides.forEach(function (slide, i) {
+        slide.classList.toggle('is-active', i === current);
+      });
+      dots.forEach(function (dot, i) {
+        dot.classList.toggle('is-active', i === current);
+      });
+      slideNow.textContent = String(current + 1).padStart(2, '0');
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === total - 1;
+    }
+
+    function go(i) {
+      current = Math.max(0, Math.min(total - 1, i));
+      render();
+    }
+
+    prevBtn.addEventListener('click', function () { go(current - 1); });
+    nextBtn.addEventListener('click', function () { go(current + 1); });
+
+    window.addEventListener('keydown', function (e) {
+      if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].indexOf(e.key) !== -1) {
+        e.preventDefault();
+        go(current + 1);
+      } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].indexOf(e.key) !== -1) {
+        e.preventDefault();
+        go(current - 1);
+      } else if (e.key === 'Home') {
+        go(0);
+      } else if (e.key === 'End') {
+        go(total - 1);
+      }
+    });
+
+    var touchStartX = null;
+    window.addEventListener('touchstart', function (e) {
+      touchStartX = e.changedTouches[0].clientX;
+    }, { passive: true });
+    window.addEventListener('touchend', function (e) {
+      if (touchStartX === null) return;
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 60) {
+        go(current + (dx < 0 ? 1 : -1));
+      }
+      touchStartX = null;
+    }, { passive: true });
+
+    render();
+  })();
+</script>
+</body>
+</html>
