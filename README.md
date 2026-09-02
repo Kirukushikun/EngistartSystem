@@ -130,17 +130,13 @@ php artisan reverb:install
 Key variables beyond Laravel defaults:
 
 ```env
-# Auth mode: local DB auth, or delegate to BFC Group's external auth API
-ENGISTART_AUTH_MODE=local
-# local/api
-
+# Auth: no Turnstile secret -> local test accounts; secret set -> BFC Group's external auth API
 AUTH_API_BASE_URI=https://bfcgroup.ph
 AUTH_API_KEY=
 AUTH_USER_API_KEY=
 AUTH_VERIFY_SSL=true
 
 # Cloudflare Turnstile. A blank secret key also means "testing mode" — see Seeding below.
-TURNSTILE_VERIFY=false
 TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
 
@@ -212,7 +208,10 @@ as the signal — that key only exists on a properly set-up environment.
 | `TURNSTILE_SECRET_KEY` | Login behaves as |
 |---|---|
 | Blank / unset | **Testing mode on.** The Auth API is never called; the login page lists the `TestSeeder` accounts and authenticates against them locally. |
-| Set | **Testing mode off.** Normal login, Turnstile challenge shown (when `TURNSTILE_VERIFY=true`), test-account panel gone. |
+| Set | **Testing mode off.** Normal login goes through the external Auth API; the test-account panel is gone. |
+
+The Turnstile widget itself renders whenever `TURNSTILE_SITE_KEY` is set — independent of the mode
+switch above, since a site key with no matching secret is a misconfiguration, not a mode.
 
 Filling in the secret is the flip — there is no separate switch to remember at go-live, and no flag
 that can leave a live system on dummy accounts. Under `APP_ENV=production` testing mode is always

@@ -35,8 +35,9 @@ class AuthController extends Controller
             // -- the panel isn't hidden with CSS, it simply isn't there.
             'testAccounts' => $testingMode ? TestAccounts::panel() : [],
             'testAccountPassword' => $testingMode ? TestAccounts::PASSWORD : null,
-            'turnstileSiteKey' => $testingMode ? null : (string) config('services.turnstile.site_key'),
-            'turnstileEnabled' => ! $testingMode && (bool) config('services.turnstile.verify'),
+            'turnstileSiteKey' => (string) config('services.turnstile.site_key'),
+            // If there's a site key configured, show the widget -- full stop.
+            'turnstileEnabled' => filled(config('services.turnstile.site_key')),
         ]);
     }
 
@@ -58,11 +59,7 @@ class AuthController extends Controller
             return $turnstileFailure;
         }
 
-        $mode = (string) config('auth.mode', 'local');
-
-        return $mode === 'api'
-            ? $this->attemptApiLogin($request, $credentials)
-            : $this->attemptLocalLogin($request, $credentials);
+        return $this->attemptApiLogin($request, $credentials);
     }
 
     /**
@@ -70,7 +67,9 @@ class AuthController extends Controller
      */
     protected function verifyTurnstile(Request $request): ?RedirectResponse
     {
-        if (! config('services.turnstile.verify')) {
+        // Called only when TestingMode::enabled() is false, i.e. the secret key
+        // is set -- there is no separate flag to also remember to flip.
+        if (blank(config('services.turnstile.secret'))) {
             return null;
         }
 

@@ -20,7 +20,6 @@ return [
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
-    'mode' => env('ENGISTART_AUTH_MODE', 'local'),
 
     'api' => [
         'base_uri' => env('AUTH_API_BASE_URI', 'https://bfcgroup.ph'),
