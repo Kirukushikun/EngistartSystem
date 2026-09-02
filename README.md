@@ -17,6 +17,7 @@
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Environment Variables](#environment-variables)
+- [Seeding](#seeding)
 - [Running Locally](#running-locally)
 - [Testing](#testing)
 - [Notifications (Reverb)](#notifications-reverb)
@@ -108,14 +109,17 @@ composer install
 cp .env.example .env
 php artisan key:generate
 
-# 4. Configure your database in .env, then run migrations
-php artisan migrate
+# 4. Configure your database in .env, then run migrations + seed the clean state
+php artisan migrate:fresh --seed
 
-# 5. Install Node dependencies and build assets
+# 5. Load the dummy accounts and sample data (local/staging only)
+php artisan db:seed --class=TestSeeder
+
+# 6. Install Node dependencies and build assets
 npm install
 npm run build
 
-# 6. Install & configure Reverb (WebSocket server for notifications)
+# 7. Install & configure Reverb (WebSocket server for notifications)
 php artisan reverb:install
 ```
 
@@ -134,6 +138,11 @@ AUTH_API_BASE_URI=https://bfcgroup.ph
 AUTH_API_KEY=
 AUTH_USER_API_KEY=
 AUTH_VERIFY_SSL=true
+
+# Cloudflare Turnstile. A blank secret key also means "testing mode" — see Seeding below.
+TURNSTILE_VERIFY=false
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
 
 # Database
 DB_CONNECTION=mysql
@@ -164,6 +173,55 @@ VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 ```
 
 > **Note:** Never commit your `.env` file.
+
+---
+
+## Seeding
+
+Three seeders, each with one job:
+
+| Seeder | Holds | Run when |
+|---|---|---|
+| `DatabaseSeeder` | Reference/lookup data only — the clean state | Every `migrate:fresh --seed` |
+| `TestSeeder` | Dummy accounts and sample requests | Local and staging, on top of the clean state |
+| `DeploymentSeeder` | The real accounts a live system starts with | Once, by hand, at go-live |
+
+The normal dev reset is these two, in this order:
+
+```bash
+php artisan migrate:fresh --seed              # clean, usable, zero users, zero requests
+php artisan db:seed --class=TestSeeder        # + dummy accounts and sample data
+```
+
+`DatabaseSeeder` never creates users and never calls the other two, so `migrate:fresh --seed`
+always lands on an empty-but-usable system. `TestSeeder` refuses to run when `APP_ENV=production`.
+`DeploymentSeeder` is idempotent and deliberately not wired into `--seed`:
+
+```bash
+php artisan db:seed --class=DeploymentSeeder  # real initial data, go-live only
+```
+
+Seeders live under `database/seeders/` in `Reference/`, `Test/` and `Deployment/`; the three
+top-level seeders are orchestrators that do nothing but call into those folders.
+
+### Testing mode
+
+The system works out for itself whether it is a real deployment, using the Turnstile secret key
+as the signal — that key only exists on a properly set-up environment.
+
+| `TURNSTILE_SECRET_KEY` | Login behaves as |
+|---|---|
+| Blank / unset | **Testing mode on.** The Auth API is never called; the login page lists the `TestSeeder` accounts and authenticates against them locally. |
+| Set | **Testing mode off.** Normal login, Turnstile challenge shown (when `TURNSTILE_VERIFY=true`), test-account panel gone. |
+
+Filling in the secret is the flip — there is no separate switch to remember at go-live, and no flag
+that can leave a live system on dummy accounts. Under `APP_ENV=production` testing mode is always
+off regardless of the secret, so a misconfigured production system fails closed rather than falling
+back to dummy accounts.
+
+Test accounts (one per role, password `1234`) are defined once in
+[app/Support/TestAccounts.php](app/Support/TestAccounts.php) — the seeder and the login panel
+both read from there, so they cannot drift.
 
 ---
 

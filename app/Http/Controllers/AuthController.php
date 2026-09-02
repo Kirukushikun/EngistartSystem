@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\TestAccounts;
+use App\Support\TestingMode;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -23,7 +27,17 @@ class AuthController extends Controller
             return redirect()->route($this->homeRouteForRole((string) Auth::user()->role));
         }
 
-        return view('auth.login');
+        $testingMode = TestingMode::enabled();
+
+        return view('auth.login', [
+            'testingMode' => $testingMode,
+            // The dummy-account data never reaches the page outside testing mode
+            // -- the panel isn't hidden with CSS, it simply isn't there.
+            'testAccounts' => $testingMode ? TestAccounts::panel() : [],
+            'testAccountPassword' => $testingMode ? TestAccounts::PASSWORD : null,
+            'turnstileSiteKey' => $testingMode ? null : (string) config('services.turnstile.site_key'),
+            'turnstileEnabled' => ! $testingMode && (bool) config('services.turnstile.verify'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -33,11 +47,57 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // Testing mode skips the whole Auth API path rather than attempting and
+        // catching it: a dev machine with no API credentials should never sit
+        // through a network timeout just to arrive at a login failure.
+        if (TestingMode::enabled()) {
+            return $this->attemptLocalLogin($request, $credentials);
+        }
+
+        if ($turnstileFailure = $this->verifyTurnstile($request)) {
+            return $turnstileFailure;
+        }
+
         $mode = (string) config('auth.mode', 'local');
 
         return $mode === 'api'
             ? $this->attemptApiLogin($request, $credentials)
             : $this->attemptLocalLogin($request, $credentials);
+    }
+
+    /**
+     * Returns a redirect when the challenge fails, or null to carry on.
+     */
+    protected function verifyTurnstile(Request $request): ?RedirectResponse
+    {
+        if (! config('services.turnstile.verify')) {
+            return null;
+        }
+
+        try {
+            $verification = Http::asForm()
+                ->timeout(5)
+                ->connectTimeout(3)
+                ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                    'secret' => (string) config('services.turnstile.secret'),
+                    'response' => (string) $request->input('turnstile_token', ''),
+                    'remoteip' => $request->ip(),
+                ]);
+        } catch (ConnectionException $exception) {
+            Log::warning('Turnstile verification unreachable', ['error' => $exception->getMessage()]);
+
+            return back()
+                ->withErrors(['turnstile_token' => 'Human verification service is unreachable. Please try again shortly.'])
+                ->onlyInput('email');
+        }
+
+        if (! ($verification->json('success') ?? false)) {
+            return back()
+                ->withErrors(['turnstile_token' => 'Human verification failed. Please complete the challenge and try again.'])
+                ->onlyInput('email');
+        }
+
+        return null;
     }
 
     protected function attemptLocalLogin(Request $request, array $credentials): RedirectResponse
@@ -85,6 +145,8 @@ class AuthController extends Controller
                 'Content-Type' => 'application/json',
             ])
                 ->withOptions(['verify' => $verify])
+                ->timeout(10)
+                ->connectTimeout(5)
                 ->post($baseUri . '/api/v1/auth/login', [
                     'email' => $email,
                     'password' => (string) $credentials['password'],
@@ -119,6 +181,8 @@ class AuthController extends Controller
                 'Content-Type' => 'application/json',
             ])
                 ->withOptions(['verify' => $verify])
+                ->timeout(10)
+                ->connectTimeout(5)
                 ->get($baseUri . '/api/v1/users/get-user-id', [
                     'email' => $email,
                 ]);

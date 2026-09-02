@@ -1,50 +1,47 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Test;
 
 use App\Models\ProjectRequest;
 use App\Models\User;
 use App\Support\ProjectTimelineCalculator;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
-class ProjectCalendarDemoSeeder extends Seeder
+/**
+ * Fake project requests spread across farms, budget categories, statuses and
+ * both actual and not-yet-computed timelines, so the Project Calendar, inboxes
+ * and summary pages have enough variety to click through.
+ *
+ * Depends on TestAccountsSeeder for its requestors and engineers.
+ */
+class TestProjectDataSeeder extends Seeder
 {
-    /**
-     * Seeds extra farm managers/engineers and a spread of project requests
-     * (multiple farms, budget categories, statuses, and both actual and
-     * not-yet-computed timelines) so the Project Calendar page has enough
-     * variety to click through and review.
-     */
     public function run(): void
     {
-        $users = [
-            ['name' => 'Maria Cruz', 'email' => 'm.cruz@brooksidegroup.org', 'role' => 'farm_manager', 'farm' => 'Farm B – Capas, Tarlac'],
-            ['name' => 'Pedro Reyes', 'email' => 'p.reyes@brooksidegroup.org', 'role' => 'farm_manager', 'farm' => 'Farm C – Concepcion, Tarlac'],
-            ['name' => 'Ramon Torres', 'email' => 'r.torres@brooksidegroup.org', 'role' => 'farm_manager', 'farm' => 'Farm D – Angeles, Pampanga'],
-            ['name' => 'Engr. L. Bautista', 'email' => 'l.bautista@brooksidegroup.org', 'role' => 'engineer', 'farm' => null],
-            ['name' => 'Engr. R. Ramos', 'email' => 'r.ramos@brooksidegroup.org', 'role' => 'engineer', 'farm' => null],
-        ];
+        $users = User::query()
+            ->whereIn('email', [
+                'j.santos@brooksidegroup.org',
+                'm.cruz@brooksidegroup.org',
+                'p.reyes@brooksidegroup.org',
+                'r.torres@brooksidegroup.org',
+                'l.bautista@brooksidegroup.org',
+                'r.ramos@brooksidegroup.org',
+            ])
+            ->get()
+            ->keyBy('email');
 
-        foreach ($users as $user) {
-            User::updateOrCreate(
-                ['email' => $user['email']],
-                [
-                    'name' => $user['name'],
-                    'role' => $user['role'],
-                    'farm' => $user['farm'],
-                    'is_active' => true,
-                    'password' => Hash::make('1234'),
-                ]
-            );
+        $jose = $users['j.santos@brooksidegroup.org'] ?? null;
+        $maria = $users['m.cruz@brooksidegroup.org'] ?? null;
+        $pedro = $users['p.reyes@brooksidegroup.org'] ?? null;
+        $ramon = $users['r.torres@brooksidegroup.org'] ?? null;
+        $bautista = $users['l.bautista@brooksidegroup.org'] ?? null;
+        $ramos = $users['r.ramos@brooksidegroup.org'] ?? null;
+
+        if (! $jose || ! $maria || ! $pedro || ! $ramon || ! $bautista || ! $ramos) {
+            $this->command?->warn('TestProjectDataSeeder skipped: run TestAccountsSeeder first, or just db:seed --class=TestSeeder.');
+
+            return;
         }
-
-        $jose = User::where('email', 'j.santos@brooksidegroup.org')->first();
-        $maria = User::where('email', 'm.cruz@brooksidegroup.org')->first();
-        $pedro = User::where('email', 'p.reyes@brooksidegroup.org')->first();
-        $ramon = User::where('email', 'r.torres@brooksidegroup.org')->first();
-        $bautista = User::where('email', 'l.bautista@brooksidegroup.org')->first();
-        $ramos = User::where('email', 'r.ramos@brooksidegroup.org')->first();
 
         $requests = [
             [
@@ -184,9 +181,9 @@ class ProjectCalendarDemoSeeder extends Seeder
                     'request_type' => 'Building',
                     'budget_category' => $data['budget_category'],
                     'farm_name' => $data['farm_name'],
-                    'purpose' => $data['title'] . ' — seeded for Project Calendar demo purposes.',
+                    'purpose' => $data['title'].' — seeded as sample data.',
                     'date_needed' => $submittedAt->copy()->addDays(90)->toDateString(),
-                    'description' => $data['title'] . ' — seeded for Project Calendar demo purposes.',
+                    'description' => $data['title'].' — seeded as sample data.',
                     'project_start_date' => $data['with_actual_dates'] ? $timeline['start_date'] : null,
                     'project_completion_date' => $data['with_actual_dates'] ? $timeline['completion_date'] : null,
                     'submitted_at' => $submittedAt,

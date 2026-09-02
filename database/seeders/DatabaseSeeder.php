@@ -2,39 +2,29 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
+/**
+ * The clean state: reference/lookup data only -- everything a form needs to be
+ * usable, and nothing else. Running `migrate:fresh --seed` must leave a usable
+ * system with zero users and zero requests.
+ *
+ * This seeder never creates users and never calls TestSeeder or
+ * DeploymentSeeder. Those are invoked explicitly, by name, on purpose.
+ */
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        $users = [
-            ['name' => 'Jose Santos', 'email' => 'j.santos@brooksidegroup.org', 'role' => 'farm_manager'],
-            ['name' => 'Div. Head Santos', 'email' => 'dh.santos@brooksidegroup.org', 'role' => 'division_head'],
-            ['name' => 'Atty. T. Dizon', 'email' => 't.dizon@brooksidegroup.org', 'role' => 'vp_gen_services'],
-            ['name' => 'Ancel Roque', 'email' => 'a.roque@brooksidegroup.org', 'role' => 'dh_gen_services'],
-            ['name' => 'Engr. D. Baniaga', 'email' => 'd.baniaga@brooksidegroup.org', 'role' => 'ed_manager'],
-            ['name' => 'Jeff Montiano', 'email' => 'j.montiano@brooksidegroup.org', 'role' => 'it_admin'],
-            ['name' => 'Guest Viewer', 'email' => 'guest@brooksidegroup.org', 'role' => 'guest'],
-        ];
-
-        foreach ($users as $user) {
-            User::updateOrCreate(
-                ['email' => $user['email']],
-                [
-                    'name' => $user['name'],
-                    'role' => $user['role'],
-                    'password' => Hash::make('1234'),
-                ]
-            );
-        }
+        // This system carries no lookup tables yet -- statuses, budget
+        // categories and timelines are config-driven (config/project_timelines.php,
+        // config/sidebar.php). Reference seeders go in Reference/ and get listed
+        // here as the first lookup table lands.
+        $this->call([
+            //
+        ]);
     }
 }

@@ -28,6 +28,23 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cloudflare Turnstile
+    |--------------------------------------------------------------------------
+    |
+    | The presence of a secret key is also what tells the application it is a
+    | real deployment rather than a work in progress -- see App\Support    | TestingMode. Leave the secret blank on a dev/staging box to keep the
+    | login page in testing mode.
+    |
+    */
+
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY', ''),
+        'secret' => env('TURNSTILE_SECRET_KEY', ''),
+        'verify' => env('TURNSTILE_VERIFY', false),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

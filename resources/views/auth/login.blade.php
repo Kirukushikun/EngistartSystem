@@ -9,6 +9,9 @@
     <link rel="icon" href="{{ asset('engistart.ico') }}" type="image/x-icon">
     <title>Login | Project Initialization System</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if ($turnstileEnabled && $turnstileSiteKey)
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
 </head>
 <body class="h-full overflow-hidden bg-apis-bg3 text-apis-text" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', value => { localStorage.setItem('darkMode', value); document.documentElement.classList.toggle('dark', value); });">
     <div class="login-page min-h-screen flex items-center justify-center px-6 py-10 bg-apis-bg3">
@@ -40,42 +43,35 @@
                         <input type="checkbox" name="remember" value="1">
                         <span>Remember me</span>
                     </label>
+                    @if ($turnstileEnabled && $turnstileSiteKey)
+                        <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}" data-response-field-name="turnstile_token" data-theme="auto"></div>
+                    @endif
                     <button type="submit" class="w-full rounded-[8px] px-4 py-2.5 text-[13px] font-medium transition-colors" style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd)">Sign In</button>
                 </form>
             </div>
 
-            <details class="dev-account-panel mt-4 rounded-[12px] text-[11px] leading-[1.6]" style="background: var(--bg2); border: 0.5px solid var(--border)">
-                <summary class="flex items-center justify-between px-4 py-3 font-medium text-apis-text2 select-none">
-                    <span>Dev accounts</span>
-                    <span class="dev-account-chevron">⌄</span>
-                </summary>
+            @if ($testingMode)
+                <details class="dev-account-panel mt-4 rounded-[12px] text-[11px] leading-[1.6]" style="background: var(--bg2); border: 0.5px solid var(--border)">
+                    <summary class="flex items-center justify-between px-4 py-3 font-medium text-apis-text2 select-none">
+                        <span>Test accounts</span>
+                        <span class="dev-account-chevron">&#8964;</span>
+                    </summary>
 
-                <div class="px-4 pb-4">
-                    <p class="m-0 mb-2 text-apis-text2">Click a role to fill its credentials, then Sign In.</p>
+                    <div class="px-4 pb-4">
+                        <p class="m-0 mb-2 text-apis-text2">Testing mode &mdash; no Turnstile secret key is set, so login runs against these seeded accounts. Click a role to fill its credentials, then Sign In.</p>
 
-                    <div class="dev-account-grid">
-                        <?php
-                        $logins = [
-                            'Farm Manager'      => ['name' => 'Jose Santos',       'email' => 'j.santos@brooksidegroup.org'],
-                            'Division Head'     => ['name' => 'Div. Head Santos',  'email' => 'dh.santos@brooksidegroup.org'],
-                            'VP Gen Services'   => ['name' => 'Atty. T. Dizon',    'email' => 't.dizon@brooksidegroup.org'],
-                            'ED Manager'        => ['name' => 'Engr. D. Baniaga',  'email' => 'd.baniaga@brooksidegroup.org'],
-                            'DH Gen Services'   => ['name' => 'Ancel Roque',       'email' => 'a.roque@brooksidegroup.org'],
-                            'Engineer'          => ['name' => 'Engr. L. Bautista', 'email' => 'l.bautista@brooksidegroup.org'],
-                            'IT Admin'          => ['name' => 'Jeff Montiano',     'email' => 'j.montiano@brooksidegroup.org'],
-                            'Guest'             => ['name' => 'Guest Viewer',      'email' => 'guest@brooksidegroup.org'],
-                        ];
-
-                        foreach ($logins as $role => $account): ?>
-                            <button type="button" class="dev-account-card" data-email="<?= htmlspecialchars($account['email']) ?>" data-password="1234">
-                                <span class="dev-account-role"><?= htmlspecialchars($role) ?></span>
-                                <span class="dev-account-name"><?= htmlspecialchars($account['name']) ?></span>
-                                <span class="dev-account-email"><?= htmlspecialchars($account['email']) ?></span>
-                            </button>
-                        <?php endforeach; ?>
+                        <div class="dev-account-grid">
+                            @foreach ($testAccounts as $account)
+                                <button type="button" class="dev-account-card" data-email="{{ $account['email'] }}" data-password="{{ $testAccountPassword }}">
+                                    <span class="dev-account-role">{{ $account['label'] }}</span>
+                                    <span class="dev-account-name">{{ $account['name'] }}</span>
+                                    <span class="dev-account-email">{{ $account['email'] }}</span>
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
-            </details>
+                </details>
+            @endif
 
             <style>
                 .login-card {
@@ -95,6 +91,10 @@
                     font-weight: 700;
                     letter-spacing: 0.02em;
                 }
+            </style>
+
+            @if ($testingMode)
+            <style>
                 .dev-account-panel summary {
                     cursor: pointer;
                     list-style: none;
@@ -150,7 +150,9 @@
                     opacity: 0.7;
                 }
             </style>
+            @endif
 
+            @if ($testingMode)
             <script>
                 document.querySelectorAll('.dev-account-card').forEach(card => {
                     card.addEventListener('click', () => {
@@ -161,6 +163,7 @@
                     });
                 });
             </script>
+            @endif
         </div>
     </div>
 </body>
