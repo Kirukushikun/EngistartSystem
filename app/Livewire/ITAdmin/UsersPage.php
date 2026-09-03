@@ -4,6 +4,7 @@ namespace App\Livewire\ITAdmin;
 
 use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\User;
+use App\Support\TestingMode;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
@@ -86,14 +87,45 @@ class UsersPage extends Component
 
     public function getUsersProperty(): Collection
     {
+        // Testing mode has no real directory to grant access from -- test
+        // accounts already have their roles from TestAccountsSeeder. Show the
+        // local roster directly instead of calling the real API with whatever
+        // placeholder credentials happen to be sitting in a dev .env.
+        if (TestingMode::enabled()) {
+            return $this->dbUsers->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'farm' => $user->farm ?? '—',
+                'department' => $user->department ?? '—',
+                'status' => $user->is_active ? 'active' : 'disabled',
+            ])->values();
+        }
+
         $apiUsers = Cache::remember('users_page_api_users', 300, function () {
-            $response = Http::withHeaders([
-                    'x-api-key' => '123456789bgc',
-                ])
-                ->withOptions([
-                    'verify' => storage_path('cacert.pem'),
-                ])
-                ->post('https://bfcgroup.ph/api/v1/users');
+            $baseUri = rtrim((string) config('auth.api.base_uri'), '/');
+            $apiKey = (string) config('auth.api.auth_user_api_key');
+
+            if ($baseUri === '' || $apiKey === '') {
+                Log::warning('UsersPage skipped: auth configuration is incomplete.');
+                return [];
+            }
+
+            try {
+                $response = Http::withHeaders([
+                        'x-api-key' => $apiKey,
+                    ])
+                    ->withOptions([
+                        'verify' => storage_path('cacert.pem'),
+                    ])
+                    ->timeout(10)
+                    ->connectTimeout(5)
+                    ->post($baseUri . '/api/v1/users');
+            } catch (\Throwable $exception) {
+                Log::error('UsersPage API unreachable: ' . $exception->getMessage());
+                return [];
+            }
 
             if (!$response->successful()) {
                 Log::error('UsersPage API error: ' . $response->status());
