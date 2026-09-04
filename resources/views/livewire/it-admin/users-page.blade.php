@@ -203,7 +203,12 @@
                         @if ($formMode !== 'role')
                             <div>
                                 <label class="block text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Farm</label>
-                                <input type="text" wire:model="form.farm" class="apis-toolbar-control w-full" placeholder="Assign farm if applicable">
+                                <select wire:model="form.farm" class="apis-toolbar-control w-full">
+                                    <option value="">— None —</option>
+                                    @foreach ($this->farmOptions as $farm)
+                                        <option value="{{ $farm }}">{{ $farm }}</option>
+                                    @endforeach
+                                </select>
                                 @error('form.farm')
                                     <p class="mt-2 text-[11px]" style="color: var(--red)">{{ $message }}</p>
                                 @enderror
@@ -211,7 +216,12 @@
 
                             <div>
                                 <label class="block text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Department</label>
-                                <input type="text" wire:model="form.department" class="apis-toolbar-control w-full" placeholder="Assign department if applicable">
+                                <select wire:model="form.department" class="apis-toolbar-control w-full">
+                                    <option value="">— None —</option>
+                                    @foreach ($this->departmentOptions as $department)
+                                        <option value="{{ $department }}">{{ $department }}</option>
+                                    @endforeach
+                                </select>
                                 @error('form.department')
                                     <p class="mt-2 text-[11px]" style="color: var(--red)">{{ $message }}</p>
                                 @enderror

@@ -135,14 +135,23 @@ class UsersPage extends Component
             $json  = $response->json();
             $users = $json['data'] ?? $json;
 
-            return array_map(function ($user) {
+            $decrypted = [];
+
+            foreach ($users as $user) {
                 try {
                     $user['id'] = Crypt::decryptString($user['id']);
+                    $decrypted[] = $user;
                 } catch (\Exception $e) {
-                    Log::error('Failed to decrypt ID for: ' . $user['first_name'] . ' ' . $user['last_name']);
+                    // Drop the record rather than keep the raw ciphertext in
+                    // 'id' -- it would otherwise get rendered straight into
+                    // wire:click="grantAccess(...)" and break every button on
+                    // the page. Usually an APP_KEY/cipher mismatch with
+                    // whichever system encrypted this id; see the message.
+                    Log::error('Failed to decrypt user id for '.($user['first_name'] ?? '?').' '.($user['last_name'] ?? '?').': '.$e->getMessage());
                 }
-                return $user;
-            }, $users);
+            }
+
+            return $decrypted;
         });
 
         return collect($apiUsers)->map(function ($user) {
@@ -384,6 +393,38 @@ class UsersPage extends Component
             'it_admin' => 'IT Admin',
             'guest' => 'Guest',
         ];
+    }
+
+    public function getFarmOptionsProperty(): array
+    {
+        return $this->optionsWithCurrentValue(
+            (array) config('organization.farms', []),
+            $this->form['farm'] ?? ''
+        );
+    }
+
+    public function getDepartmentOptionsProperty(): array
+    {
+        return $this->optionsWithCurrentValue(
+            (array) config('organization.departments', []),
+            $this->form['department'] ?? ''
+        );
+    }
+
+    /**
+     * The configured list, plus the record's current value tacked on if it
+     * predates that list (e.g. seeded demo data) -- so opening the edit form
+     * doesn't silently drop it just because it isn't one of the fixed options.
+     */
+    protected function optionsWithCurrentValue(array $options, string $current): array
+    {
+        $current = trim($current);
+
+        if ($current !== '' && ! in_array($current, $options, true)) {
+            $options[] = $current;
+        }
+
+        return $options;
     }
 
     protected function refreshDbUsers(): void

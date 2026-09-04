@@ -1,11 +1,48 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('prevent-browser-cache')->group(function () {
     Route::redirect('/', '/login');
 });
+
+// TEMPORARY -- delete before go-live. Dumps the raw directory API response
+// plus a decrypt check of the first record's id, so an APP_KEY/cipher
+// mismatch with the auth system shows up directly instead of as a silently
+// skipped/broken row on the Users page. See resolveExternalUserId() /
+// UsersPage for how the real code uses this.
+Route::get('/debug/user-api', function () {
+    abort_if(app()->isProduction(), 404);
+
+    $baseUri = rtrim((string) config('auth.api.base_uri'), '/');
+    $apiKey = (string) config('auth.api.auth_user_api_key');
+
+    $response = Http::withHeaders(['x-api-key' => $apiKey])
+        ->withOptions(['verify' => storage_path('cacert.pem')])
+        ->timeout(10)->connectTimeout(5)
+        ->post($baseUri.'/api/v1/users');
+
+    $body = $response->json() ?? $response->body();
+    $first = data_get($body, 'data.0') ?? (is_array($body) ? ($body[0] ?? null) : null);
+
+    return response()->json([
+        'status' => $response->status(),
+        'base_uri' => $baseUri,
+        'api_key_configured' => $apiKey !== '',
+        'app_key_set' => config('app.key') !== '',
+        'app_cipher' => config('app.cipher'),
+        'first_record_id_raw' => $first['id'] ?? null,
+        'first_record_decrypt_check' => rescue(
+            fn () => ['id_decrypts_to' => Crypt::decryptString($first['id'] ?? '')],
+            fn (\Throwable $e) => 'FAILED -- '.$e->getMessage().' (APP_KEY/APP_CIPHER mismatch with the auth system, or this is not a Crypt::encryptString payload)',
+            false
+        ),
+        'raw' => $body,
+    ], 200, [], JSON_PRETTY_PRINT);
+})->middleware(['auth']);
 
 Route::middleware(['guest', 'prevent-browser-cache'])->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
