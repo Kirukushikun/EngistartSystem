@@ -434,6 +434,13 @@ class UsersPage extends Component
         $this->dbUsers = Cache::remember('users_page_db_users', 600, function () {
             return User::all()->keyBy('id');
         });
+
+        // Livewire memoizes computed properties for the whole request. saveUser()
+        // and toggleAccess() read $this->users before they mutate anything, so
+        // without this the re-render replays that pre-save value -- the row keeps
+        // saying "No Access" and the grant looks like it silently did nothing.
+        unset($this->users, $this->filteredUsers, $this->paginatedUsers);
+        unset($this->totalPages, $this->showingFrom, $this->showingTo);
     }
 
     protected function blankToNull(?string $value): ?string
