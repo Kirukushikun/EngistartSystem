@@ -77,6 +77,40 @@ class NewRequestPage extends Component
         }
     }
 
+    /**
+     * The memo header's "FROM" / "FARM" -- the signed-in requestor, not a
+     * hardcoded name.
+     */
+    public function getRequestorProperty(): ?\App\Models\User
+    {
+        return Auth::user();
+    }
+
+    /**
+     * The memo header's "TO": the division head of the requestor's own
+     * department (e.g. Poultry). If that department has no division head
+     * assigned yet -- or has more than one, where naming one would be a guess --
+     * fall back to the plain role label rather than naming the wrong person.
+     */
+    public function getAddresseeProperty(): string
+    {
+        $department = trim((string) (Auth::user()?->department ?? ''));
+
+        if ($department === '') {
+            return 'Division Head';
+        }
+
+        $divisionHeads = \App\Models\User::query()
+            ->where('role', 'division_head')
+            ->where('is_active', true)
+            ->where('department', $department)
+            ->get();
+
+        return $divisionHeads->count() === 1
+            ? (string) $divisionHeads->first()->name
+            : 'Division Head';
+    }
+
     public function getTypeOptionsProperty(): array
     {
         return [

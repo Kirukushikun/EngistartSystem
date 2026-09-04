@@ -48,10 +48,10 @@
                 {{-- Memo header --}}
                 <div class="grid grid-cols-2 gap-x-5 gap-y-1 text-[12px] rounded-[8px] p-[11px_16px] mb-4"
                      style="background: var(--bg2); border: 0.5px solid var(--border)">
-                    <div><span class="text-apis-text2">TO: </span><span class="font-medium">Div. Head Santos</span></div>
+                    <div><span class="text-apis-text2">TO: </span><span class="font-medium">{{ $this->addressee }}</span></div>
                     <div><span class="text-apis-text2">DATE OF REQUEST: </span><span class="font-medium">{{ now()->format('M j, Y') }}</span></div>
-                    <div><span class="text-apis-text2">FROM: </span><span class="font-medium">Jose Santos</span></div>
-                    <div><span class="text-apis-text2">FARM: </span><span class="font-medium">Farm A – Bamban, Tarlac</span></div>
+                    <div><span class="text-apis-text2">FROM: </span><span class="font-medium">{{ $this->requestor?->name ?? '—' }}</span></div>
+                    <div><span class="text-apis-text2">FARM: </span><span class="font-medium">{{ $this->requestor?->farm ?? '—' }}</span></div>
                 </div>
 
                 {{-- Info alert --}}
