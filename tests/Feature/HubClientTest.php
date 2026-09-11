@@ -218,6 +218,21 @@ class HubClientTest extends TestCase
         $this->assertNull(HubConnection::current()->last_synced_at);
     }
 
+    public function test_fetch_grants_reports_rate_limiting_distinctly(): void
+    {
+        HubConnection::create(['client_id' => 'chub_abc', 'client_secret' => 'topsecret']);
+
+        Http::fake(['*/api/v1/grants' => Http::response([], 429)]);
+
+        try {
+            (new HubClient())->fetchGrants();
+            $this->fail('Expected a RuntimeException.');
+        } catch (RuntimeException $e) {
+            $this->assertNotInstanceOf(HubConnectionRejected::class, $e);
+            $this->assertStringContainsString('rate-limiting', $e->getMessage());
+        }
+    }
+
     public function test_fetch_grants_throws_on_a_malformed_response(): void
     {
         HubConnection::create(['client_id' => 'chub_abc', 'client_secret' => 'topsecret']);

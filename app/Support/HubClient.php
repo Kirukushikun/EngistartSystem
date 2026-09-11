@@ -102,6 +102,10 @@ class HubClient
             throw new HubConnectionRejected('The hub rejected this connection (revoked or invalid).');
         }
 
+        if ($response->status() === 429) {
+            throw new RuntimeException('The hub is rate-limiting sync requests. Wait a moment and try again.');
+        }
+
         if (! $response->successful()) {
             throw new RuntimeException("Hub responded with status {$response->status()}.");
         }
