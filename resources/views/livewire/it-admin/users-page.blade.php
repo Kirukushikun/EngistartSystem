@@ -1,4 +1,12 @@
 <div class="p-6 overflow-y-auto h-full space-y-4">
+    <div class="flex justify-end">
+        <a href="{{ route('it-admin.users.sync') }}"
+           class="text-[11px] px-3 py-1.5 rounded-[8px] font-medium"
+           style="border: 0.5px solid var(--blue-bd); background: var(--blue-bg); color: var(--blue);">
+            Sync from hub
+        </a>
+    </div>
+
     <div class="rounded-[12px] p-[14px]" style="border: 0.5px solid var(--border); background: var(--bg2)">
         <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.8fr)_180px_180px_180px_100px] gap-3 items-end">
             <div>

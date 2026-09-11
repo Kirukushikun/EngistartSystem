@@ -1,0 +1,66 @@
+{
+    "_fixture_note": "Hand-written stand-in for GET /api/v1/grants, shaped from essentials/hub-integration-guide.md section 3. REPLACE THIS with a pasted real hub response once the hub exists (guide section 5) -- a fixture built from our own assumptions only proves the code agrees with itself.",
+    "generated_at": "2026-09-07T10:00:00Z",
+    "people": [
+        {
+            "user_id": 412,
+            "name": "Maria Santos",
+            "email": "m.santos@bfcgroup.org",
+            "farm": "Farm A",
+            "department": "Finance",
+            "position": "Senior Accountant",
+            "roles": ["division_head", "manager"],
+            "active": true
+        },
+        {
+            "user_id": 87,
+            "name": "Juan Cruz",
+            "email": "j.cruz@bfcgroup.org",
+            "farm": "Farm B",
+            "department": "Operations",
+            "position": null,
+            "roles": ["manager"],
+            "active": true
+        },
+        {
+            "user_id": 205,
+            "name": "Elena Reyes",
+            "email": "e.reyes@bfcgroup.org",
+            "farm": "PFC",
+            "department": null,
+            "position": "VP Operations",
+            "roles": ["vp", "manager"],
+            "active": true
+        },
+        {
+            "user_id": 333,
+            "name": "Rowan Dela Cruz",
+            "email": "r.delacruz@bfcgroup.org",
+            "farm": null,
+            "department": "Human Resources",
+            "position": "HR Officer",
+            "roles": ["user"],
+            "active": true
+        },
+        {
+            "user_id": 90,
+            "name": "Ben Aquino",
+            "email": "b.aquino@bfcgroup.org",
+            "farm": "HATCHERY",
+            "department": "Poultry",
+            "position": "Auditor",
+            "roles": ["auditor", "manager"],
+            "active": true
+        },
+        {
+            "user_id": 501,
+            "name": "Grace Lim",
+            "email": "g.lim@bfcgroup.org",
+            "farm": "FEEDMILL",
+            "department": "Feedmill",
+            "position": "Line Supervisor",
+            "roles": ["manager"],
+            "active": false
+        }
+    ]
+}

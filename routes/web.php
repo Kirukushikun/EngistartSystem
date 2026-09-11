@@ -96,6 +96,7 @@ Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
     Route::middleware('role:it_admin')->group(function () {
         Route::get('/it-admin/all-requests', \App\Livewire\ITAdmin\AllRequestsPage::class)->name('it-admin.all-requests');
         Route::get('/it-admin/users', \App\Livewire\ITAdmin\UsersPage::class)->name('it-admin.users');
+        Route::get('/it-admin/users/sync', \App\Livewire\ITAdmin\HubSyncPage::class)->name('it-admin.users.sync');
         Route::get('/it-admin/audit', \App\Livewire\ITAdmin\AuditTrailPage::class)->name('it-admin.audit');
         Route::get('/it-admin/override', \App\Livewire\ITAdmin\StatusOverridePage::class)->name('it-admin.override');
         Route::get('/it-admin/pending-changes', \App\Livewire\ITAdmin\PendingChangesPage::class)->name('it-admin.pending-changes');

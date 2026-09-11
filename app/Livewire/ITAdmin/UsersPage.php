@@ -5,13 +5,12 @@ namespace App\Livewire\ITAdmin;
 use App\Livewire\Concerns\HasSimplePagination;
 use App\Models\User;
 use App\Support\TestingMode;
+use App\Support\UserAccessManager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Livewire\Component;
 
 class UsersPage extends Component
@@ -300,51 +299,26 @@ class UsersPage extends Component
             return;
         }
 
-        $user = User::find($this->selectedUserId);
+        $attributes = [
+            'name' => (string) $directoryUser['name'],
+            'email' => (string) $directoryUser['email'],
+            'role' => (string) $validated['form']['role'],
+        ];
 
-        if (! $user) {
-            $user = new User();
-            $user->id = $this->selectedUserId;
-            $user->name = (string) $directoryUser['name'];
-            $user->email = (string) $directoryUser['email'];
-            $user->password = Hash::make(Str::random(40));
-            $user->is_active = true;
-        } else {
-            $user->name = (string) $directoryUser['name'];
-            $user->email = (string) $directoryUser['email'];
-        }
-
-        $wasActiveEngineer = $user->exists && $user->getOriginal('role') === 'engineer' && (bool) $user->getOriginal('is_active');
-
-        $user->role = (string) $validated['form']['role'];
-
+        // "role" mode leaves farm/department as they are.
         if ($this->formMode !== 'role') {
-            $user->farm = $this->blankToNull($validated['form']['farm']);
-            $user->department = $this->blankToNull($validated['form']['department']);
+            $attributes['farm'] = $validated['form']['farm'];
+            $attributes['department'] = $validated['form']['department'];
         }
 
-        if ($user->role === 'engineer' && $user->is_active && ! $wasActiveEngineer) {
-            $activeEngineerCount = User::query()
-                ->where('role', 'engineer')
-                ->where('is_active', true)
-                ->when($user->exists, fn ($query) => $query->where('id', '!=', $user->id))
-                ->count();
+        $result = UserAccessManager::assign((int) $this->selectedUserId, $attributes, 'manual');
 
-            if ($activeEngineerCount >= 4) {
-                $user->is_active = false;
-                $this->dispatch('notify', type: 'warn', message: '4 engineer accounts are already active — this one was added disabled. Disable another engineer to activate it.');
-            }
+        if ($result['notice'] !== null) {
+            $this->dispatch('notify', type: 'warn', message: $result['notice']);
         }
-
-        $user->save();
 
         $this->refreshDbUsers();
         $this->cancelForm();
-    }
-
-    protected function activeEngineerCount(): int
-    {
-        return User::query()->where('role', 'engineer')->where('is_active', true)->count();
     }
 
     public function toggleAccess(int $userId): void
@@ -355,14 +329,20 @@ class UsersPage extends Component
             return;
         }
 
-        if (! $user->is_active && $user->role === 'engineer' && $this->activeEngineerCount() >= 4) {
-            $this->dispatch('notify', type: 'warn', message: 'Only 4 engineer accounts can be active at a time. Disable another engineer first.');
+        if ($user->is_active) {
+            UserAccessManager::revoke($user);
+            $this->refreshDbUsers();
 
             return;
         }
 
-        $user->is_active = ! $user->is_active;
-        $user->save();
+        $notice = UserAccessManager::reinstate($user);
+
+        if ($notice !== null) {
+            $this->dispatch('notify', type: 'warn', message: $notice);
+
+            return;
+        }
 
         $this->refreshDbUsers();
     }
@@ -441,13 +421,6 @@ class UsersPage extends Component
         // saying "No Access" and the grant looks like it silently did nothing.
         unset($this->users, $this->filteredUsers, $this->paginatedUsers);
         unset($this->totalPages, $this->showingFrom, $this->showingTo);
-    }
-
-    protected function blankToNull(?string $value): ?string
-    {
-        $value = trim((string) $value);
-
-        return $value === '' ? null : $value;
     }
 
     public function render()

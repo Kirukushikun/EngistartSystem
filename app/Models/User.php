@@ -26,7 +26,9 @@ class User extends Authenticatable
         'role',
         'farm',
         'department',
+        'position',
         'is_active',
+        'source',
         'password',
     ];
 
