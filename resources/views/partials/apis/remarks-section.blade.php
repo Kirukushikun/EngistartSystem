@@ -27,9 +27,14 @@
                             };
                         @endphp
                         <div class="rounded-[10px] p-[10px_12px]" style="background: {{ $entryStyle['bg'] }}; border: 0.5px solid {{ $entryStyle['border'] }};">
-                            <div class="mb-1">
-                                <p class="text-[12px] m-0 text-apis-text font-medium">{{ $entry['role'] }}@if($entry['actor']) · {{ $entry['actor'] }}@endif</p>
-                                <p class="text-[11px] m-0" style="color: {{ $entryStyle['color'] }};">{{ $entry['label'] }}</p>
+                            <div class="mb-1 flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-[12px] m-0 text-apis-text font-medium">{{ $entry['role'] }}@if($entry['actor']) · {{ $entry['actor'] }}@endif</p>
+                                    <p class="text-[11px] m-0" style="color: {{ $entryStyle['color'] }};">{{ $entry['label'] }}</p>
+                                </div>
+                                @if (!empty($entry['date']))
+                                    <span class="text-[10px] text-apis-text2 whitespace-nowrap shrink-0">{{ $entry['date'] }}</span>
+                                @endif
                             </div>
                             <p class="text-[12px] text-apis-text m-0 leading-[1.6]">{{ $entry['remarks'] }}</p>
                         </div>
