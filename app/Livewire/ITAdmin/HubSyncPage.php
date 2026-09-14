@@ -77,6 +77,8 @@ class HubSyncPage extends Component
         $this->hasConnection = true;
 
         $this->load();
+
+        $this->dispatch('notify', type: 'success', message: 'Connected to the Access Hub.');
     }
 
     public function resetConnection(): void
@@ -92,6 +94,8 @@ class HubSyncPage extends Component
         $this->selectedNew = $this->selectedChanged = [];
         $this->lastSyncedAt = null;
         $this->lastSyncedStale = false;
+
+        $this->dispatch('notify', type: 'warn', message: 'Access Hub connection reset. Enroll again to resume syncing.');
     }
 
     public function refreshPreview(): void
@@ -147,6 +151,8 @@ class HubSyncPage extends Component
 
         $this->load();
         $this->flash = "Sync applied — {$updated} account(s) updated, {$revoked} revoked.";
+
+        $this->dispatch('notify', type: 'success', message: $this->flash);
     }
 
     protected function load(): void

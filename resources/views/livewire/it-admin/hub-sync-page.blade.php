@@ -1,5 +1,12 @@
 <div class="p-6 overflow-y-auto h-full space-y-4">
 
+    @php
+        $spinner = '<svg class="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>';
+    @endphp
+
     {{-- Header row --}}
     <div class="flex items-center justify-between gap-3 flex-wrap">
         <a href="{{ route('it-admin.users') }}" class="text-[12px] text-apis-text2 hover:text-apis-text">&larr; Back to User Management</a>
@@ -14,17 +21,21 @@
                     <span class="text-[11px] text-apis-text2">Never synced</span>
                 @endif
 
-                <button type="button" wire:click="refreshPreview"
-                    class="text-[11px] px-3 py-1.5 rounded-[8px]"
+                <button type="button" wire:click="refreshPreview" wire:target="refreshPreview" wire:loading.attr="disabled"
+                    class="text-[11px] px-3 py-1.5 rounded-[8px] inline-flex items-center gap-1.5"
                     style="border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text);">
-                    Refresh preview
+                    <span wire:loading wire:target="refreshPreview">{!! $spinner !!}</span>
+                    <span wire:loading.remove wire:target="refreshPreview">Refresh preview</span>
+                    <span wire:loading wire:target="refreshPreview">Refreshing&hellip;</span>
                 </button>
 
-                <button type="button" wire:click="resetConnection"
+                <button type="button" wire:click="resetConnection" wire:target="resetConnection" wire:loading.attr="disabled"
                     wire:confirm="Reset the Access Hub connection? You'll need to enroll again with a new code before syncing."
-                    class="text-[11px] px-3 py-1.5 rounded-[8px]"
+                    class="text-[11px] px-3 py-1.5 rounded-[8px] inline-flex items-center gap-1.5"
                     style="border: 0.5px solid var(--red-bd); background: var(--red-bg); color: var(--red);">
-                    Reset connection
+                    <span wire:loading wire:target="resetConnection">{!! $spinner !!}</span>
+                    <span wire:loading.remove wire:target="resetConnection">Reset connection</span>
+                    <span wire:loading wire:target="resetConnection">Resetting&hellip;</span>
                 </button>
             </div>
         @endif
@@ -50,16 +61,20 @@
 
             <div>
                 <label class="block text-[10px] text-apis-text2 mb-2 font-medium uppercase tracking-[0.07em]">Enrollment code</label>
-                <input type="text" wire:model="enrollmentCode" class="apis-toolbar-control w-full" placeholder="HUB-XXXX-XXXX" autofocus>
+                <input type="text" wire:model="enrollmentCode" wire:target="enroll" wire:loading.attr="disabled"
+                    class="apis-toolbar-control w-full" placeholder="HUB-XXXX-XXXX" autofocus>
                 @error('enrollmentCode')
                     <p class="mt-2 text-[11px]" style="color: var(--red)">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="flex justify-end">
-                <button type="button" wire:click="enroll" class="apis-card-button font-medium"
+                <button type="button" wire:click="enroll" wire:target="enroll" wire:loading.attr="disabled"
+                    class="apis-card-button font-medium inline-flex items-center gap-1.5"
                     style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd);">
-                    Connect
+                    <span wire:loading wire:target="enroll">{!! $spinner !!}</span>
+                    <span wire:loading.remove wire:target="enroll">Connect</span>
+                    <span wire:loading wire:target="enroll">Connecting&hellip;</span>
                 </button>
             </div>
         </div>
@@ -88,6 +103,8 @@
                 @endif
             </div>
         @else
+
+            <div wire:loading.delay.class="opacity-50 pointer-events-none" wire:target="apply" class="space-y-4 transition-opacity">
 
             {{-- NEW --}}
             <div class="rounded-[12px] overflow-hidden" style="border: 0.5px solid var(--border); background: var(--bg)">
@@ -177,14 +194,22 @@
             </div>
 
             {{-- Apply --}}
-            <div class="flex justify-end gap-2 rounded-[12px] p-[12px_14px]" style="border: 0.5px solid var(--border); background: var(--bg)">
-                <button type="button" wire:click="apply"
+            <div class="flex items-center justify-end gap-3 rounded-[12px] p-[12px_14px]" style="border: 0.5px solid var(--border); background: var(--bg)">
+                <span wire:loading.delay wire:target="apply" class="text-[11px] text-apis-text2 inline-flex items-center gap-1.5">
+                    {!! $spinner !!} Applying&hellip; don't close this page
+                </span>
+
+                <button type="button" wire:click="apply" wire:target="apply" wire:loading.attr="disabled"
                     @disabled(count($newPeople) === 0 && count($changedPeople) === 0)
-                    class="apis-card-button font-medium"
+                    class="apis-card-button font-medium inline-flex items-center gap-1.5"
                     style="background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-bd);">
-                    Apply selected
+                    <span wire:loading wire:target="apply">{!! $spinner !!}</span>
+                    <span wire:loading.remove wire:target="apply">Apply selected</span>
+                    <span wire:loading wire:target="apply">Applying&hellip;</span>
                 </button>
             </div>
+
+            </div> {{-- /wire:loading dim wrapper --}}
 
         @endif
     @endunless

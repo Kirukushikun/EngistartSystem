@@ -351,6 +351,16 @@ class HubSyncTest extends TestCase
         $this->assertSame(2, User::count()); // it admin + the untouched manual row
     }
 
+    public function test_apply_dispatches_a_success_toast_matching_the_banner(): void
+    {
+        $this->fakeHub([$this->person(412)]);
+
+        Livewire::actingAs($this->itAdmin())
+            ->test(HubSyncPage::class)
+            ->call('apply')
+            ->assertDispatched('notify', type: 'success', message: 'Sync applied — 1 account(s) updated, 0 revoked.');
+    }
+
     public function test_a_rejected_connection_offers_reset_instead_of_retry(): void
     {
         $this->hubRejectsConnection();
@@ -392,7 +402,8 @@ class HubSyncTest extends TestCase
             ->call('enroll')
             ->assertSet('hasConnection', true)
             ->assertSet('enrollmentError', null)
-            ->assertSet('enrollmentCode', '');
+            ->assertSet('enrollmentCode', '')
+            ->assertDispatched('notify', type: 'success', message: 'Connected to the Access Hub.');
 
         $this->assertNotNull(HubConnection::current());
         $this->assertSame('chub_new', HubConnection::current()->client_id);
@@ -429,7 +440,8 @@ class HubSyncTest extends TestCase
         $component->call('resetConnection')
             ->assertSet('hasConnection', false)
             ->assertSet('newPeople', [])
-            ->assertSet('error', null);
+            ->assertSet('error', null)
+            ->assertDispatched('notify', type: 'warn');
 
         $this->assertNull(HubConnection::current());
     }
