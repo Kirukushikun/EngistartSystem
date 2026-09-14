@@ -48,6 +48,18 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // Engineers are provisioned with a real, IT-staff-set local password
+        // (see AssignedEngineersPage) precisely because they have no account
+        // in BFC's central Auth API -- unlike every other role, they always
+        // authenticate locally, in every environment, regardless of testing
+        // mode. Without this, going out of testing mode in production routes
+        // EVERY login through the external API -- including engineers, who
+        // don't exist there and can never get in no matter what password IT
+        // staff sets for them locally.
+        if ($this->isLocalOnlyAccount($credentials['email'])) {
+            return $this->attemptLocalLogin($request, $credentials);
+        }
+
         // Testing mode skips the whole Auth API path rather than attempting and
         // catching it: a dev machine with no API credentials should never sit
         // through a network timeout just to arrive at a login failure.
@@ -60,6 +72,22 @@ class AuthController extends Controller
         }
 
         return $this->attemptApiLogin($request, $credentials);
+    }
+
+    /**
+     * True for accounts that never authenticate via the external Auth API,
+     * regardless of testing mode. Currently just engineers -- see the note in
+     * store(). If another role is ever provisioned the same local-password
+     * way (a dedicated form that sets a real, known password rather than the
+     * random placeholder UserAccessManager uses for API-backed accounts),
+     * add it here.
+     */
+    protected function isLocalOnlyAccount(string $email): bool
+    {
+        return User::query()
+            ->where('email', $email)
+            ->where('role', 'engineer')
+            ->exists();
     }
 
     /**
