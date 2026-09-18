@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Access Hub Integration — Guide &amp; Simulation</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171b21; --panel2:#1d222a; --border:#2a303a;
+    --text:#e6e9ee; --muted:#9aa4b2; --accent:#4f8cff; --accent2:#6fd08c;
+    --warn:#e0a94e; --bad:#e0645f; --code-bg:#11151b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;line-height:1.55;}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 20px 80px;}
+  h1{font-size:1.7rem;margin:0 0 6px;}
+  h2{font-size:1.25rem;margin:40px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+  h3{font-size:1.02rem;margin:24px 0 8px;color:var(--accent);}
+  h4{font-size:.92rem;margin:16px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  p{margin:8px 0;color:var(--text);}
+  .lede{color:var(--muted);font-size:.95rem;max-width:760px;}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;}
+  code{background:var(--code-bg);padding:1px 6px;border-radius:4px;font-size:.88em;color:#c9d6ff;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:.82rem;color:#c9d6ff;}
+  table{width:100%;border-collapse:collapse;margin:10px 0 6px;font-size:.88rem;}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;}
+  ul,ol{margin:6px 0;padding-left:22px;}
+  li{margin:3px 0;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin:14px 0;}
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 8px;position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5;}
+  .pill{background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:6px 13px;border-radius:999px;font-size:.82rem;cursor:pointer;text-decoration:none;}
+  .pill:hover{color:var(--text);border-color:var(--accent);}
+  .tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:5px;background:var(--panel2);border:1px solid var(--border);color:var(--muted);}
+  .tag.built{color:var(--accent2);border-color:#2d5a3d;}
+  .note{border-left:3px solid var(--accent);background:#132132;padding:10px 14px;border-radius:0 6px 6px 0;font-size:.88rem;color:#bcd0f0;margin:12px 0;}
+  .warn{border-left:3px solid var(--warn);background:#2a2313;padding:10px 14px;border-radius:0 6px 6px 0;font-size:.88rem;color:#f0dcb2;margin:12px 0;}
+
+  /* ---- simulation ---- */
+  .sim{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b0e12;margin:18px 0;}
+  .sim-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#05070a;border-bottom:1px solid var(--border);}
+  .sim-dot{width:10px;height:10px;border-radius:50%;background:#3a4250;}
+  .sim-url{flex:1;background:#11151b;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.76rem;color:var(--muted);font-family:ui-monospace,monospace;}
+  .sim-body{display:flex;min-height:420px;}
+  .sim-stage{flex:1;padding:22px;background:linear-gradient(180deg,#0e1218,#0b0e12);}
+  .sim-comments{width:300px;background:#0d1117;border-left:1px solid var(--border);padding:16px;font-size:.8rem;color:#9fb3cf;}
+  .sim-comments h5{margin:0 0 8px;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;}
+  .sim-comments .comment-line{margin:0 0 10px;padding-left:14px;border-left:2px solid #253247;color:#8fa6c9;}
+  .sim-comments .comment-line b{color:#c9d6ff;}
+  .sim-controls{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:#05070a;border-top:1px solid var(--border);}
+  .sim-step-label{font-size:.78rem;color:var(--muted);}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:.85rem;cursor:pointer;}
+  .btn:hover{filter:brightness(1.1);}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn.ghost{background:transparent;border:none;color:var(--accent);padding:8px 4px;}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+
+  .mock-page-title{font-size:1rem;font-weight:600;margin-bottom:2px;}
+  .mock-sub{color:var(--muted);font-size:.8rem;margin-bottom:16px;}
+  .flex-end{display:flex;justify-content:flex-end;margin-bottom:14px;}
+  .link-btn{color:var(--accent);font-size:.85rem;text-decoration:none;cursor:pointer;border:1px solid #26364f;padding:6px 12px;border-radius:7px;background:#131c2b;}
+  .link-btn:hover{background:#182535;}
+  .back-link{color:var(--muted);font-size:.8rem;margin-bottom:14px;display:inline-block;cursor:pointer;}
+  .back-link:hover{color:var(--text);}
+  .mock-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  .mock-table th{background:#141922;color:var(--muted);font-weight:500;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+  .mock-table td{padding:8px 10px;border-bottom:1px solid #1d222a;}
+
+  .enroll-card{max-width:420px;border:1px solid var(--border);background:var(--panel);border-radius:10px;padding:22px;}
+  .enroll-card label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:6px;}
+  .enroll-card input{width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:#0f1319;color:var(--text);font-size:.9rem;margin-bottom:14px;}
+  .enroll-card input:focus{outline:2px solid var(--accent);}
+
+  .group-card{border:1px solid var(--border);border-radius:9px;margin-bottom:14px;overflow:hidden;background:var(--panel);}
+  .group-header{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:#141922;font-size:.82rem;font-weight:600;}
+  .group-header .count{background:var(--panel2);border-radius:999px;padding:1px 9px;font-size:.72rem;color:var(--muted);}
+  .group-header.new .count{color:var(--accent2);}
+  .group-header.changed .count{color:var(--warn);}
+  .person-row{display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border-top:1px solid #1d222a;font-size:.8rem;}
+  .person-row input[type=checkbox]{margin-top:3px;}
+  .person-fields{display:flex;flex-direction:column;gap:1px;}
+  .person-fields .name{font-weight:600;}
+  .person-fields .muted{color:var(--muted);font-size:.76rem;}
+  .diff{color:var(--warn);font-size:.74rem;}
+  .empty-msg{padding:14px;color:var(--muted);font-size:.8rem;font-style:italic;}
+  .sync-header-line{font-size:.78rem;color:var(--muted);margin-bottom:10px;}
+  .sync-header-line.stale{color:var(--warn);}
+  .flash{background:#122a1c;border:1px solid #2d5a3d;color:#a9e4bd;padding:9px 14px;border-radius:7px;font-size:.82rem;margin-bottom:12px;}
+  .foot-actions{display:flex;justify-content:space-between;margin-top:16px;}
+
+  .checklist{list-style:none;padding-left:0;}
+  .checklist li{padding-left:26px;position:relative;margin:5px 0;}
+  .checklist li::before{content:"☑";position:absolute;left:0;color:var(--accent2);}
+
+  footer{margin-top:60px;color:var(--muted);font-size:.78rem;border-top:1px solid var(--border);padding-top:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Access Hub Integration — Guide &amp; Simulation</h1>
+  <p class="lede">
+    One file, replacing what used to be two: <code>hub-integration-guide.md</code> (the org's generic contract
+    every system implements) and <code>hub-integration-implementation.md</code> (what Engistart specifically did
+    with it). Read top to bottom for the contract and the decisions, or jump straight to
+    <a class="pill" style="display:inline-block;" href="#simulation">§4 the simulation</a> to click through the real flow.
+  </p>
+
+  <div class="pill-row">
+    <a class="pill" href="#contract">1 · The contract</a>
+    <a class="pill" href="#decisions">2 · What Engistart decided</a>
+    <a class="pill" href="#architecture">3 · Architecture</a>
+    <a class="pill" href="#simulation">4 · Live simulation</a>
+    <a class="pill" href="#failure">5 · Failure handling</a>
+    <a class="pill" href="#checklist">6 · Checklist &amp; deploy</a>
+  </div>
+
+  <!-- ================= 1. CONTRACT ================= -->
+  <h2 id="contract">1 · The contract (what every system implementing this must honor)</h2>
+
+  <div class="note">
+    <b>Ground rule:</b> this feature is optional. The system must work perfectly with <b>no hub connection at all</b> —
+    that's the normal state, not a degraded one. Login is never touched by the hub, under any circumstance.
+    If the hub is down, unreachable, or was never enrolled, the rest of User Management behaves exactly as it
+    always did.
+  </div>
+
+  <h3>What the hub actually is</h3>
+  <p>
+    One central list of people and their org role(s). Nothing more. The vocabulary is fixed to four values —
+    <code>manager</code>, <code>division_head</code>, <code>vp</code>, <code>user</code> — and a person can hold
+    more than one at once (<code>["division_head","manager"]</code> is a valid single entry, not two records).
+    The hub doesn't know Engistart's role enum, module codes, or permission names. It says "Maria is a division
+    head, and also a manager" and stops. What that means inside Engistart is Engistart's business — that
+    translation is exactly what §2 below documents.
+  </p>
+
+  <h3>What a sync receives</h3>
+  <pre>GET /api/v1/grants
+{
+  "generated_at": "2026-09-07T10:00:00Z",
+  "people": [
+    {
+      "user_id": 412,
+      "name": "Maria Santos",
+      "email": "m.santos@example.org",
+      "farm": "Farm A",
+      "department": "Finance",
+      "position": "Senior Accountant",
+      "roles": ["division_head", "manager"],
+      "active": true
+    },
+    {
+      "user_id": 87,
+      "name": "Juan Cruz",
+      "email": "j.cruz@example.org",
+      "farm": "Farm B",
+      "department": "Operations",
+      "position": null,
+      "roles": ["manager"],
+      "active": true
+    }
+  ]
+}</pre>
+  <ul>
+    <li><code>user_id</code> is the same numeric ID Engistart's <code>users</code> table already keys on — already decrypted, nothing to decrypt on receipt.</li>
+    <li><code>roles</code> is <b>always an array</b>. A mapping step that reads <code>roles[0]</code> and stops is a bug — it must iterate the whole array.</li>
+    <li><code>active: false</code> is the revoke signal, not something to filter out on arrival.</li>
+    <li>An unknown role string means "skip that string, warn" — never "crash" and never "drop the whole person" if at least one of their other roles is recognized.</li>
+    <li><code>farm</code> / <code>department</code> / <code>position</code> are <b>display-only, with no bearing on access</b>. All three can be <code>null</code> and often are — never gate anything on them, never let a null one break a sync.</li>
+  </ul>
+
+  <h3>Fixed reference values — <code>farm</code> and <code>department</code></h3>
+  <p>
+    Unlike <code>position</code> (free text, hub-admin-typed, no fixed list), <code>farm</code> and
+    <code>department</code> are drawn from closed, hub-side lists. As of 2026-09-15 the hub returns exactly these
+    strings — recorded here so a future system's mapping (§2.1-style table, or a dropdown's option list) has a
+    real source to key off instead of guessing from a handful of sample payloads.
+  </p>
+  <table>
+    <tr><th>Farms (7)</th><th>Departments (11)</th></tr>
+    <tr>
+      <td>
+        <code>BFC</code><br>
+        <code>BFC-IRAQ</code><br>
+        <code>BROOKDALE</code><br>
+        <code>FEEDMILL</code><br>
+        <code>HATCHERY</code><br>
+        <code>PFC</code><br>
+        <code>RH/BBGC</code>
+      </td>
+      <td>
+        <code>Accounting</code><br>
+        <code>Audit</code><br>
+        <code>Feedmill</code><br>
+        <code>General Services</code><br>
+        <code>Human Resources</code><br>
+        <code>IT and Security Services</code><br>
+        <code>Poultry</code><br>
+        <code>Purchasing</code><br>
+        <code>Sales &amp; Marketing</code><br>
+        <code>Swine</code><br>
+        <code>Treasury</code>
+      </td>
+    </tr>
+  </table>
+  <div class="note">
+    Engistart stores these as free-text strings (<code>users.farm</code>, <code>users.department</code>), not
+    enums — a hub value that doesn't already exist locally is simply appended as a trailing option wherever a
+    dropdown shows it (the <code>optionsWithCurrentValue()</code> pattern in <code>UsersPage</code>), rather than
+    rejected. A future system with its own closed enum for either column should map from this exact list, not
+    from whatever values happen to show up in a test fixture — and should re-check this list against the hub's
+    own <code>docs/api.md</code> before relying on it being exhaustive, since it is hub-maintained and can grow.
+  </div>
+
+  <h3>What must exist, structurally, no matter the system</h3>
+  <table>
+    <tr><th>Requirement</th><th>Why</th></tr>
+    <tr><td>A <code>source</code> column (<code>hub</code> / <code>manual</code>)</td><td>Sync only ever touches rows it owns. This one column is what guarantees a hand-added account is never modified or deleted by a sync.</td></tr>
+    <tr><td>A committed, logic-free role-mapping config</td><td>The hub's 4 roles → this system's own access model, decided once and reviewed as code, not invented per sync.</td></tr>
+    <tr><td>Connection storage — <code>client_id</code>, encrypted <code>client_secret</code>, <code>last_synced_at</code></td><td>Never in <code>.env</code> — the point is nobody carries secrets between environments by hand.</td></tr>
+    <tr><td>Enrollment step (code → connection)</td><td>One-time; after that the connection persists across redeploys as long as the database does.</td></tr>
+    <tr><td>A three-way preview before any write</td><td>New / Changed / Local-only — an admin confirms, sync never writes blind.</td></tr>
+    <tr><td>Apply reuses the panel's existing assign/revoke logic</td><td>No second path into <code>users</code> — one write path, so validation and side effects can't drift apart.</td></tr>
+    <tr><td>A staleness line</td><td>Stamped on fetch, not apply — mitigates the lag between "removed at the hub" and "this system notices."</td></tr>
+  </table>
+
+  <!-- ================= 2. DECISIONS ================= -->
+  <h2 id="decisions">2 · What Engistart specifically decided</h2>
+  <p class="lede">The contract above is deliberately generic. These four calls were this project's to make.</p>
+
+  <h3>2.1 — The role map</h3>
+  <table>
+    <tr><th>Hub role</th><th>Engistart role</th><th>Reasoning</th></tr>
+    <tr><td><code>division_head</code></td><td><code>division_head</code></td><td>Direct match</td></tr>
+    <tr><td><code>vp</code></td><td><code>vp_gen_services</code></td><td>The only VP-level role Engistart has</td></tr>
+    <tr><td><code>manager</code></td><td><code>farm_manager</code></td><td>Closest operational equivalent</td></tr>
+    <tr><td><code>user</code></td><td><i>unmapped, deliberately</i></td><td>A plain hub user with no management role gets no Engistart login at all</td></tr>
+  </table>
+  <p><code>dh_gen_services</code>, <code>ed_manager</code>, <code>it_admin</code>, <code>engineer</code>, <code>guest</code> have
+    <b>no hub equivalent</b>. Those roles stay permanently <code>source = manual</code> — the hub never creates, touches, or revokes them, because it never mentions them.</p>
+
+  <h3>2.2 — Multiple hub roles on one person, who wins</h3>
+  <p>
+    Engistart's <code>users.role</code> is a single enum column (not a JSON/bitmask access set), so the contract's
+    "decide up front how they combine" resolves to <b>highest-privilege wins</b>:
+    <code>vp_gen_services &gt; division_head &gt; farm_manager</code>. That ordering is a
+    <code>private const PRIORITY</code> inside <code>HubRoleResolver</code> — not in <code>config/hub.php</code> —
+    because the contract is explicit that this decision belongs in the code that <i>reads</i> the mapping table,
+    not the table itself. <code>config/hub.php</code> stays a flat, no-logic lookup.
+  </p>
+
+  <h3>2.3 — Farm / department / position: display-only, or stored?</h3>
+  <p>
+    The contract calls these optional and display-only. Engistart's call: <b>store all three</b> on
+    <code>source = hub</code> rows, overwritten on every sync.
+  </p>
+  <div class="warn">
+    <b>Consequence accepted deliberately:</b> <code>users.farm</code> also seeds the default <code>farm_name</code>
+    on a new Farm Manager request (<code>NewRequestPage.php</code>), so a hub sync can silently change what a farm
+    manager's next submission defaults to. <code>position</code> didn't exist on <code>users</code> before this
+    integration — it was added specifically for it.
+  </div>
+
+  <h3>2.4 — The actual wire protocol</h3>
+  <p>The contract explicitly defers this to the hub repo's own <code>docs/api.md</code>. The exact shape implemented and independently verified against real source (§5):</p>
+  <ul>
+    <li>Base URL: <code>https://accesshub.bfcgroup.ph</code> — <code>/login</code> is the human page; the API root has no path suffix.</li>
+    <li><code>POST /api/v1/enroll</code> — body <code>{code, project_key, environment}</code> → <code>{client_id, client_secret}</code>. <code>project_key</code> is this project's own registration on the hub, set up by a human on the hub admin side — never a placeholder to invent.</li>
+    <li><code>GET /api/v1/grants</code> — auth via two custom headers, <code>X-Client-Id</code> and <code>X-Client-Secret</code> (not <code>x-api-key</code>, not <code>Authorization: Bearer</code>).</li>
+  </ul>
+
+  <!-- ================= 3. ARCHITECTURE ================= -->
+  <h2 id="architecture">3 · Architecture — file by file</h2>
+
+  <h4>Schema</h4>
+  <table>
+    <tr><th>Migration</th><th>Adds</th></tr>
+    <tr><td><code>..._add_hub_sync_fields_to_users_table.php</code></td><td><code>users.source</code> (default <code>manual</code>), <code>users.position</code> (nullable)</td></tr>
+    <tr><td><code>..._create_hub_connections_table.php</code></td><td><code>hub_connections</code> — <code>client_id</code>, encrypted <code>client_secret</code>, <code>last_synced_at</code></td></tr>
+  </table>
+
+  <h4>Config &amp; domain classes</h4>
+  <table>
+    <tr><th>File</th><th>Job</th><th></th></tr>
+    <tr><td><code>config/hub.php</code></td><td><code>base_url</code>, <code>project_key</code>, and the flat <code>role_map</code> from §2.1</td><td><span class="tag built">config</span></td></tr>
+    <tr><td><code>App\Support\HubRoleResolver</code></td><td><code>roles[] → ?role</code>. Owns the priority order from §2.2. Unknown strings warn and are skipped, never crash.</td><td><span class="tag built">class</span></td></tr>
+    <tr><td><code>App\Support\HubSyncComparison</code></td><td>Hub <code>people[]</code> + local <code>users</code> → <code>{new, changed, local_only}</code>. The one place deciding what a sync <i>would</i> do.</td><td><span class="tag built">class</span></td></tr>
+    <tr><td><code>App\Support\UserAccessManager</code></td><td>The single write path into <code>users</code> — <code>assign()</code> / <code>revoke()</code> / <code>reinstate()</code>. Both the panel (<code>source: manual</code>) and the sync (<code>source: hub</code>) call this.</td><td><span class="tag built">class</span></td></tr>
+    <tr><td><code>App\Support\HubClient</code></td><td>The only class making HTTP calls to the hub — <code>enroll()</code> and <code>fetchGrants()</code>.</td><td><span class="tag built">class</span></td></tr>
+    <tr><td><code>HubEnrollmentException</code>, <code>HubConnectionRejected</code></td><td>Typed failures so the UI can tell "bad code" from "hub is down" from "credentials revoked."</td><td><span class="tag built">class</span></td></tr>
+    <tr><td><code>App\Models\HubConnection</code></td><td><code>current()</code> / <code>replace()</code> / <code>reset()</code>. Enforced singleton — <code>replace()</code> deletes any prior row first.</td><td><span class="tag built">model</span></td></tr>
+    <tr><td><code>App\Livewire\ITAdmin\HubSyncPage</code></td><td>The page itself, at <code>/it-admin/users/sync</code>. Three states — see §4.</td><td><span class="tag built">livewire</span></td></tr>
+  </table>
+
+  <h4>What <code>UsersPage</code> itself gained</h4>
+  <p>
+    <code>saveUser()</code> and <code>toggleAccess()</code> were refactored to call <code>UserAccessManager</code>
+    instead of writing <code>users</code> directly — this is what makes "no second write path" literally true, not
+    just documented. Editing a hub-owned row through the ordinary panel flips it to <code>source = manual</code>
+    (an intentional escape hatch: a manual edit is manual intent), while the plain enable/disable toggle does
+    <b>not</b> flip <code>source</code> — a temporary disable isn't a claim of ownership.
+  </p>
+
+  <!-- ================= 4. SIMULATION ================= -->
+  <h2 id="simulation">4 · Live simulation</h2>
+  <p class="lede">
+    Click through the actual flow, in the actual shape it takes on screen. This is not a mockup of an idealized
+    design — it mirrors <code>hub-sync-page.blade.php</code> and <code>users-page.blade.php</code> exactly,
+    including one correction worth calling out up front:
+  </p>
+  <div class="warn">
+    <b>It is not a modal.</b> "Sync from hub" is a plain link at the top-right of User Management. Clicking it
+    <b>navigates to a separate full page</b> (<code>/it-admin/users/sync</code>), with a "← Back to User
+    Management" link to return. The enrollment step is a bordered <i>card</i> on that page — easy to mistake for
+    a modal at a glance, which is exactly why this got flagged and corrected. The preview isn't a table either:
+    it's three stacked cards, each person a flex row, not spreadsheet columns.
+  </div>
+
+  <div class="sim">
+    <div class="sim-toolbar">
+      <div class="sim-dot"></div><div class="sim-dot"></div><div class="sim-dot"></div>
+      <div class="sim-url" id="simUrl">/it-admin/users</div>
+    </div>
+    <div class="sim-body">
+      <div class="sim-stage" id="simStage"><!-- injected by JS --></div>
+      <div class="sim-comments">
+        <h5>Developer commentary</h5>
+        <div id="simComments"></div>
+      </div>
+    </div>
+    <div class="sim-controls">
+      <span class="sim-step-label" id="simStepLabel">Step 1 of 6</span>
+      <div>
+        <button class="btn secondary" id="simRestart">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 5. FAILURE HANDLING ================= -->
+  <h2 id="failure">5 · Behavior when things go wrong</h2>
+
+  <h4>Enrollment</h4>
+  <table>
+    <tr><th>Hub response</th><th>Engistart shows</th></tr>
+    <tr><td><code>200</code></td><td>Stores <code>client_id</code>/<code>client_secret</code>, panel flips to the preview</td></tr>
+    <tr><td><code>404</code></td><td>"the hub does not recognize this project key"</td></tr>
+    <tr><td><code>422</code></td><td>"the code is wrong, expired, or already used"</td></tr>
+    <tr><td><code>429</code></td><td>"rate-limiting enrollment attempts, wait a moment"</td></tr>
+    <tr><td>network failure</td><td>"Could not reach the Access Hub to enroll"</td></tr>
+  </table>
+  <p>No connection is ever partially created — any failure leaves <code>hub_connections</code> exactly as it was.</p>
+
+  <h4>While connected</h4>
+  <table>
+    <tr><th>Situation</th><th>Shown</th><th><code>last_synced_at</code></th></tr>
+    <tr><td>Hub unreachable / times out</td><td>Generic error, "User Management is unaffected"</td><td>untouched</td></tr>
+    <tr><td><code>401</code>/<code>403</code> (revoked/invalid)</td><td>Dedicated message + a <b>Reset connection</b> button, not a retry prompt</td><td>untouched</td></tr>
+    <tr><td><code>429</code> on the grants call</td><td>"rate-limiting sync requests"</td><td>untouched</td></tr>
+    <tr><td>Malformed response (<code>people</code> missing)</td><td>Generic error</td><td>untouched</td></tr>
+  </table>
+  <p>"Reset connection" deletes the <code>hub_connections</code> row outright and drops the panel back to State 1 — the only way forward is enrolling again with a fresh code.</p>
+
+  <h3>Two things this integration deliberately does not do</h3>
+  <ul>
+    <li><b>It never touches login.</b> <code>AuthController</code> has no reference to the hub anywhere. Access Hub and BFC's Auth API (what users actually authenticate against) are two unrelated systems that happen to both be "external BFC APIs." The hub only ever decides <i>what role a <code>source = hub</code> user has</i>, never <i>whether someone can log in</i>.</li>
+    <li><b>It never overwrites anything an admin granted by hand.</b> Every write path checks <code>source === 'hub'</code> before touching an existing row. A <code>source = manual</code> account — including every account for a role the hub doesn't know about — is invisible to the sync in every direction.</li>
+  </ul>
+
+  <!-- ================= 6. CHECKLIST ================= -->
+  <h2 id="checklist">6 · Checklist &amp; deploy runbook</h2>
+
+  <h4>Built &amp; verified</h4>
+  <ul class="checklist">
+    <li><code>source</code> column added, existing rows default to <code>manual</code></li>
+    <li>Role mapping config committed, flat, logic-free, keyed on the current 4 hub roles</li>
+    <li>Multiple-roles-per-person combine rule lives in <code>HubRoleResolver</code>, not the config</li>
+    <li>Farm / department / position shown in preview, tolerant of nulls, stored on hub rows (§2.3)</li>
+    <li>Connection row — client ID, encrypted secret, <code>last_synced_at</code></li>
+    <li>Hub base URL in committed config, no secrets in <code>.env</code></li>
+    <li>Enrollment card on first sync, "Reset connection" available thereafter</li>
+    <li>Compare produces three groups: new, changed, local-only</li>
+    <li>Preview shown before any write, admin confirms per row</li>
+    <li>Apply reuses <code>UserAccessManager</code> — no second write path</li>
+    <li>Sync never modifies or deletes <code>source = manual</code> rows</li>
+    <li>User ID set explicitly on create, not mass-assigned</li>
+    <li><code>last_synced_at</code> stamped on fetch only, amber past 30 days</li>
+    <li>Every hub call has connect and read timeouts</li>
+    <li>Panel verified working with the hub switched off entirely</li>
+    <li>44 automated tests — <code>HubSyncTest.php</code> (resolver/compare/apply/lifecycle) + <code>HubClientTest.php</code> (real HTTP layer via <code>Http::fake()</code>)</li>
+  </ul>
+
+  <h4>Deploying this for real</h4>
+  <ol>
+    <li>Get this project's <code>project_key</code> and a one-time enrollment code from whoever administers <code>accesshub.bfcgroup.ph</code>.</li>
+    <li>Set <code>HUB_BASE_URL</code> and <code>HUB_PROJECT_KEY</code> in the environment's <code>.env</code>.</li>
+    <li>As IT Admin: User Management → "Sync from hub" → paste the code → Connect.</li>
+    <li>Review the New/Changed lists, tick what's right, Apply.</li>
+    <li>From then on, "Refresh preview" + "Apply selected" is the whole workflow. Watch the last-synced line — past 30 days, it turns amber on its own.</li>
+  </ol>
+
+  <footer>
+    Supersedes <code>hub-integration-guide.md</code> and <code>hub-integration-implementation.md</code> — both
+    dissolved into this single file. Built 2026-09-10 → 2026-09-11, corrected 2026-09-14 (grants <code>429</code>
+    handling) and 2026-09-15 (this merge + simulation, and a precision fix on the UI shape in §4).
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const stage = document.getElementById('simStage');
+  const comments = document.getElementById('simComments');
+  const urlBar = document.getElementById('simUrl');
+  const stepLabel = document.getElementById('simStepLabel');
+  const restartBtn = document.getElementById('simRestart');
+
+  const TOTAL_STEPS = 6;
+  let step = 1;
+  let code = '';
+  let selectedNew = {412:true, 87:true};
+  let selectedChanged = {501:false};
+  let applied = false;
+
+  function esc(s){ return s; }
+
+  function render(){
+    stepLabel.textContent = `Step ${step} of ${TOTAL_STEPS}`;
+    if (step === 1) renderUsersPage();
+    else if (step === 2) renderEnrollForm();
+    else if (step === 3) renderConnecting();
+    else if (step === 4) renderPreview();
+    else if (step === 5) renderApplying();
+    else if (step === 6) renderApplied();
+  }
+
+  function setComments(lines){
+    comments.innerHTML = lines.map(l => `<div class="comment-line">${l}</div>`).join('');
+  }
+
+  function renderUsersPage(){
+    urlBar.textContent = '/it-admin/users';
+    stage.innerHTML = `
+      <div class="mock-page-title">User Management</div>
+      <div class="mock-sub">Grant, edit, and revoke system access.</div>
+      <div class="flex-end">
+        <span class="link-btn" id="btnSyncFromHub">Sync from hub</span>
+      </div>
+      <table class="mock-table">
+        <tr><th>Name</th><th>Role</th><th>Source</th><th>Status</th></tr>
+        <tr><td>I. Guno</td><td>IT Administrator</td><td>manual</td><td>Active</td></tr>
+        <tr><td>JC. Purganan</td><td>Farm Manager</td><td>manual</td><td>Active</td></tr>
+        <tr><td>A. Tadeo</td><td>Guest</td><td>manual</td><td>Disabled</td></tr>
+      </table>`;
+    document.getElementById('btnSyncFromHub').onclick = () => { step = 2; render(); };
+    setComments([
+      `<b>UsersPage</b> renders normally — the hub has no bearing on this page's own behavior.`,
+      `The link is plain markup inside <code>&lt;div class="flex justify-end"&gt;</code> — not a button that opens anything in place.`,
+      `Clicking it is a real navigation to <code>route('it-admin.users.sync')</code>.`
+    ]);
+  }
+
+  function renderEnrollForm(){
+    urlBar.textContent = '/it-admin/users/sync';
+    stage.innerHTML = `
+      <span class="back-link" id="btnBack">← Back to User Management</span>
+      <div class="mock-page-title">Sync from Access Hub</div>
+      <div class="mock-sub">Review what would change before anything is written.</div>
+      <div class="enroll-card">
+        <label>One-time enrollment code</label>
+        <input type="text" id="codeInput" placeholder="e.g. AH-7F2Q-1X" value="${code}">
+        <button class="btn" id="btnConnect">Connect</button>
+      </div>`;
+    document.getElementById('btnBack').onclick = () => { step = 1; render(); };
+    document.getElementById('codeInput').oninput = (e) => { code = e.target.value; };
+    document.getElementById('btnConnect').onclick = () => {
+      if (!code.trim()) { code = 'AH-7F2Q-1X'; }
+      step = 3; render();
+    };
+    setComments([
+      `<b>State 1</b> — <code>HubConnection::current()</code> is <code>null</code>, so the whole page is one bordered card. No preview exists yet — this is the part that reads like a "modal" but is a full page.`,
+      `Submitting calls <code>HubClient::enroll($code)</code> → <code>POST /api/v1/enroll</code> with <code>{code, project_key, environment}</code>.`,
+      `The code is never stored — only the returned <code>client_id</code>/<code>client_secret</code> are, via <code>HubConnection::replace()</code>.`
+    ]);
+  }
+
+  function renderConnecting(){
+    stage.innerHTML = `<div class="mock-page-title">Sync from Access Hub</div>
+      <div class="mock-sub" style="margin-top:40px;">Connecting…</div>`;
+    setComments([
+      `Real request in flight — <code>10s</code> timeout, <code>5s</code> connect timeout.`,
+      `On <code>200</code>: <code>hub_connections</code> row created, panel flips state.`,
+      `On <code>404</code>/<code>422</code>/<code>429</code>/network failure: a specific message shown, row untouched — see §5.`
+    ]);
+    setTimeout(() => { step = 4; render(); }, 650);
+  }
+
+  function personRow(p, groupSel, checked){
+    const box = groupSel
+      ? `<input type="checkbox" data-id="${p.id}" data-group="${groupSel}" ${checked ? 'checked' : ''}>`
+      : '';
+    return `<div class="person-row">
+      ${box}
+      <div class="person-fields">
+        <span class="name">${p.name}</span>
+        <span class="muted">${p.email}</span>
+        <span class="muted">${p.role}${p.farm ? ' · ' + p.farm : ''}${p.department ? ' · ' + p.department : ''}${p.position ? ' · ' + p.position : ''}</span>
+        ${p.diff ? `<span class="diff">${p.diff}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function renderPreview(){
+    urlBar.textContent = '/it-admin/users/sync';
+    const newPeople = [
+      {id:412, name:'Maria Santos', email:'m.santos@example.org', role:'Division Head', farm:'Farm A', department:'Finance', position:'Senior Accountant'},
+      {id:87,  name:'Juan Cruz',    email:'j.cruz@example.org',   role:'Farm Manager',  farm:'Farm B', department:'Operations', position:null},
+    ];
+    const changedPeople = [
+      {id:501, name:'Ana Reyes', email:'a.reyes@example.org', role:'Farm Manager', farm:'Farm C', department:'Agronomy', position:'Lead',
+       diff:'role: Division Head → Farm Manager (hub roles changed)'},
+    ];
+    const localOnly = [
+      {id:1, name:'I. Guno', email:'i.guno@bfcgroup.org', role:'IT Administrator', farm:null, department:null, position:null},
+      {id:2, name:'JC. Purganan', email:'jc.purganan@bfcgroup.org', role:'Farm Manager (manual)', farm:null, department:null, position:null},
+    ];
+
+    stage.innerHTML = `
+      <span class="back-link" id="btnBack">← Back to User Management</span>
+      <div class="mock-page-title">Sync from Access Hub</div>
+      <div class="sync-header-line">Last synced 0 seconds ago</div>
+
+      <div class="group-card">
+        <div class="group-header new"><span>New</span><span class="count">${newPeople.length}</span></div>
+        ${newPeople.map(p => personRow(p, 'new', selectedNew[p.id])).join('')}
+      </div>
+
+      <div class="group-card">
+        <div class="group-header changed"><span>Changed</span><span class="count">${changedPeople.length}</span></div>
+        ${changedPeople.map(p => personRow(p, 'changed', selectedChanged[p.id])).join('')}
+      </div>
+
+      <div class="group-card">
+        <div class="group-header"><span>Local only</span><span class="count">${localOnly.length}</span></div>
+        ${localOnly.map(p => personRow(p, null)).join('')}
+        <div class="empty-msg">Never touched by sync — shown for reassurance only.</div>
+      </div>
+
+      <div class="foot-actions">
+        <button class="btn secondary" id="btnRefresh">Refresh preview</button>
+        <button class="btn" id="btnApply">Apply selected</button>
+      </div>`;
+
+    document.getElementById('btnBack').onclick = () => { step = 1; render(); };
+    document.getElementById('btnRefresh').onclick = () => { step = 3; render(); };
+    document.getElementById('btnApply').onclick = () => { step = 5; render(); };
+    stage.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.onchange = (e) => {
+        const id = Number(e.target.dataset.id);
+        if (e.target.dataset.group === 'new') selectedNew[id] = e.target.checked;
+        else selectedChanged[id] = e.target.checked;
+      };
+    });
+
+    setComments([
+      `<b>State 2</b> — <code>HubClient::fetchGrants()</code> succeeded, <code>HubSyncComparison::build()</code> sorted every hub person into New / Changed / Local-only.`,
+      `<b>New</b> rows are pre-ticked (safe default). <b>Changed</b> rows are un-ticked — "needs eyes." <b>Local only</b> has no checkbox at all — it is structurally impossible to select these.`,
+      `<code>last_synced_at</code> was stamped the moment the fetch succeeded — <i>before</i> any apply happens.`,
+      `Three stacked cards, not a table — this is the part that's easy to describe wrong from memory.`
+    ]);
+  }
+
+  function renderApplying(){
+    stage.innerHTML = `<div class="mock-page-title">Sync from Access Hub</div>
+      <div class="mock-sub" style="margin-top:40px;">Applying…</div>`;
+    setComments([
+      `For each ticked row: <code>UserAccessManager::assign($id, $attrs, 'hub')</code> (new/changed) or <code>::revoke($user)</code> (went inactive at the hub).`,
+      `A guardrail re-checks <code>$user->source === 'hub'</code> right before writing — even if compare somehow handed back a row it shouldn't have, a manual row still can't be touched.`,
+      `<code>Cache::forget('users_page_db_users')</code> so User Management re-reads fresh next visit.`
+    ]);
+    setTimeout(() => { applied = true; step = 6; render(); }, 600);
+  }
+
+  function renderApplied(){
+    const updated = Object.values(selectedNew).filter(Boolean).length + Object.values(selectedChanged).filter(Boolean).length;
+    stage.innerHTML = `
+      <span class="back-link" id="btnBack">← Back to User Management</span>
+      <div class="mock-page-title">Sync from Access Hub</div>
+      <div class="flash">Sync applied — ${updated} account(s) updated, 0 revoked.</div>
+      <div class="sync-header-line">Last synced 0 seconds ago</div>
+      <div class="group-card">
+        <div class="group-header new"><span>New</span><span class="count">0</span></div>
+        <div class="empty-msg">Nothing pending — the rows you applied moved into User Management as <code>source = hub</code>.</div>
+      </div>
+      <div class="foot-actions">
+        <span></span>
+        <span class="link-btn" id="btnReset">Reset connection</span>
+      </div>`;
+    document.getElementById('btnBack').onclick = () => { step = 1; render(); };
+    document.getElementById('btnReset').onclick = () => { step = 2; code=''; render(); };
+    setComments([
+      `Applied rows disappear from New/Changed on this same reload — visible confirmation, not a leap of faith.`,
+      `"Reset connection" deletes the <code>hub_connections</code> row outright and drops back to State 1 — the only way forward from there is enrolling again with a fresh code.`,
+      `This is the whole feature end to end: nothing here can touch login, and nothing here can touch a <code>source = manual</code> row.`
+    ]);
+  }
+
+  restartBtn.onclick = () => {
+    step = 1; code=''; selectedNew = {412:true, 87:true}; selectedChanged = {501:false}; applied=false;
+    render();
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
