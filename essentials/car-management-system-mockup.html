@@ -292,7 +292,7 @@
           <h2>Dashboard</h2>
           <p>Repeat offenses, response &amp; resolution time, open/closed status — Sept 1–17, 2026</p>
         </div>
-        <button class="btn btn-accent" data-goto="new">+ New CAR</button>
+        <button class="btn btn-accent" id="dashboardNewBtn" data-goto="new">+ New CAR</button>
       </div>
       <div class="content">
 
@@ -476,19 +476,9 @@
   function svg(name){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ICONS[name]}</svg>`; }
 
   /* ============ ROLES ============ */
-  const ROLE_COLOR = { qa:'accent', supervisor:'blue', manager:'violet', farmdh:'amber', issuingdh:'green' };
+  const ROLE_COLOR = { supervisor:'blue', manager:'violet', farmdh:'amber', requestor:'green' };
 
   const ROLES = {
-    qa: {
-      id:'qa', name:'J. Dela Cruz', title:'QA Coordinator', scope:'Corporate',
-      blurb:'Issues CARs and monitors performance across every farm and business line.',
-      nav:[
-        { view:'dashboard', label:'Dashboard', icon:'dashboard' },
-        { view:'list', label:'All CARs', icon:'list', filter:null },
-        { view:'new', label:'New CAR', icon:'plus' },
-        { view:'list', label:'Overdue', icon:'alert', filter:'overdue' },
-      ],
-    },
     supervisor: {
       id:'supervisor', name:'R. Santos', title:'Farm Supervisor', scope:'PFC',
       blurb:'Responds to CARs issued against PFC — logs containment, root cause and corrective action.',
@@ -500,30 +490,33 @@
     },
     manager: {
       id:'manager', name:'L. Fernandez', title:'Farm Manager', scope:'BROOKDALE',
-      blurb:'Approves root cause & corrective action submitted by BROOKDALE supervisors.',
+      blurb:'Approves root cause & corrective action submitted by BROOKDALE supervisors — or prepares it directly when needed.',
       nav:[
         { view:'list', label:'My Approvals', icon:'inbox', filter:'mine' },
         { view:'list', label:'All CARs', icon:'list', filter:null },
       ],
     },
     farmdh: {
-      id:'farmdh', name:'M. Torres', title:'Farm Department Head', scope:'Multi-farm',
-      blurb:'Validates whether an implemented corrective action was actually effective.',
+      id:'farmdh', name:'M. Torres', title:'Farm Division Head', scope:'Multi-farm',
+      blurb:'Validates whether an implemented corrective action was effective, approves Manager-prepared responses directly (Step 10), and tracks every farm on the dashboard.',
       nav:[
+        { view:'dashboard', label:'Dashboard', icon:'dashboard' },
         { view:'list', label:'My Validations', icon:'inbox', filter:'mine' },
         { view:'list', label:'All CARs', icon:'list', filter:null },
+        { view:'list', label:'Overdue', icon:'alert', filter:'overdue' },
       ],
     },
-    issuingdh: {
-      id:'issuingdh', name:'A. Bautista', title:'Issuing Department Head', scope:'Corporate QA',
-      blurb:'Gives the final acceptance that closes a CAR — or sends it back for another round.',
+    requestor: {
+      id:'requestor', name:'A. Bautista', title:'Requestor', scope:'Issuing Department',
+      blurb:'Files CARs on behalf of complainants and gives the final acceptance that closes each one — no dashboard, this role is solely for requesting.',
       nav:[
-        { view:'list', label:'My Acceptances', icon:'inbox', filter:'mine' },
+        { view:'new', label:'New CAR', icon:'plus' },
         { view:'list', label:'All CARs', icon:'list', filter:null },
+        { view:'list', label:'My Acceptances', icon:'inbox', filter:'mine' },
       ],
     },
   };
-  const ROLE_ORDER = ['qa','supervisor','manager','farmdh','issuingdh'];
+  const ROLE_ORDER = ['requestor','supervisor','manager','farmdh'];
 
   let currentUser = null;
 
@@ -565,6 +558,7 @@
     'Pending Response':          'blue',
     'Returned for Revision':     'red',
     'Pending Approval':          'violet',
+    'Pending DH Approval':       'violet',
     'Awaiting Evidence':         'amber',
     'Pending Validation':        'amber',
     'Pending Final Acceptance':  'violet',
@@ -572,7 +566,8 @@
     'Open — Not Accepted':       'red',
   };
 
-  /* Who owns a CAR right now — mirrors current_owner_role/current_owner_id */
+  /* Who owns a CAR right now — mirrors current_owner_role/current_owner_id.
+   * Step 10: Supervisor-prepared -> Manager approves; Manager-prepared -> Division Head approves. */
   function ownerOf(car){
     switch (car.status){
       case 'Pending Response':
@@ -581,17 +576,19 @@
         return { role:'supervisor', label:`${car.farm} Supervisor` };
       case 'Pending Approval':
         return { role:'manager', label:`${car.farm} Manager` };
+      case 'Pending DH Approval':
+        return { role:'farmdh', label:'Farm Division Head' };
       case 'Pending Validation':
-        return { role:'farmdh', label:'Farm Department Head' };
+        return { role:'farmdh', label:'Farm Division Head' };
       case 'Pending Final Acceptance':
-        return { role:'issuingdh', label:'Issuing Department Head' };
+        return { role:'requestor', label:'Requestor' };
       default:
         return { role:null, label:'No further action' };
     }
   }
   function phaseOf(status){
     if (status === 'Pending Response') return 1;
-    if (status === 'Pending Approval' || status === 'Returned for Revision') return 2;
+    if (status === 'Pending Approval' || status === 'Pending DH Approval' || status === 'Returned for Revision') return 2;
     return 3;
   }
 
@@ -604,8 +601,8 @@
         { date:'2026-08-29', who:'PFC Supervisor', what:'Interim containment logged; root cause and corrective action submitted for approval.', tone:'default' },
         { date:'2026-08-30', who:'PFC Manager', what:'Root cause & corrective action approved — routed to Phase III.', tone:'green' },
         { date:'2026-09-03', who:'PFC Supervisor', what:'Implementation evidence uploaded.', tone:'default' },
-        { date:'2026-09-04', who:'Farm Department Head', what:'Corrective action validated as effective — forwarded to Issuing Department.', tone:'green' },
-        { date:'2026-09-05', who:'Issuing Department Head', what:'Final acceptance approved — CAR closed.', tone:'green' },
+        { date:'2026-09-04', who:'Farm Division Head', what:'Corrective action validated as effective — forwarded to Issuing Department.', tone:'green' },
+        { date:'2026-09-05', who:'Requestor', what:'Final acceptance approved — CAR closed.', tone:'green' },
       ]},
     { ref:'CAR-2026-0139', farm:'PFC', unit:'Table Egg Logistics', line:'TABLE EGG', category:'Logistics & Distribution Transport', subcategory:'Issuance & Delivery Errors',
       issued:'2026-09-02', complainant:'SM Hypermarket Distribution Desk', status:'Open — Not Accepted',
@@ -614,8 +611,8 @@
         { date:'2026-09-02', who:'PFC Supervisor', what:'Interim containment logged; root cause and corrective action submitted for approval.', tone:'default' },
         { date:'2026-09-03', who:'PFC Manager', what:'Root cause & corrective action approved — routed to Phase III.', tone:'green' },
         { date:'2026-09-05', who:'PFC Supervisor', what:'Implementation evidence uploaded.', tone:'default' },
-        { date:'2026-09-06', who:'Farm Department Head', what:'Corrective action validated as effective — forwarded to Issuing Department.', tone:'green' },
-        { date:'2026-09-07', who:'Issuing Department Head', what:'Not accepted — new end date requested, looped back for re-implementation.', tone:'red' },
+        { date:'2026-09-06', who:'Farm Division Head', what:'Corrective action validated as effective — forwarded to Issuing Department.', tone:'green' },
+        { date:'2026-09-07', who:'Requestor', what:'Not accepted — new end date requested, looped back for re-implementation.', tone:'red' },
       ]},
     { ref:'CAR-2026-0140', farm:'BROOKDALE', unit:'Eggroom', line:'TABLE EGG', category:'Compliance & Standards', subcategory:'Sanitation and Maintenance',
       issued:'2026-09-05', complainant:'Internal Audit', status:'Pending Approval',
@@ -655,10 +652,15 @@
         { date:'2026-09-16', who:'HATCHERY Supervisor', what:'Interim containment logged; root cause and corrective action submitted for approval.', tone:'default' },
         { date:'2026-09-16', who:'HATCHERY Manager', what:'Root cause & corrective action approved — routed to Phase III.', tone:'green' },
         { date:'2026-09-16', who:'HATCHERY Supervisor', what:'Implementation evidence uploaded (minor issue, fast turnaround).', tone:'default' },
-        { date:'2026-09-17', who:'Farm Department Head', what:'Corrective action validated as effective — forwarded to Issuing Department.', tone:'green' },
+        { date:'2026-09-17', who:'Farm Division Head', what:'Corrective action validated as effective — forwarded to Issuing Department.', tone:'green' },
+      ]},
+    { ref:'CAR-2026-0146', farm:'BROOKDALE', unit:'Eggroom', line:'TABLE EGG', category:'Compliance & Standards', subcategory:'Storage & Handling',
+      issued:'2026-09-17', complainant:'Internal Audit', status:'Pending Response',
+      history:[
+        { date:'2026-09-17', who:'Internal Audit', what:'CAR issued — Storage & Handling', tone:'default' },
       ]},
   ];
-  let nextRefNum = 146;
+  let nextRefNum = 147;
 
   /* ============ HELPERS ============ */
   function addDays(dateStr, n){
@@ -758,6 +760,7 @@
 
   /* ============ DASHBOARD (QA only) ============ */
   function renderDashboard(){
+    document.getElementById('dashboardNewBtn').hidden = !currentUser.nav.some(n => n.view === 'new');
     const openCount = cars.filter(c => !c.status.startsWith('Closed')).length;
     const phase1Count = cars.filter(c => phaseOf(c.status) === 1).length;
     document.getElementById('statOpen').textContent = openCount;
@@ -830,7 +833,8 @@
 
     const phase2Active = phase >= 2;
     const phase2Note = car.status === 'Pending Approval' ? `Awaiting ${car.farm} Manager sign-off`
-      : car.status === 'Returned for Revision' ? 'Returned for revision — supervisor needs to resubmit'
+      : car.status === 'Pending DH Approval' ? 'Manager-prepared — awaiting Division Head sign-off (Step 10)'
+      : car.status === 'Returned for Revision' ? 'Returned for revision — needs resubmitting'
       : phase2Active ? 'Approved — routed to Phase III' : '';
     const phase2 = `
       <div class="card" style="opacity:${phase2Active ? 1 : .5}">
@@ -897,11 +901,16 @@
     showView('detail');
   }
 
-  /* ============ ROLE-GATED ACTIONS ============ */
+  /* ============ ROLE-GATED ACTIONS ============
+   * Step 10 gives Phase II two paths depending on who actually prepares the
+   * response: Supervisor-prepared -> Manager approves (the default path);
+   * Manager-prepared directly -> Division Head approves instead. So Manager
+   * gets a normal-ownership approval action AND an opt-in override action on
+   * items still sitting with the Supervisor — not gated by strict ownership.
+   */
   function renderActionBar(car){
-    const owner = ownerOf(car);
-    if (owner.role !== currentUser.id) return '';
-    if ((currentUser.id === 'supervisor' || currentUser.id === 'manager') && car.farm !== currentUser.scope) return '';
+    const inFarmScope = (currentUser.id !== 'supervisor' && currentUser.id !== 'manager') || car.farm === currentUser.scope;
+    if (!inFarmScope) return '';
 
     if (currentUser.id === 'supervisor'){
       if (car.status === 'Pending Response' || car.status === 'Returned for Revision'){
@@ -913,17 +922,30 @@
           [{ label:'Upload implementation evidence', cls:'btn-accent', action:'uploadEvidence' }]);
       }
     }
-    if (currentUser.id === 'manager' && car.status === 'Pending Approval'){
-      return actionBar('Review the root cause and corrective action before this moves to implementation.',
-        [{ label:'Approve', cls:'btn-accent', action:'approvePhase2' },
-         { label:'Return for revision', cls:'btn-secondary', action:'rejectPhase2' }]);
+    if (currentUser.id === 'manager'){
+      if (car.status === 'Pending Approval'){
+        return actionBar('Review the root cause and corrective action before this moves to implementation.',
+          [{ label:'Approve', cls:'btn-accent', action:'approvePhase2' },
+           { label:'Return for revision', cls:'btn-secondary', action:'rejectPhase2' }]);
+      }
+      if (car.status === 'Pending Response' || car.status === 'Returned for Revision'){
+        return actionBar('You can respond directly instead of waiting on the Supervisor. Per Step 10, a Manager-prepared response is approved by the Division Head, not by you.',
+          [{ label:'Prepare & submit directly', cls:'btn-secondary', action:'managerSubmitDirect' }]);
+      }
     }
-    if (currentUser.id === 'farmdh' && car.status === 'Pending Validation'){
-      return actionBar('Was the corrective action effective?',
-        [{ label:'Mark effective', cls:'btn-accent', action:'markEffective' },
-         { label:'Not effective', cls:'btn-secondary', action:'markNotEffective' }]);
+    if (currentUser.id === 'farmdh'){
+      if (car.status === 'Pending Validation'){
+        return actionBar('Was the corrective action effective?',
+          [{ label:'Mark effective', cls:'btn-accent', action:'markEffective' },
+           { label:'Not effective', cls:'btn-secondary', action:'markNotEffective' }]);
+      }
+      if (car.status === 'Pending DH Approval'){
+        return actionBar('A Manager prepared this response directly, with no Supervisor involved — per Step 10 that means it needs your approval instead of a Manager\'s.',
+          [{ label:'Approve', cls:'btn-accent', action:'approvePhase2FromManager' },
+           { label:'Return for revision', cls:'btn-secondary', action:'rejectPhase2' }]);
+      }
     }
-    if (currentUser.id === 'issuingdh' && car.status === 'Pending Final Acceptance'){
+    if (currentUser.id === 'requestor' && car.status === 'Pending Final Acceptance'){
       return actionBar('Give final acceptance to close this CAR, or send it back for another round.',
         [{ label:'Accept — close CAR', cls:'btn-accent', action:'acceptClose' },
          { label:'Not accepted', cls:'btn-secondary', action:'rejectClose' }]);
@@ -932,7 +954,7 @@
   }
   function actionBar(note, buttons){
     return `<div class="card action-bar" style="background:var(--accent-bg); border-color:var(--accent-bd);">
-      <div class="who">Your action — ${currentUser.title}${currentUser.scope.includes('Corporate')||currentUser.scope==='Multi-farm' ? '' : ' · '+currentUser.scope}</div>
+      <div class="who">Your action — ${currentUser.title}${currentUser.scope==='Multi-farm'||currentUser.scope==='Issuing Department' ? '' : ' · '+currentUser.scope}</div>
       <div class="note">${note}</div>
       <div style="display:flex; gap:10px;">
         ${buttons.map(b => `<button class="btn ${b.cls}" data-action="${b.action}">${b.label}</button>`).join('')}
@@ -959,6 +981,14 @@
       case 'approvePhase2':
         car.status = 'Awaiting Evidence';
         pushHistory(car, 'Root cause & corrective action approved — routed to Phase III.', 'green');
+        break;
+      case 'managerSubmitDirect':
+        car.status = 'Pending DH Approval';
+        pushHistory(car, 'Interim containment logged; root cause and corrective action prepared directly by the Manager — submitted for Division Head approval (Step 10: Manager-prepared responses are approved by DH, not by a Manager).');
+        break;
+      case 'approvePhase2FromManager':
+        car.status = 'Awaiting Evidence';
+        pushHistory(car, 'Root cause & corrective action (Manager-prepared) approved by the Division Head — routed to Phase III.', 'green');
         break;
       case 'rejectPhase2':
         car.status = 'Returned for Revision';
@@ -1064,7 +1094,7 @@
     activeListFilter = filter;
     document.getElementById('listTitle').textContent = label;
     document.getElementById('listSub').textContent = desc;
-    document.getElementById('listNewBtn').hidden = !(currentUser.id === 'qa' || currentUser.id === 'supervisor');
+    document.getElementById('listNewBtn').hidden = !(currentUser.id === 'requestor' || currentUser.id === 'supervisor');
     let list = cars;
     if (filter === 'overdue') list = cars.filter(isOverdue);
     else if (filter === 'mine') list = filterMine(cars);
@@ -1080,7 +1110,7 @@
   }
   function navDesc(item){
     if (item.filter === 'overdue') return 'CARs past their response or implementation deadline.';
-    if (item.filter === 'mine') return `Items waiting on you — ${currentUser.title}${currentUser.scope==='Corporate'||currentUser.scope==='Corporate QA'||currentUser.scope==='Multi-farm' ? '' : ' · '+currentUser.scope}.`;
+    if (item.filter === 'mine') return `Items waiting on you — ${currentUser.title}${currentUser.scope==='Multi-farm'||currentUser.scope==='Issuing Department' ? '' : ' · '+currentUser.scope}.`;
     return 'All CARs across TABLE EGG and DOP operations.';
   }
 

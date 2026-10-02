@@ -52,6 +52,17 @@ Route::middleware(['guest', 'prevent-browser-cache'])->group(function () {
 Route::middleware(['auth', 'prevent-browser-cache'])->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
+    // Laravel's built-in `guest` middleware bounces an already-authenticated
+    // user away from /login by looking for a route named `dashboard` or
+    // `home`, falling back to `/` if neither exists. This app has neither --
+    // every role has its own home page instead -- so without this route,
+    // that fallback sent authenticated visitors to `/`, which unconditionally
+    // redirects to `/login`, which immediately bounces them right back here:
+    // an infinite /login <-> / loop (ERR_TOO_MANY_REDIRECTS, "This page isn't
+    // working"). This route is the fix -- Laravel finds it and stops there.
+    Route::get('/home', fn () => redirect()->route(AuthController::homeRouteForRole((string) auth()->user()->role)))
+        ->name('home');
+
     Route::middleware('role:farm_manager')->group(function () {
         Route::get('/farm-manager/requests/new', \App\Livewire\FarmManager\NewRequestPage::class)->name('farm-manager.requests.new');
         Route::get('/farm-manager/requests', \App\Livewire\FarmManager\MyRequestsPage::class)->name('farm-manager.requests.index');
